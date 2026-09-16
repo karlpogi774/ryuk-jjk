@@ -1,31 +1,55 @@
-const login = require("fca-unofficial"); // Palitan mo ng exact FCA library mo kung iba ang gamit mo
+const login = require("fca-unofficial");
 const fs = require("fs");
 const path = require("path");
 
-// 1. Suriin kung may appstate.json bago mag-login
-if (!fs.existsSync("appstate.json")) {
-  console.error("Error: Walang makitang appstate.json file! I-check ang Environment Variables sa Render.");
+const rainbowColors = ["\x1b[31m", "\x1b[33m", "\x1b[32m", "\x1b[36m", "\x1b[34m", "\x1b[35m"];
+function rainbowText(text) {
+  let result = "";
+  for (let i = 0; i < text.length; i++) {
+    const color = rainbowColors[i % rainbowColors.length];
+    result += color + text[i];
+  }
+  return result + "\x1b[0m";
+}
+
+const cookiePath = path.join(__dirname, "account.txt");
+if (!fs.existsSync(cookiePath)) {
+  console.error(rainbowText("[ ❌ ERROR ] account.txt file for cookie not found! — Powered by Kurapika"));
   process.exit(1);
 }
 
 let appState;
 try {
-  appState = JSON.parse(fs.readFileSync("appstate.json", "utf8"));
+  const cookieContent = fs.readFileSync(cookiePath, "utf8");
+  appState = JSON.parse(cookieContent);
 } catch (e) {
-  console.error("Error parsing appstate.json:", e);
+  console.error(rainbowText("[ ❌ ERROR ] Error parsing account.txt:"), e);
   process.exit(1);
 }
 
-// 2. Simulan ang pag-login ng Bot
+const configPath = path.join(__dirname, "config.json");
+let botConfig = { admin: [] };
+if (fs.existsSync(configPath)) {
+  try {
+    botConfig = JSON.parse(fs.readFileSync(configPath, "utf8"));
+  } catch (e) {
+    console.error(rainbowText("[ ❌ ERROR ] Error parsing config.json:"), e);
+  }
+} else {
+  console.warn(rainbowText("[ ⚠️ WARNING ] config.json not found. — Powered by Kurapika"));
+}
+
 login({ appState: appState }, (err, api) => {
   if (err) {
-    console.error("Login Error:", err);
+    console.error(rainbowText("[ ❌ LOGIN ERROR ]"), err);
     return;
   }
 
-  console.log("Gojo is successfully logged in and running via auto.js!");
+  console.log(rainbowText("┌─────────────────────────────────────────────────────────┐"));
+  console.log(rainbowText("│          GOJO BOT ACTIVE — POWERED BY KURAPIKA          │"));
+  console.log(rainbowText("└─────────────────────────────────────────────────────────┘"));
+  console.log(rainbowText("✨ Status: Successfully logged in and running via auto.js!"));
 
-  // Itakda ang Options ng API
   api.setOptions({
     listenEvents: true,
     selfListen: false,
@@ -33,41 +57,55 @@ login({ appState: appState }, (err, api) => {
     forceLogin: true
   });
 
-  // 3. I-load ang command file (Siguraduhing 'activate.js' ang pangalan ng file mo)
-  const commandPath = path.join(__dirname, "activate.js"); 
-  let commandModule = null;
-  
-  if (fs.existsSync(commandPath)) {
-    commandModule = require(commandPath);
-    console.log("Command module loaded successfully into auto.js.");
+  const scriptsDir = path.join(__dirname, "script");
+  const commands = new Map();
+
+  if (fs.existsSync(scriptsDir)) {
+    const commandFiles = fs.readdirSync(scriptsDir).filter(file => file.endsWith(".js"));
+    
+    console.log(rainbowText("┌─────────────────────────────────────────────────────────┐"));
+    console.log(rainbowText("│                    LOADED COMMANDS                      │"));
+    console.log(rainbowText("├─────────────────────────────────────────────────────────┘"));
+
+    for (const file of commandFiles) {
+      const commandPath = path.join(scriptsDir, file);
+      try {
+        const commandModule = require(commandPath);
+        if (commandModule.config && commandModule.config.name) {
+          commands.set(commandModule.config.name, commandModule);
+          console.log(rainbowText(`  ➜ Loaded: ${commandModule.config.name}.js`));
+        }
+      } catch (error) {
+        console.error(rainbowText(`  ❌ Error loading ${file}:`), error);
+      }
+    }
+    console.log(rainbowText("└─────────────────────────────────────────────────────────┘"));
   } else {
-    console.warn("Warning: Walang nahanap na command file sa path na '", commandPath, "'");
+    console.warn(rainbowText("[ ⚠️ WARNING ] 'script/' folder not found. — Powered by Kurapika"));
   }
 
-  // 4. Listener loop para sa mga mensahe at events sa Messenger
   api.listenMqtt(async (err, event) => {
-    if (err) return console.error("MQTT Error:", err);
+    if (err) return console.error(rainbowText("[ ❌ MQTT ERROR ]"), err);
 
     try {
-      if (!commandModule) return;
-
-      // Kapag nag-type ang user ng command (hal. /activate on)
       if (event.type === "message" && event.body && event.body.startsWith("/")) {
         const args = event.body.slice(1).trim().split(/ +/);
         const commandName = args.shift().toLowerCase();
 
-        if (commandModule.config && commandModule.config.name === commandName) {
-          await commandModule.run({ api, event, args });
+        const command = commands.get(commandName);
+        if (command) {
+          await command.run({ api, event, args, botConfig });
         }
       }
 
-      // Kapag nagpapadala ng regular na mensahe, sticker, o emoji (para sa handleEvent)
-      if (typeof commandModule.handleEvent === "function") {
-        await commandModule.handleEvent({ api, event });
+      for (const [_, command] of commands) {
+        if (typeof command.handleEvent === "function") {
+          await command.handleEvent({ api, event, botConfig });
+        }
       }
 
     } catch (error) {
-      console.error("Execution Error in event listener:", error);
+      console.error(rainbowText("[ ❌ EXECUTION ERROR ]"), error);
     }
   });
 });
