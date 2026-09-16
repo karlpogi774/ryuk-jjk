@@ -13,30 +13,28 @@ const ADMIN_IDS = [
 
 module.exports.config = {
   name: "gojo",
-  version: "28.0.0",
+  version: "30.0.0",
   hasPermission: 2,
   credits: "Jehosh / Gojo Satoru Edition",
-  description: "Gojo Bot: Fixed Reactions & Instant Anti-GC Rename Protection.",
+  description: "Gojo Bot: Continuous Non-Stop Chatting (5s Exact Delay) & Anti-Rename Engine.",
   usePrefix: true,
   commandCategory: "Admin",
   usages: "🕶️ /gojo on — Buksan ang 24h Domain Expansion 🌌\n" +
           "💙 /gojo theme — Switch Messenger Theme to Gojo Blue ⚡\n" +
-          "🔒 /gojo onsetgname <pangalan> — Lock GC name (Auto Revert) ♾️\n" +
+          "🔒 /gojo onsetgname <pangalan> — Unbreakable GC Name Lock ♾️\n" +
           "🏷️ /gojo onsetnick <nickname> — Change member nicknames safely 🤞\n" +
           "👋 /gojo welcome <on/off> — Toggle Auto Welcome 🔮\n" +
           "🎯 /gojo target <FB Name / Tag> — Target specific user 😼\n" +
           "❌ /gojo untarget — Clear target 🕶️\n" +
           "🚫 /gojo off — Turn OFF sa GC 🌌\n" +
           "📊 /gojo status — Check GC status ⚡",
-  cooldowns: 5
+  cooldowns: 2
 };
 
 const DATA_PATH = path.join(__dirname, "gojo_data.json");
 
-const AUTO_REPLY_MIN_DELAY_MS = 4000;
-const AUTO_REPLY_MAX_DELAY_MS = 6000;
-const SPAM_WINDOW_MS = 10000;
-const USER_SPAM_LIMIT = 2;
+// FIXED 5 SECONDS DELAY
+const AUTO_REPLY_DELAY_MS = 5000;
 
 const GOJO_THEME_IDS = [
   "2104033373204368", 
@@ -45,7 +43,6 @@ const GOJO_THEME_IDS = [
 ];
 
 const lastReplyTime = {};
-const userMessageTracker = {};
 
 const GOJO_SELF_EMOJIS = ["🕶️", "🌌", "♾️", "💙", "⚡", "😼", "🤞", "👑", "🔮"];
 
@@ -135,14 +132,6 @@ function getRemaining(threadID) {
   return left > 0 ? left : 0;
 }
 
-function isSpamming(senderID) {
-  const now = Date.now();
-  if (!userMessageTracker[senderID]) userMessageTracker[senderID] = [];
-  userMessageTracker[senderID] = userMessageTracker[senderID].filter(t => now - t < SPAM_WINDOW_MS);
-  userMessageTracker[senderID].push(now);
-  return userMessageTracker[senderID].length > USER_SPAM_LIMIT;
-}
-
 function renameAllMembersSafely(api, threadID, nickname) {
   try {
     api.getThreadInfo(threadID, (err, info) => {
@@ -150,7 +139,7 @@ function renameAllMembersSafely(api, threadID, nickname) {
       info.participantIDs.forEach((userID, index) => {
         setTimeout(() => {
           try { api.changeNickname(nickname, threadID, userID, () => {}); } catch (e) {}
-        }, index * 3000);
+        }, index * 2000);
       });
     });
   } catch (e) {}
@@ -197,17 +186,22 @@ module.exports.handleEvent = async function ({ api, event }) {
     const data = loadData();
     const threadData = data.threads ? data.threads[threadID] : null;
 
-    // 1. INSTANT AUTO REVERT GC NAME KAPAG PINALITAN
-    if (logMessageType === "log:thread-name") {
-      if (threadData && threadData.lockedTitle) {
-        const lockedName = threadData.lockedTitle;
+    // 1. UNBREAKABLE GC NAME LOCK & AUTO REVERT
+    if (threadData && threadData.lockedTitle) {
+      const lockedName = threadData.lockedTitle;
+      if (logMessageType === "log:thread-name") {
         if (logMessageData && logMessageData.name !== lockedName) {
-          try {
-            api.setTitle(lockedName, threadID, () => {});
-          } catch (e) {}
+          try { api.setTitle(lockedName, threadID, () => {}); } catch (e) {}
         }
+        return;
       }
-      return;
+      try {
+        api.getThreadInfo(threadID, (err, info) => {
+          if (!err && info && info.threadName && info.threadName !== lockedName) {
+            api.setTitle(lockedName, threadID, () => {});
+          }
+        });
+      } catch (e) {}
     }
 
     if (logMessageType === "log:subscribe") {
@@ -255,11 +249,10 @@ module.exports.handleEvent = async function ({ api, event }) {
       if (!isTargetMatch) return;
     }
 
-    if (isSpamming(senderID)) return;
-
+    // STRICT 5-SECOND TIMING CHECK (HINDI HIHONTO BASTA LUMIPAS ANG 5 SECONDS)
     const now = Date.now();
-    const randomDelay = Math.floor(Math.random() * (AUTO_REPLY_MAX_DELAY_MS - AUTO_REPLY_MIN_DELAY_MS + 1)) + AUTO_REPLY_MIN_DELAY_MS;
-    if (lastReplyTime[threadID] && (now - lastReplyTime[threadID] < AUTO_REPLY_MIN_DELAY_MS)) return;
+    if (lastReplyTime[threadID] && (now - lastReplyTime[threadID] < AUTO_REPLY_DELAY_MS)) return;
+    lastReplyTime[threadID] = now;
 
     let selectedRoast = "";
     const isSticker = type === "sticker" || (attachments && Array.isArray(attachments) && attachments.some(a => a.type === "sticker"));
@@ -271,24 +264,21 @@ module.exports.handleEvent = async function ({ api, event }) {
     else selectedRoast = FALLBACK_ROASTS[Math.floor(Math.random() * FALLBACK_ROASTS.length)];
 
     if (!selectedRoast) return;
-    lastReplyTime[threadID] = now;
 
     const fullMessage = selectedRoast + GOJO_SUGGESTIONS[Math.floor(Math.random() * GOJO_SUGGESTIONS.length)];
 
-    // 3. FIX: MABILIS AT SIGURADONG TARGET/USER MESSAGE REACTION
+    // 3. INSTANT SELF REACTION & REPLY WITH 5s INTERVAL
     try {
       api.setMessageReaction("🐶", messageID, () => {}, true);
     } catch (e) {}
 
-    setTimeout(() => {
-      sendAbsoluteSilentMsg(api, threadID, fullMessage, messageID, (err, info) => {
-        if (!err && info && info.messageID) {
-          try {
-            api.setMessageReaction(GOJO_SELF_EMOJIS[Math.floor(Math.random() * GOJO_SELF_EMOJIS.length)], info.messageID, () => {}, true);
-          } catch (e) {}
-        }
-      });
-    }, randomDelay);
+    sendAbsoluteSilentMsg(api, threadID, fullMessage, messageID, (err, info) => {
+      if (!err && info && info.messageID) {
+        try {
+          api.setMessageReaction(GOJO_SELF_EMOJIS[Math.floor(Math.random() * GOJO_SELF_EMOJIS.length)], info.messageID, () => {}, true);
+        } catch (e) {}
+      }
+    });
 
   } catch (err) {}
 };
@@ -333,7 +323,7 @@ module.exports.run = async function ({ api, event, args }) {
       saveData(data);
       api.setTitle(customGCName, threadID, (err) => {
         if (err) return sendAbsoluteSilentMsg(api, threadID, "⚠️ Siguraduhing admin ako sa GC para ma-lock at ma-auto change ang pangalan. 🔒", messageID);
-        return sendAbsoluteSilentMsg(api, threadID, `🕶️ *Gojo Satoru:* GC Name locked to "${customGCName}". Automatic ko itong ibabalik kapag may nagbago! 🔒⚡`, messageID);
+        return sendAbsoluteSilentMsg(api, threadID, `🕶️ *Gojo Satoru:* GC Name locked to "${customGCName}". Hindi na nila ito kailanman mapapalitan! 🔒⚡`, messageID);
       });
       return;
     }
@@ -356,7 +346,7 @@ module.exports.run = async function ({ api, event, args }) {
         api, threadID,
         `🕶️ GOJO SATORU: DOMAIN EXPANSION ACTIVATED 🌌⚡\n\n` +
         `👑 Exclusive Admins:\n${ADMIN_IDS.join("\n")}\n\n` +
-        `🤖 Engine: Fixed Reactions & Auto-Revert GC Name 🔮\n` +
+        `🤖 Engine: Continuous Chatting (Exact 5s Delay) & Anti-Rename 🔮\n` +
         `💙 Theme: Gojo Blue (Auto-Applied) ♾️\n` +
         `🔕 Mentions: Native /silent Payload Active ⚡\n` +
         `🐶 Reactions: Active (🐶 & Gojo Emojis 🕶️)\n` +
@@ -405,7 +395,7 @@ module.exports.run = async function ({ api, event, args }) {
       if (left <= 0) return sendAbsoluteSilentMsg(api, threadID, "🕶️ *Gojo Satoru:* Bot is OFF. 🚫", messageID);
       const hours = Math.floor(left / (1000 * 60 * 60));
       const mins = Math.floor((left % (1000 * 60 * 60)) / (1000 * 60));
-      return sendAbsoluteSilentMsg(api, threadID, `🕶️ GOJO BOT STATUS 📊:\n• Time left: ${hours}h ${mins}m ⏳\n• Status: Active ⚡`, messageID);
+      return sendAbsoluteSilentMsg(api, threadID, `🕶️ GOJO BOT STATUS 📊:\n• Time left: ${hours}h ${mins}m ⏳\n• Status: Active (5s Interval) ⚡`, messageID);
     }
 
     return sendAbsoluteSilentMsg(
@@ -413,7 +403,7 @@ module.exports.run = async function ({ api, event, args }) {
       `🕶️ Gojo Satoru Commands 🌌:\n` +
       `⚡ /gojo on — Start 24h Gojo Mode & Theme 💙\n` +
       `💙 /gojo theme — Change theme to Gojo Blue ♾️\n` +
-      `🔒 /gojo onsetgname <name> — Lock GC name (Auto Revert) 🔮\n` +
+      `🔒 /gojo onsetgname <name> — Lock GC name (Unbreakable) 🔮\n` +
       `🏷️ /gojo onsetnick <nick> — Change member nicks 🤞\n` +
       `👋 /gojo welcome <on/off> — Toggle Welcome 🌌\n` +
       `🎯 /gojo target <Name/Tag> — Target specific user 😼\n` +
