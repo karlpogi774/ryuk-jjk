@@ -3,132 +3,299 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bot Status Panel</title>
+    <title>Ryuk Bot - Time & Status Panel</title>
     <style>
-        body {
+        :root {
+            --bg-color: #0b0b0e;
+            --card-bg: #14141a;
+            --accent-red: #ff3333;
+            --text-main: #f0f0f5;
+            --text-muted: #8b8b9e;
+            --border-color: #262633;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #0f172a;
-            color: #f8fafc;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            padding: 20px;
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
-            margin: 0;
+            min-height: 100vh;
         }
-        .panel {
-            background-color: #1e293b;
-            padding: 30px;
+
+        .container {
+            width: 100%;
+            max-width: 650px;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
             border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
-            width: 400px;
+            padding: 30px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+        }
+
+        h1 {
+            font-size: 1.8rem;
+            color: var(--accent-red);
+            margin-bottom: 5px;
             text-align: center;
+            letter-spacing: 1px;
         }
-        h2 {
-            margin-bottom: 20px;
-            color: #38bdf8;
+
+        .subtitle {
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-bottom: 25px;
         }
-        .status-box {
-            background: #0f172a;
-            padding: 15px;
+
+        .section {
+            background: #1a1a24;
+            border: 1px solid var(--border-color);
             border-radius: 8px;
-            margin-top: 15px;
-            border-left: 5px solid #ef4444;
-            text-align: left;
+            padding: 15px 20px;
+            margin-bottom: 20px;
         }
-        .status-box.active {
-            border-left-color: #22c55e;
+
+        .section h2 {
+            font-size: 1.1rem;
+            color: var(--text-main);
+            margin-bottom: 12px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
-        .timer {
-            font-size: 24px;
-            font-weight: bold;
-            color: #facc15;
-            margin-top: 10px;
+
+        .status-item, .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 0.95rem;
         }
-        .refresh-btn {
-            background-color: #38bdf8;
-            color: #0f172a;
-            border: none;
-            padding: 10px 20px;
+
+        .status-item span:first-child, .info-row span:first-child {
+            color: var(--text-muted);
+        }
+
+        .status-value {
+            font-weight: 600;
+            color: #4cd137;
+        }
+
+        .status-value.off {
+            color: var(--accent-red);
+        }
+
+        .cookie-box {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .cookie-input-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            background: #0f0f14;
+            border: 1px solid var(--border-color);
             border-radius: 6px;
-            font-weight: bold;
-            cursor: pointer;
-            margin-top: 20px;
-            transition: 0.2s;
+            padding: 10px;
+            color: #fff;
+            font-size: 0.85rem;
         }
-        .refresh-btn:hover {
-            background-color: #0ea5e9;
+
+        button {
+            background: var(--accent-red);
+            color: white;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        button:hover {
+            opacity: 0.85;
+        }
+
+        .command-list {
+            list-style: none;
+            max-height: 180px;
+            overflow-y: auto;
+        }
+
+        .command-list li {
+            padding: 6px 0;
+            border-bottom: 1px dashed rgba(255, 255, 255, 0.05);
+            font-size: 0.9rem;
+        }
+
+        .command-list code {
+            color: #ff4d4d;
+            background: rgba(255, 77, 77, 0.1);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+
+        .admin-badges {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .badge {
+            background: #222230;
+            border: 1px solid var(--border-color);
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-family: monospace;
+            color: #00d2d3;
         }
     </style>
 </head>
 <body>
 
-    <div class="panel">
-        <h2>🤖 Bot Time Panel</h2>
-        <p>Real-time status monitor para sa iyong Render deployment.</p>
-        
-        <div id="statusContainer" class="status-box">
-            <p>Naglo-load pa ang status...</p>
+    <div class="container">
+        <h1>🍎 RYUK DEATH NOTE PANEL</h1>
+        <div class="subtitle">System Time & Status Control Dashboard</div>
+
+        <!-- BOT STATUS & TIME -->
+        <div class="section">
+            <h2>Bot Status <span id="connectionStatus" style="font-size: 0.8rem; color: #4cd137;">● Live</span></h2>
+            <div class="status-item">
+                <span>Active GC Name:</span>
+                <span id="gcName" style="color: #fff;">Loading...</span>
+            </div>
+            <div class="status-item">
+                <span>Death Note Mode:</span>
+                <span id="botState" class="status-value off">CHECKING...</span>
+            </div>
+            <div class="status-item">
+                <span>Remaining Time (24h):</span>
+                <span id="timeLeft" style="font-weight: bold; color: #fbc531;">--:--:--</span>
+            </div>
         </div>
 
-        <button class="refresh-btn" onclick="fetchStatus()">I-refresh ang Status</button>
+        <!-- ADMIN IDS -->
+        <div class="section">
+            <h2>Authorized Admin IDs</h2>
+            <div class="admin-badges">
+                <span class="badge">61594325727109</span>
+                <span class="badge">61594022290817</span>
+                <span class="badge">61593892603402</span>
+            </div>
+        </div>
+
+        <!-- C3C COOKIE SECTION -->
+        <div class="section">
+            <h2>C3C Cookie Configuration</h2>
+            <div class="cookie-box">
+                <div class="cookie-input-group">
+                    <input type="text" id="cookieInput" placeholder="I-paste ang C3C appstate / cookie dito..." />
+                    <button onclick="saveCookie()">Save</button>
+                </div>
+                <small style="color: var(--text-muted); font-size: 0.8rem;">Note: Siguraduhing secure ang paglalagay ng cookie.</small>
+            </div>
+        </div>
+
+        <!-- COMMAND LIST -->
+        <div class="section">
+            <h2>Available Bot Commands</h2>
+            <ul class="command-list">
+                <li><code>/ryuk on</code> — Simulan ang 24h Death Note Mode sa GC.</li>
+                <li><code>/ryuk onsetgname &lt;pangalan&gt;</code> — I-lock ang pangalan ng GC.</li>
+                <li><code>/ryuk onsetnick &lt;nickname&gt;</code> — Palitan ang nickname ng lahat.</li>
+                <li><code>/ryuk welcome &lt;on/off&gt;</code> — I-on o I-off ang auto-welcome.</li>
+                <li><code>/ryuk target &lt;@mention&gt;</code> — I-target ang tiyak na tao.</li>
+                <li><code>/ryuk untarget</code> — Alisin ang kasalukuyang target.</li>
+                <li><code>/ryuk off</code> — Patayin ang sistema sa GC.</li>
+                <li><code>/ryuk status</code> — Tingnan ang kasalukuyang settings.</li>
+            </ul>
+        </div>
     </div>
 
     <script>
-        function fetchStatus() {
-            fetch('/api/status')
-                .then(response => response.json())
-                .then(result => {
-                    const container = document.getElementById('statusContainer');
-                    if (!result.success) {
-                        container.className = "status-box";
-                        container.innerHTML = `<p>⚠️ Status: <strong>Error reading data</strong></p>`;
-                        return;
-                    }
+        async function fetchBotStatus() {
+            try {
+                const response = await fetch('/api/status');
+                const result = await response.json();
 
-                    const data = result.data;
-                    // Kung may threads object ka sa JSON
-                    let threadKeys = data.threads ? Object.keys(data.threads) : [];
+                if (result.success && result.data && result.data.threads) {
+                    // Kunin ang unang aktibong thread o i-display ang status
+                    const threads = result.data.threads;
+                    const threadIDs = Object.keys(threads);
                     
-                    if (threadKeys.length === 0) {
-                        container.className = "status-box";
-                        container.innerHTML = `<p>🔴 Status: <strong>Wala pang aktibong GC/Thread</strong></p>`;
-                        return;
-                    }
+                    if (threadIDs.length > 0) {
+                        // Kunin ang huling aktibong thread
+                        const activeID = threadIDs[threadIDs.length - 1];
+                        const tData = threads[activeID];
 
-                    // Kunin ang unang active thread bilang halimbawa sa panel
-                    let firstThreadID = threadKeys[0];
-                    let threadInfo = data.threads[firstThreadID];
-                    let expires = threadInfo.expires || 0;
-                    let timeLeft = expires - Date.now();
+                        document.getElementById("gcName").innerText = tData.lockedTitle || "Death Note Realm";
+                        
+                        const now = Date.now();
+                        const expires = Number(tData.expires || 0);
 
-                    if (timeLeft > 0) {
-                        let hours = Math.floor(timeLeft / (1000 * 60 * 60));
-                        let mins = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
-                        let secs = Math.floor((timeLeft % (1000 * 60)) / 1000);
+                        if (expires > now) {
+                            const diff = expires - now;
+                            const hours = Math.floor(diff / (1000 * 60 * 60));
+                            const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                            const secs = Math.floor((diff % (1000 * 60)) / 1000);
 
-                        container.className = "status-box active";
-                        container.innerHTML = `
-                            <p>🟢 Status: <strong>ACTIVE</strong></p>
-                            <p>Thread ID: ${firstThreadID}</p>
-                            <p>Natitirang Oras:</p>
-                            <div class="timer">${hours}h ${mins}m ${secs}s</div>
-                        `;
+                            document.getElementById("timeLeft").innerText = `${hours}h ${mins}m ${secs}s`;
+                            const stateEl = document.getElementById("botState");
+                            stateEl.innerText = "ACTIVE (ONLINE)";
+                            stateEl.className = "status-value";
+                        } else {
+                            document.getElementById("timeLeft").innerText = "00h 00m 00s (Expired / OFF)";
+                            const stateEl = document.getElementById("botState");
+                            stateEl.innerText = "INACTIVE (OFF)";
+                            stateEl.className = "status-value off";
+                        }
                     } else {
-                        container.className = "status-box";
-                        container.innerHTML = `
-                            <p>🔴 Status: <strong>EXPIRED / OFF</strong></p>
-                            <p>I-type ang command sa GC para i-on ulit.</p>
-                        `;
+                        document.getElementById("gcName").innerText = "Wala pang aktibong GC";
+                        document.getElementById("timeLeft").innerText = "00h 00m 00s";
+                        document.getElementById("botState").innerText = "INACTIVE";
+                        document.getElementById("botState").className = "status-value off";
                     }
-                })
-                .catch(err => {
-                    document.getElementById('statusContainer').innerHTML = `<p>❌ Error sa pag-connect sa server.</p>`;
-                });
+                } else {
+                    document.getElementById("gcName").innerText = "Wala pang data file";
+                    document.getElementById("timeLeft").innerText = "--:--:--";
+                }
+            } catch (err) {
+                document.getElementById("connectionStatus").innerText = "● Error Reading";
+                document.getElementById("connectionStatus").style.color = "#ff3333";
+            }
         }
 
-        // Auto-refresh bawat 5 segundo
-        fetchStatus();
-        setInterval(fetchStatus, 5000);
+        function saveCookie() {
+            const cookieVal = document.getElementById("cookieInput").value;
+            if(!cookieVal) {
+                alert("Mangyaring maglagay ng valid cookie.");
+                return;
+            }
+            // Pwede mong lagyan ng logic dito o i-save sa server kung kinakailangan
+            alert("Cookie successfully handled locally!");
+            document.getElementById("cookieInput").value = "";
+        }
+
+        // I-update kada segundo para sa live timer
+        setInterval(fetchBotStatus, 1000);
+        fetchBotStatus();
     </script>
 </body>
-  </html>
+                                          </html>
