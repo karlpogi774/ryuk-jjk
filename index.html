@@ -1,119 +1,111 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ryuk Bot - Admin Panel</title>
-    <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { background-color: #0b0b0e; color: #f0f0f5; padding: 20px; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
-        .container { width: 100%; max-width: 650px; background: #14141a; border: 1px solid #262633; border-radius: 12px; padding: 30px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6); }
-        h1 { font-size: 1.8rem; color: #ff3333; margin-bottom: 5px; text-align: center; letter-spacing: 1px; }
-        .subtitle { text-align: center; color: #8b8b9e; font-size: 0.9rem; margin-bottom: 25px; }
-        .section { background: #1a1a24; border: 1px solid #262633; border-radius: 8px; padding: 15px 20px; margin-bottom: 20px; }
-        .section h2 { font-size: 1.1rem; color: #f0f0f5; margin-bottom: 12px; border-bottom: 1px solid #262633; padding-bottom: 6px; display: flex; justify-content: space-between; align-items: center; }
-        .status-item { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.95rem; }
-        .status-item span:first-child { color: #8b8b9e; }
-        .status-value { font-weight: 600; color: #4cd137; }
-        .cookie-box { display: flex; flex-direction: column; gap: 8px; }
-        .cookie-input-group { display: flex; gap: 10px; }
-        input[type="text"] { flex: 1; background: #0f0f14; border: 1px solid #262633; border-radius: 6px; padding: 10px; color: #fff; font-size: 0.85rem; }
-        button { background: #ff3333; color: white; border: none; padding: 10px 16px; border-radius: 6px; font-weight: 600; cursor: pointer; transition: opacity 0.2s; }
-        button:hover { opacity: 0.85; }
-        .command-list { list-style: none; max-height: 200px; overflow-y: auto; }
-        .command-list li { padding: 6px 0; border-bottom: 1px dashed rgba(255, 255, 255, 0.05); font-size: 0.9rem; }
-        .command-list code { color: #ff4d4d; background: rgba(255, 77, 77, 0.1); padding: 2px 6px; border-radius: 4px; font-family: monospace; }
-        .admin-badges { display: flex; flex-wrap: wrap; gap: 6px; }
-        .badge { background: #222230; border: 1px solid #262633; padding: 3px 8px; border-radius: 4px; font-size: 0.75rem; font-family: monospace; color: #00d2d3; }
-        #saveMsg { font-size: 0.8rem; color: #4cd137; display: none; margin-top: 4px; }
-    </style>
-</head>
-<body>
+const login = require("fca-unofficial");
+const fs = require("fs");
+const path = require("path");
 
-    <div class="container">
-        <h1>🍎 RYUK DEATH NOTE PANEL</h1>
-        <div class="subtitle">System Dashboard & Control Hub</div>
+const rainbowColors = ["\x1b[31m", "\x1b[33m", "\x1b[32m", "\x1b[36m", "\x1b[34m", "\x1b[35m"];
+function rainbowText(text) {
+  let result = "";
+  for (let i = 0; i < text.length; i++) {
+    const color = rainbowColors[i % rainbowColors.length];
+    result += color + text[i];
+  }
+  return result + "\x1b[0m";
+}
 
-        <!-- BOT STATUS -->
-        <div class="section">
-            <h2>Bot Status <span style="font-size: 0.8rem; color: #4cd137;">● Online</span></h2>
-            <div class="status-item">
-                <span>System Mode:</span>
-                <span class="status-value">Gojo / Ryuk Safe Engine</span>
-            </div>
-            <div class="status-item">
-                <span>Status Fetcher:</span>
-                <span id="fetchState" style="color: #fbc531;">Connected Successfully</span>
-            </div>
-        </div>
+const cookiePath = path.join(__dirname, "account.txt");
+if (!fs.existsSync(cookiePath)) {
+  console.error(rainbowText("[ ❌ ERROR ] account.txt file for cookie not found! — Powered by Kurapika"));
+  process.exit(1);
+}
 
-        <!-- ADMIN IDS -->
-        <div class="section">
-            <h2>Authorized Admin IDs</h2>
-            <div class="admin-badges">
-                <span class="badge">61594325727109</span>
-                <span class="badge">61594022290817</span>
-                <span class="badge">61593892603402</span>
-                <span class="badge">61594055835097</span>
-            </div>
-        </div>
+let appState;
+try {
+  const cookieContent = fs.readFileSync(cookiePath, "utf8");
+  appState = JSON.parse(cookieContent);
+} catch (e) {
+  console.error(rainbowText("[ ❌ ERROR ] Error parsing account.txt:"), e);
+  process.exit(1);
+}
 
-        <!-- C3C COOKIE SECTION -->
-        <div class="section">
-            <h2>C3C Cookie Configuration</h2>
-            <div class="cookie-box">
-                <div class="cookie-input-group">
-                    <input type="text" id="cookieInput" placeholder="I-paste ang C3C appstate / cookie dito..." />
-                    <button onclick="saveCookie()">Save Cookie</button>
-                </div>
-                <div id="saveMsg">✓ Na-save nang ligtas ang c3c cookie format!</div>
-            </div>
-        </div>
+const configPath = path.join(__dirname, "config.json");
+let botConfig = { admin: [] };
+if (fs.existsSync(configPath)) {
+  try {
+    botConfig = JSON.parse(fs.readFileSync(configPath, "utf8"));
+  } catch (e) {
+    console.error(rainbowText("[ ❌ ERROR ] Error parsing config.json:"), e);
+  }
+} else {
+  console.warn(rainbowText("[ ⚠️ WARNING ] config.json not found. — Powered by Kurapika"));
+}
 
-        <!-- COMMAND LIST -->
-        <div class="section">
-            <h2>Available Bot Commands</h2>
-            <ul class="command-list">
-                <li><code>/ryuk on</code> — Simulan ang 24h Mode & Auto Theme.</li>
-                <li><code>/ryuk onsetgname &lt;pangalan&gt;</code> — I-lock ang pangalan ng GC.</li>
-                <li><code>/ryuk onsetnick &lt;nickname&gt;</code> — Ligtas na palitan ang nickname ng lahat.</li>
-                <li><code>/ryuk welcome &lt;on/off&gt;</code> — I-on o I-off ang auto-welcome.</li>
-                <li><code>/ryuk target &lt;@mention&gt;</code> — I-target ang tiyak na tao.</li>
-                <li><code>/ryuk untarget</code> — Alisin ang kasalukuyang target.</li>
-                <li><code>/ryuk off</code> — Patayin ang sistema sa GC.</li>
-                <li><code>/ryuk status</code> — Tingnan ang natitirang oras at settings.</li>
-            </ul>
-        </div>
-    </div>
+login({ appState: appState }, (err, api) => {
+  if (err) {
+    console.error(rainbowText("[ ❌ LOGIN ERROR ]"), err);
+    return;
+  }
 
-    <script>
-        function saveCookie() {
-            const cookieVal = document.getElementById("cookieInput").value.trim();
-            const msg = document.getElementById("saveMsg");
-            
-            if(!cookieVal) {
-                alert("Mangyaring maglagay ng valid cookie o c3c data.");
-                return;
-            }
+  console.log(rainbowText("┌─────────────────────────────────────────────────────────┐"));
+  console.log(rainbowText("│          GOJO BOT ACTIVE — POWERED BY KURAPIKA          │"));
+  console.log(rainbowText("└─────────────────────────────────────────────────────────┘"));
+  console.log(rainbowText("✨ Status: Successfully logged in and running via auto.js!"));
 
-            // Sine-save muna natin sa browser localStorage para hindi mawala agad
-            localStorage.setItem("c3c_cookie", cookieVal);
-            
-            msg.style.display = "block";
-            document.getElementById("cookieInput").value = "";
-            
-            setTimeout(() => {
-                msg.style.display = "none";
-            }, 4000);
+  api.setOptions({
+    listenEvents: true,
+    selfListen: false,
+    updatePresence: true,
+    forceLogin: true
+  });
+
+  const scriptsDir = path.join(__dirname, "script");
+  const commands = new Map();
+
+  if (fs.existsSync(scriptsDir)) {
+    const commandFiles = fs.readdirSync(scriptsDir).filter(file => file.endsWith(".js"));
+    
+    console.log(rainbowText("┌─────────────────────────────────────────────────────────┐"));
+    console.log(rainbowText("│                    LOADED COMMANDS                      │"));
+    console.log(rainbowText("├─────────────────────────────────────────────────────────┘"));
+
+    for (const file of commandFiles) {
+      const commandPath = path.join(scriptsDir, file);
+      try {
+        const commandModule = require(commandPath);
+        if (commandModule.config && commandModule.config.name) {
+          commands.set(commandModule.config.name, commandModule);
+          console.log(rainbowText(`  ➜ Loaded: ${commandModule.config.name}.js`));
         }
+      } catch (error) {
+        console.error(rainbowText(`  ❌ Error loading ${file}:`), error);
+      }
+    }
+    console.log(rainbowText("└─────────────────────────────────────────────────────────┘"));
+  } else {
+    console.warn(rainbowText("[ ⚠️ WARNING ] 'script/' folder not found. — Powered by Kurapika"));
+  }
 
-        // Auto-load kung may nakasalang na cookie sa local storage dati
-        window.onload = function() {
-            const saved = localStorage.getItem("c3c_cookie");
-            if(saved) {
-                console.log("C3C Cookie loaded from storage cache.");
-            }
+  api.listenMqtt(async (err, event) => {
+    if (err) return console.error(rainbowText("[ ❌ MQTT ERROR ]"), err);
+
+    try {
+      if (event.type === "message" && event.body && event.body.startsWith("/")) {
+        const args = event.body.slice(1).trim().split(/ +/);
+        const commandName = args.shift().toLowerCase();
+
+        const command = commands.get(commandName);
+        if (command) {
+          await command.run({ api, event, args, botConfig });
         }
-    </script>
-</body>
-                        </html>
+      }
+
+      for (const [_, command] of commands) {
+        if (typeof command.handleEvent === "function") {
+          await command.handleEvent({ api, event, botConfig });
+        }
+      }
+
+    } catch (error) {
+      console.error(rainbowText("[ ❌ EXECUTION ERROR ]"), error);
+    }
+  });
+});
