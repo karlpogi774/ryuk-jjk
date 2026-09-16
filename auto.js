@@ -23,7 +23,7 @@ login({ appState: appState }, (err, api) => {
     return;
   }
 
-  console.log("Ryuk Bot is successfully logged in and running via auto.js!");
+  console.log("Gojo is successfully logged in and running via auto.js!");
 
   // Itakda ang Options ng API
   api.setOptions({
@@ -33,8 +33,8 @@ login({ appState: appState }, (err, api) => {
     forceLogin: true
   });
 
-  // 3. I-load ang command file (Siguraduhing 'ryuk.js' o 'activate.js' ang pangalan ng file mo)
-  const commandPath = path.join(__dirname, "ryuk.js"); 
+  // 3. I-load ang command file (Siguraduhing 'activate.js' ang pangalan ng file mo)
+  const commandPath = path.join(__dirname, "activate.js"); 
   let commandModule = null;
   
   if (fs.existsSync(commandPath)) {
@@ -51,7 +51,7 @@ login({ appState: appState }, (err, api) => {
     try {
       if (!commandModule) return;
 
-      // Kapag nag-type ang user ng command (hal. /ryuk on)
+      // Kapag nag-type ang user ng command (hal. /activate on)
       if (event.type === "message" && event.body && event.body.startsWith("/")) {
         const args = event.body.slice(1).trim().split(/ +/);
         const commandName = args.shift().toLowerCase();
@@ -61,7 +61,7 @@ login({ appState: appState }, (err, api) => {
         }
       }
 
-      // Kapag nagpapadala ng regular na mensahe, sticker, o emoji (para sa handleEvent / auto-roast)
+      // Kapag nagpapadala ng regular na mensahe, sticker, o emoji (para sa handleEvent)
       if (typeof commandModule.handleEvent === "function") {
         await commandModule.handleEvent({ api, event });
       }
