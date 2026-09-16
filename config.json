@@ -6,6 +6,8 @@
     "61593892603402"
   ],
   "prefix": "/",
+  "botName": "Ryuk Bot",
+  "language": "tl",
   "autoRestart": true,
   "commandCategory": "Fun"
 }
