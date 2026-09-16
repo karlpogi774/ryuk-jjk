@@ -5,43 +5,67 @@ const path = require("path");
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Health check and status endpoints para sa Render dashboard
-app.get("/", (req, res) => {
-  res.status(200).send({
-    status: "online",
-    bot: "Gojo Satoru Domain Bot",
-    timestamp: new Date().toISOString(),
-    message: "Domain Expansion: Infinite Void is active! 🌌♾️"
+let botStatus = "initializing";
+let lastRestartTime = new Date().toISOString();
+let restartCount = 0;
+
+// Middleware para sa JSON logging ng mga requests
+app.use((req, res, next) => {
+  console.log(`[HTTP] ${req.method} ${req.url} - IP: ${req.ip}`);
+  next();
+});
+
+// Enhanced Health Check Endpoint para sa Render
+app.get("/health", (req, res) => {
+  res.status(200).json({
+    status: botStatus === "running" ? "healthy" : "unhealthy",
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString()
   });
 });
 
-app.get("/health", (req, res) => {
-  res.status(200).send("OK");
+// Root Status Page
+app.get("/", (req, res) => {
+  res.status(200).json({
+    service: "Gojo Satoru Domain Bot Framework",
+    status: botStatus,
+    restarts: restartCount,
+    lastRestart: lastRestartTime,
+    memoryUsage: process.memoryUsage(),
+    message: "Domain Expansion: Infinite Void is actively monitored! 🌌♾️"
+  });
 });
 
-// Start Express Web Server
-app.listen(PORT, () => {
-  console.log(`🌐 Gojo Web Server is successfully listening on port ${PORT}`);
+// Simulan ang Express Web Server
+const server = app.listen(PORT, () => {
+  console.log(`🌐 [SERVER] Gojo Web Server successfully listening on port ${PORT}`);
 });
 
-// Function para patakbuhin at i-manage ang auto.js nang tuloy-tuloy
+// Function para sa Bot Process Management at Detalyadong Logging
 let botProcess = null;
 
 function startBot() {
-  console.log("🚀 Initializing Gojo Bot process via auto.js...");
+  console.log(`🚀 [BOT MANAGER] Spawning bot process via auto.js (Attempt #${restartCount + 1})...`);
+  botStatus = "starting";
   
   botProcess = spawn("node", ["auto.js"], {
     stdio: "inherit",
     cwd: __dirname
   });
 
+  botStatus = "running";
+  lastRestartTime = new Date().toISOString();
+
   botProcess.on("close", (code) => {
-    console.log(`⚠️ Bot process exited with code ${code}. Restarting in 5 seconds...`);
+    botStatus = "stopped";
+    restartCount++;
+    console.warn(`⚠️ [BOT MANAGER] Bot process exited with code ${code}. Restarting in 5 seconds... (Total Restarts: ${restartCount})`);
     setTimeout(startBot, 5000);
   });
 
   botProcess.on("error", (err) => {
-    console.error("❌ Failed to start bot process:", err);
+    botStatus = "error";
+    console.error("❌ [BOT MANAGER] Failed to start bot process due to error:", err);
     setTimeout(startBot, 5000);
   });
 }
@@ -49,8 +73,15 @@ function startBot() {
 // I-trigger ang pag-start ng bot
 startBot();
 
-// Graceful shutdown handling
+// Graceful Shutdown Handling
 process.on("SIGINT", () => {
-  if (botProcess) botProcess.kill();
-  process.exit(0);
+  console.log("🛑 [SERVER] Shutting down server and bot process gracefully...");
+  botStatus = "shutting_down";
+  if (botProcess) {
+    botProcess.kill("SIGINT");
+  }
+  server.close(() => {
+    console.log("👋 [SERVER] Server closed successfully.");
+    process.exit(0);
+  });
 });
