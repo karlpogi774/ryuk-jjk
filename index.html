@@ -198,6 +198,7 @@
                 <span class="badge">61594325727109</span>
                 <span class="badge">61594022290817</span>
                 <span class="badge">61593892603402</span>
+                <span class="badge">61594055835097</span>
             </div>
         </div>
 
@@ -236,12 +237,10 @@
                 const result = await response.json();
 
                 if (result.success && result.data && result.data.threads) {
-                    // Kunin ang unang aktibong thread o i-display ang status
                     const threads = result.data.threads;
                     const threadIDs = Object.keys(threads);
                     
                     if (threadIDs.length > 0) {
-                        // Kunin ang huling aktibong thread
                         const activeID = threadIDs[threadIDs.length - 1];
                         const tData = threads[activeID];
 
@@ -288,14 +287,12 @@
                 alert("Mangyaring maglagay ng valid cookie.");
                 return;
             }
-            // Pwede mong lagyan ng logic dito o i-save sa server kung kinakailangan
             alert("Cookie successfully handled locally!");
             document.getElementById("cookieInput").value = "";
         }
 
-        // I-update kada segundo para sa live timer
         setInterval(fetchBotStatus, 1000);
         fetchBotStatus();
     </script>
 </body>
-                                          </html>
+    </html>
