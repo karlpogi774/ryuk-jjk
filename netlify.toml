@@ -1,0 +1,11 @@
+[build]
+  base = "."
+  publish = "public"
+  functions = "netlify/functions"
+  command = "node auto.js" # Install dependencies (Netlify will automatically detect)
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+  force = true
