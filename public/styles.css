@@ -1,0 +1,281 @@
+body {
+    min-height: 100vh;
+    position: relative;
+    padding: 20px;
+    background-color: #0e0e0e;
+    font-family: 'Courier Prime', sans-serif;
+    color: #fff;
+    opacity: 0;
+    animation: fadeInContent 1.2s forwards ease-in-out;
+}
+
+body::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: url('https://i.gifer.com/2YcW.gif');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    z-index: -1;
+    opacity: 0;
+    animation: fadeInBackground 1.8s forwards ease-in-out;
+}
+
+@keyframes fadeInContent {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes fadeInBackground {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+.container {
+    background-image: url('');
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-color: rgba(26, 26, 26, 0.8);
+    border-radius: 10px;
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3), 0 6px 6px rgba(0, 0, 0, 0.23);
+    padding: 20px;
+    margin-top: 20px;
+    margin-bottom: 10px;
+}
+
+
+h1 {
+    color: #fff;
+}
+
+label {
+    color: #ccc;
+}
+
+.navbar {
+  background-color: rgba(26, 26, 26, 0.8);
+  color: #fff;
+  border-radius: 10px;
+}
+
+.navbar a {
+  color: #fff;
+}
+
+.navbar a:hover {
+  color: gray;
+}
+
+.navbar-brand {
+    color: #000;
+}
+
+.navbar-toggler-icon {
+   background-color: rgba(26, 26, 26, 0.8);
+}
+.dropdown-menu {
+  background-color: #222;
+}
+.centered-textarea {
+    display: block;
+    margin: 0 auto;
+    width: 100%;
+    min-height: 150px;
+    padding: 10px;
+    box-sizing: border-box;
+    border: 1px solid #555;
+    border-radius: 10px;
+    resize: none;
+    color: #fff;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #8e44ad, #3498db);
+    border-radius: 15px;
+    font-size: 14px;
+    color: #fff;
+}
+
+.btn-primary:hover {
+    background-color: #0056b3;
+    border: 1px solid #ff8800;
+}
+
+.success-message {
+    color: green;
+    margin-top: 10px;
+    font-size: 12px;
+}
+
+.footer {
+    padding: 10px 20px;
+    text-align: center;
+    font-size: 12px;
+    color: #b5b5b5;
+    position: relative;
+    background-color: rgba(26, 26, 26, 0.8);
+    width: 115%;
+    margin-left: -30px;
+    margin-bottom: -20px;
+}
+
+.footer p {
+  margin: 5px 0;
+}
+
+.footer a {
+  color: #999999;
+  text-decoration: none;
+  transition: color 0.3s;
+}
+
+.footer a:hover {
+  color: #ffffff;
+}
+
+.container-buttons {
+    margin-top: 20px;
+    text-align: center;
+}
+
+.container-buttons .btn {
+    margin: 5px;
+}
+
+#result {
+    padding: 5px;
+    margin-top: 20px;
+    border-radius: 10px;
+    font-size: 10px;
+    color: #fff;
+}
+
+.center-placeholder::placeholder {
+    text-align: center;
+    color: #ccc;
+}
+
+.custom-swal {
+  background-color: #222;
+  color: #fff;
+  font-size: 14px;
+}
+
+.form-check {
+    display: flex;
+    margin-top: 10px;
+    padding: 10px;
+    width: 90%;
+    align-items: center;
+    border: 1px solid #555;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.3s ease, border-color 0.3s ease; 
+    background-color: #1a1a1a;
+    font-size: 15px;
+}
+
+.form-check:hover {
+    background-color: #222; 
+    border-color: #777; 
+}
+
+.form-check-input {
+    margin-right: 10px; 
+    opacity: 0;
+}
+
+.disable {
+    display: none;
+}
+
+#inputOfPrefix, #inputOfAdmin {
+    padding: 10px;
+    width: 90%;
+    border: 1px solid #555;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.3s ease, border-color 0.3s ease; 
+    background-color: #1a1a1a;
+    color: #fff;
+    font-size: 15px;
+}
+
+#json-data {
+    background-image: url('https://i.gifer.com/YQgT.gif');
+    background-size: cover;
+    color: #fff;
+    background-repeat: no-repeat;
+}
+
+#listOfCommands, #listOfCommandsEvent, #prefixOfCommands, #adminOfCommands {
+    border: none !important;
+}
+
+#listOfCommands:not(.modal), #listOfCommandsEvent:not(.modal), #prefixOfCommands:not(.modal), #adminOfCommands:not(.modal) {
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3), 0 6px 6px rgba(0, 0, 0, 0.23);
+}
+
+.container h1 {
+    position: relative;
+    display: inline-block;
+    padding: 10px 20px;
+    margin-bottom: 20px;
+    background-color: #222;
+    border-radius: 8px;
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3), 0 6px 6px rgba(0, 0, 0, 0.23);
+}
+
+.container p {
+    line-height: 1.6;
+}
+
+.container ul {
+    padding-left: 20px;
+}
+
+.container ul li {
+    list-style: none;
+}
+
+.container ul li::before {
+    content: '\2022';
+    color: #007bff;
+    font-weight: bold;
+    display: inline-block;
+    width: 1em;
+    margin-left: -1em;
+}
+
+.container ul li + li {
+    margin-top: 10px;
+}
+
+@media (max-width: 768px) {
+    .container h1 {
+        font-size: 18px;
+    }
+#scrollUpBtn {
+  position: fixed;
+  margin-bottom: 70px; 
+  right: 20px;
+  padding: 15px 30px;
+  font-size: 14px;
+  background-color: #555;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  display: none;
