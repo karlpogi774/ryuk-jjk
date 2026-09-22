@@ -1,173 +1,1152 @@
-// ==========================================================
-// 👑 RYUK — MAKUNAT V1.1 ✨
-// ✅ TULUY-TULOY KAHIT WALANG NAG-CHAT 🔁
-// ✅ HINDI HIHINTO — /ryuk off LANG ANG MAKAPAGPATIGIL ❌
-// ✅ WALANG AUTO-REPLY SA IBANG CHAT — SARILI LANG NAGLALAPAG
-// ✅ AUTO-REACT SA SARILI — LIGTAS 🛡️
-// ADMIN IDs: 61594055835097, 61593892603402, 61594325727109, 61594022290817
-// ==========================================================
+// ======================================================
+// GOJO BOT V12 | INFINITY MAKUNAT EDITION
+// Sanzu-style command module
+// Queue Recovery + Retry + Watchdog + Safe Storage
+// ======================================================
 
 const fs = require("fs");
 const path = require("path");
 
-const DATA_FILE = path.join(__dirname, "ryuk_makunat.json");
+// ======================================================
+// CONFIG
+// ======================================================
 
-const ADMIN_IDS = new Set([
-  "61594055835097",
-  "61593892603402",
-  "61594325727109",
-  "61594022290817"
-]);
+const ADMIN_ID = "61594055835097";
 
-// ⚡ ORAS — HINDI MABILIS, HINDI MABAGAL | IWAS DETECT
-const MIN_DELAY = 28000;  // 28 segundo
-const MAX_DELAY = 45000;  // 45 segundo
+const DATA_FILE = path.join(
+  __dirname,
+  "gojo_data.json"
+);
 
-const LINES = [
-  "Nandito lang ako, hindi ako aalis basta-basta 💪",
-  "Bantay ko ang GC na 'to, walang magagambala dito 👑",
-  "Kahit walang nag-chat, naririto pa rin ako — RYUK BOSS 🔥",
-  "Hindi ako titigil hanggat hindi mo sinasabi — RYUK BOSS lang 💯",
-  "Matibay, matatag — RYUK BOSS ang tanging nag-iisa ✨",
-  "Walang makakatalo, walang makakatigil — dito lang ako 👁️",
-  "Kahit tahimik ang paligid, gising pa rin ako 💜",
-  "Ako ang RYUK BOSS — pinakamakunat sa buong FB 👑",
-  "Tuloy-tuloy, walang hinto — hanggang sa dulo ng lahat ⚡",
-  "Hindi madaling mapatumba, hindi madaling mawala — ako 'to 💎",
-  "Bantay-sarado, walang palya — RYUK BOSS ang tapat 💪",
-  "Kahit walang boses, naririto pa rin — laging handa ✅",
-  "Walang pahinga, walang pagod — para sa inyo ito 🔥",
-  "Ako lang, RYUK BOSS — walang katulad, walang kapantay 👑",
-  "Matibay ang pundasyon, hindi kayang gibain ng kahit sino ⛰️",
-  "Tahimik man ang paligid, gising pa rin ang diwa ko 👁️",
-  "Hindi ako basta-basta nawawala — nananatili ako dito 💯",
-  "Sa lahat ng oras, sa lahat ng panahon — RYUK BOSS lang ⚡",
-  "Walang makakapigil, walang makakatigil — patuloy ako ✨",
-  "Pinakamakunat, pinakamaganda — ako lang 'yon, walang iba 👑"
-];
+const LOG_FILE = path.join(
+  __dirname,
+  "gojo_error.log"
+);
 
-const SELF_REACTS = ["❤️", "🔥", "💪", "✨", "💜", "👑", "⚡", "💎", "😍", "🤩"];
+const TEMP_FILE =
+  DATA_FILE + ".tmp";
 
-let lineIndex = 0;
-const activeLoops = new Map(); // threadID → { timer: Object }
+const DEFAULT_DATA = {
+  active: true,
+  autoReact: true,
+  delay: 2000,
+  cooldown: 3000,
+  totalReplies: 0
+};
 
-// --- DATA ---
+// Queue limits
+const MAX_QUEUE = 500;
+const MAX_SEEN = 3000;
+
+// Retry settings
+const MAX_SEND_RETRIES = 5;
+const RETRY_DELAY = 5000;
+
+// Watchdog
+const WATCHDOG_INTERVAL = 30000;
+const STUCK_TIMEOUT = 120000;
+
+// ======================================================
+// RUNTIME STATE
+// ======================================================
+
+let data = {
+  ...DEFAULT_DATA
+};
+
+let queue = [];
+
+let queueRunning = false;
+
+let watchdogRunning = false;
+
+let lastQueueActivity = Date.now();
+
+let lastSaveTime = 0;
+
+const seenMessages = new Set();
+
+const userLastReply = new Map();
+
+// ======================================================
+// LOGGING
+// ======================================================
+
+function logInfo(message) {
+  const output =
+    `[${new Date().toISOString()}] ${message}`;
+
+  console.log(output);
+}
+
+function logError(where, error) {
+  const message =
+    `[${new Date().toISOString()}] ${where}: ` +
+    `${error?.stack || error}\n`;
+
+  console.error(message);
+
+  try {
+    fs.appendFileSync(
+      LOG_FILE,
+      message,
+      "utf8"
+    );
+  } catch (_) {}
+}
+
+// ======================================================
+// SLEEP
+// ======================================================
+
+function sleep(ms) {
+  return new Promise(resolve => {
+    setTimeout(resolve, ms);
+  });
+}
+
+// ======================================================
+// DATA VALIDATION
+// ======================================================
+
+function normalizeData(input) {
+  const result = {
+    ...DEFAULT_DATA,
+    ...(input &&
+    typeof input === "object"
+      ? input
+      : {})
+  };
+
+  result.active =
+    result.active !== false;
+
+  result.autoReact =
+    result.autoReact !== false;
+
+  const delay =
+    Number(result.delay);
+
+  result.delay =
+    Number.isFinite(delay)
+      ? Math.max(
+          0,
+          Math.min(delay, 10000)
+        )
+      : DEFAULT_DATA.delay;
+
+  const cooldown =
+    Number(result.cooldown);
+
+  result.cooldown =
+    Number.isFinite(cooldown)
+      ? Math.max(
+          0,
+          Math.min(cooldown, 60000)
+        )
+      : DEFAULT_DATA.cooldown;
+
+  const totalReplies =
+    Number(result.totalReplies);
+
+  result.totalReplies =
+    Number.isFinite(totalReplies)
+      ? Math.max(0, totalReplies)
+      : 0;
+
+  return result;
+}
+
+// ======================================================
+// LOAD DATA
+// ======================================================
+
 function loadData() {
   try {
-    if (fs.existsSync(DATA_FILE)) return JSON.parse(fs.readFileSync(DATA_FILE, "utf8"));
-  } catch {}
-  return {};
-}
-function saveData(data) {
-  fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
-}
+    if (!fs.existsSync(DATA_FILE)) {
+      data = {
+        ...DEFAULT_DATA
+      };
 
-function isAdmin(id) {
-  return ADMIN_IDS.has(String(id));
-}
+      saveData();
 
-function nextLine() {
-  const line = LINES[lineIndex];
-  lineIndex = (lineIndex + 1) % LINES.length;
-  return line;
-}
-
-function getRandomDelay() {
-  return MIN_DELAY + Math.floor(Math.random() * (MAX_DELAY - MIN_DELAY));
-}
-
-// ✅ SIMULANG LAPAG — SARILI LANG, TULUY-TULOY
-function startLoop(api, threadID) {
-  stopLoop(threadID); // siguradong walang dating tumatakbo
-
-  async function sendNext() {
-    if (!activeLoops.has(threadID)) return; // huminto na
-
-    try {
-      const text = nextLine();
-      api.sendMessage(text, threadID, (err, info) => {
-        if (!err && info?.messageID) {
-          // ✅ AUTO-REACT SA SARILING MENSAHE
-          setTimeout(() => {
-            const emoji = SELF_REACTS[Math.floor(Math.random() * SELF_REACTS.length)];
-            api.setMessageReaction(emoji, info.messageID, () => {}, true);
-          }, 1000);
-        }
-      });
-    } catch (e) {
-      // ✅ KUNG MAY ERROR — HINDI HIHINTO! SUSUBOK ULIT
+      return;
     }
 
-    // ✅ SUSUNOD NA LAPAG — HINDI TUMITIGIL
-    const nextDelay = getRandomDelay();
-    const timer = setTimeout(sendNext, nextDelay);
-    activeLoops.set(threadID, { timer });
-  }
+    const raw =
+      fs.readFileSync(
+        DATA_FILE,
+        "utf8"
+      );
 
-  activeLoops.set(threadID, { timer: null });
-  sendNext(); // unang lapag agad
+    if (!raw.trim()) {
+      data = {
+        ...DEFAULT_DATA
+      };
+
+      return;
+    }
+
+    const saved =
+      JSON.parse(raw);
+
+    data =
+      normalizeData(saved);
+
+  } catch (error) {
+
+    logError(
+      "Load data failed",
+      error
+    );
+
+    data = {
+      ...DEFAULT_DATA
+    };
+  }
 }
 
-function stopLoop(threadID) {
-  const existing = activeLoops.get(threadID);
-  if (existing) {
-    if (existing.timer) clearTimeout(existing.timer);
-    activeLoops.delete(threadID);
+// ======================================================
+// SAVE DATA
+// ======================================================
+
+function saveData() {
+  try {
+
+    const normalized =
+      normalizeData(data);
+
+    const json =
+      JSON.stringify(
+        normalized,
+        null,
+        2
+      );
+
+    fs.writeFileSync(
+      TEMP_FILE,
+      json,
+      "utf8"
+    );
+
+    if (fs.existsSync(DATA_FILE)) {
+      try {
+        fs.copyFileSync(
+          DATA_FILE,
+          DATA_FILE + ".bak"
+        );
+      } catch (backupError) {
+        logError(
+          "Backup failed",
+          backupError
+        );
+      }
+    }
+
+    fs.renameSync(
+      TEMP_FILE,
+      DATA_FILE
+    );
+
+    lastSaveTime =
+      Date.now();
+
+    return true;
+
+  } catch (error) {
+
+    logError(
+      "Save data failed",
+      error
+    );
+
+    try {
+      if (
+        fs.existsSync(TEMP_FILE)
+      ) {
+        fs.unlinkSync(
+          TEMP_FILE
+        );
+      }
+    } catch (_) {}
+
+    return false;
   }
 }
 
-// ✅ WALANG AUTO-REPLY SA IBANG CHAT — TINANGGAL NA!
-module.exports.handleEvent = async function ({ api, event }) {
-  // WALA — HINDI TUTUGON SA IBANG MENSAHE
-};
+// Initial load
+loadData();
 
-module.exports.config = {
-  name: "ryuk",
-  version: "1.1.0",
-  hasPermission: 0,
-  credits: "RYUK — MAKUNAT ✅",
-  description: "Tuluy-tuloy kahit walang chat | Sarili lang naglalapag",
-  usePrefix: true,
-  commandCategory: "👑 RYUK",
-  usages: "/ryuk on — Simula ✅\n/ryuk off — Hinto ✅"
-};
+// ======================================================
+// GOJO REPLIES
+// ======================================================
 
-module.exports.run = async function ({ api, event, args }) {
-  const { threadID, messageID, senderID } = event;
+const GOJO_QUOTES = [
+  "Sa buong langit at lupa, ako lamang ang nag-iisang Honored One. ♾️",
+  "Infinity ang pagitan natin. Hindi mo ako maaabot. 😎",
+  "Domain Expansion: Infinite Void. 🌌",
+  "Relax ka lang. Nandito na ang pinakamalakas. 💙",
+  "Six Eyes activated. 👁️",
+  "Hindi ako nagyayabang. Sinasabi ko lang ang katotohanan. 😏",
+  "Gojo mode: ON. ♾️",
+  "Masyado kang mabagal para sa Infinity ko. ⚡",
+  "Walang drama. Isang reply lang, sapat na. 😂",
+  "Nasa ibang level ang laro ko. 🌌",
+  "Hindi pa nga ako seryoso. 💙",
+  "Ang lakas mo naman... sa chat. 😂",
+  "Infinity barrier: activated. ♾️",
+  "Sige, tuloy mo lang. Nakikinig ang Six Eyes. 👁️",
+  "Ang tunay na lakas ay marunong maghintay. ⏳",
+  "Gojo Satoru reporting for duty. 😎",
+  "Hindi ako late. Dramatic entrance lang. ✨",
+  "Walang lag sa confidence ko. ⚡",
+  "Random ang quote, pero Gojo ang dating. 😂",
+  "Keep calm. Infinity is handling the messages. 🌌",
+  "May bagong message? Gojo has entered the chat. 😎",
+  "Isang reply lang, unlimited confidence. ♾️",
+  "Ang bawat message ay may sariling oras. ⏱️",
+  "Six Eyes online. System ready. 👁️",
+  "Walang duplicate, walang kalituhan. 💙",
+  "Ang reply ay darating sa tamang oras. ⏳",
+  "Gojo energy: 100%. 🔋",
+  "Hindi kailangang mag-spam para maging legendary. 😎",
+  "Domain Expansion: Organized Reply Queue. 🌌",
+  "Infinity activated. Reply queued. ♾️",
+  "Sagot na may style, hindi puro ingay. 💙",
+  "Gojo's random wisdom has arrived. ✨",
+  "Ang tunay na flex ay stable na bot. ⚡",
+  "Minsan, ang katahimikan ay bahagi ng strategy. 😌",
+  "Message received. Infinity acknowledged. ♾️",
+  "Walang panic. May error log naman. 🛠️",
+  "Kung may problema, debug muna bago mag-drama. 😂",
+  "Gojo's got this. 😎",
+  "Naka-Infinity ang depensa, naka-queue ang sagot. 🌌",
+  "Six Eyes detected: may bagong message. 👁️",
+  "One message, one reply. Simple lang. 💙",
+  "Ang confidence ay libre. Gamitin nang maayos. 😏",
+  "Walang shortcut sa pagiging Honored One. ♾️",
+  "Gojo bot: ready kapag kailangan. 💙",
+  "Infinity mode: stable and ready. ⚡",
+  "Sino'ng nagsabing kailangan kong mag-effort? 😏",
+  "Walang makakalusot sa radar ng Gojo. 👁️",
+  "Sapat na ang isang reply para mapansin. 😎",
+  "Queue is moving. Infinity is watching. 🌌",
+  "Gojo Satoru: present. 😎"
+];
 
-  if (!isAdmin(senderID)) {
-    return api.sendMessage("👑 Hindi mo hawak ang kapangyarihan dito!", threadID, messageID);
+// ======================================================
+// GENERATED REPLY BANK
+// ======================================================
+
+const PREFIXES = [
+  "♾️ Gojo mode",
+  "👁️ Six Eyes",
+  "🌌 Infinite Void",
+  "💙 Honored One",
+  "⚡ Infinity"
+];
+
+const MESSAGES = [
+  "activated",
+  "online",
+  "detected",
+  "ready",
+  "checking the chat",
+  "has entered the GC",
+  "is watching",
+  "is processing",
+  "is on standby",
+  "reply queued"
+];
+
+const EMOJIS = [
+  "😎",
+  "⚡",
+  "♾️",
+  "💙",
+  "🌌",
+  "👁️",
+  "✨",
+  "😂",
+  "🔥",
+  "🌀"
+];
+
+const REPLIES = [
+  ...GOJO_QUOTES
+];
+
+for (
+  const prefix of PREFIXES
+) {
+
+  for (
+    const message of MESSAGES
+  ) {
+
+    for (
+      const emoji of EMOJIS
+    ) {
+
+      REPLIES.push(
+        `${prefix}: ${message} ${emoji}`
+      );
+    }
+  }
+}
+
+// ======================================================
+// RANDOM REPLY
+// ======================================================
+
+function randomReply() {
+  if (!REPLIES.length) {
+    return "♾️ Gojo is online.";
   }
 
-  const cmd = (args[0] || "").toLowerCase();
+  const index =
+    Math.floor(
+      Math.random() *
+      REPLIES.length
+    );
 
-  if (cmd === "on") {
-    startLoop(api, threadID);
-    return api.sendMessage(
-      "👑 RYUK — NAKA-ON NA! ✨\n\n" +
-      "✅ Tuluy-tuloy kahit walang nag-chat 🔁\n" +
-      "✅ Sarili lang naglalapag — walang sagot sa iba\n" +
-      "✅ Auto-react sa sarili — hindi ma-detect 🛡️\n" +
-      "✅ Hihinto lang kapag sinabi mong /ryuk off ❌\n" +
-      "✅ Makunat — hindi titigil 24/7 ⚡\n\n" +
-      "💎 I-type ang /ryuk off para huminto",
-      threadID, messageID
+  return REPLIES[index];
+}
+
+// ======================================================
+// ADMIN
+// ======================================================
+
+function isAdmin(id) {
+  return (
+    String(id) ===
+    String(ADMIN_ID)
+  );
+}
+
+// ======================================================
+// SEND NORMAL MESSAGE
+// ======================================================
+
+function send(
+  api,
+  message,
+  threadID,
+  messageID
+) {
+
+  return new Promise(resolve => {
+
+    try {
+
+      api.sendMessage(
+        message,
+        threadID,
+        error => {
+
+          if (error) {
+            logError(
+              "Send message failed",
+              error
+            );
+
+            resolve(false);
+            return;
+          }
+
+          resolve(true);
+        },
+        messageID
+      );
+
+    } catch (error) {
+
+      logError(
+        "Send exception",
+        error
+      );
+
+      resolve(false);
+    }
+  });
+}
+
+// ======================================================
+// REACTION
+// ======================================================
+
+function react(
+  api,
+  messageID
+) {
+
+  try {
+
+    if (
+      !api ||
+      typeof api.setMessageReaction !==
+        "function"
+    ) {
+      return;
+    }
+
+    api.setMessageReaction(
+      "😆",
+      messageID,
+      error => {
+
+        if (error) {
+          logError(
+            "Reaction failed",
+            error
+          );
+        }
+
+      },
+      true
+    );
+
+  } catch (error) {
+
+    logError(
+      "Reaction exception",
+      error
+    );
+  }
+}
+
+// ======================================================
+// TYPING INDICATOR
+// ======================================================
+
+function typing(
+  api,
+  threadID
+) {
+
+  try {
+
+    if (
+      !api ||
+      typeof api.sendTypingIndicator !==
+        "function"
+    ) {
+      return;
+    }
+
+    api.sendTypingIndicator(
+      threadID,
+      () => {}
+    );
+
+  } catch (error) {
+
+    logError(
+      "Typing indicator failed",
+      error
+    );
+  }
+}
+
+// ======================================================
+// REMEMBER MESSAGE
+// ======================================================
+
+function rememberMessage(
+  messageID
+) {
+
+  const id =
+    String(messageID);
+
+  if (
+    seenMessages.has(id)
+  ) {
+    return false;
+  }
+
+  seenMessages.add(id);
+
+  while (
+    seenMessages.size >
+    MAX_SEEN
+  ) {
+
+    const oldest =
+      seenMessages
+        .values()
+        .next()
+        .value;
+
+    if (
+      oldest === undefined
+    ) {
+      break;
+    }
+
+    seenMessages.delete(
+      oldest
     );
   }
 
-  if (cmd === "off") {
-    stopLoop(threadID);
-    return api.sendMessage("🛑 RYUK — HUMINTO NA 👑", threadID, messageID);
+  return true;
+}
+
+// ======================================================
+// QUEUE
+// ======================================================
+
+function enqueue(item) {
+
+  if (
+    !item ||
+    !item.api ||
+    !item.threadID ||
+    !item.senderID ||
+    !item.messageID
+  ) {
+    return;
   }
 
-  return api.sendMessage(
-    "👑 RYUK — MAKUNAT ✨\n\n" +
-    "/ryuk on — Simulang maglapag ✅\n" +
-    "/ryuk off — Huminto ✅\n\n" +
-    "🔁 Tuluy-tuloy kahit tahimik ang GC\n" +
-    "🛡️ Tamang bilis — hindi ma-restrict\n" +
-    "💎 Sarili lang naglalapag — malinis at makunat",
-    threadID, messageID
+  if (
+    queue.length >=
+    MAX_QUEUE
+  ) {
+
+    logInfo(
+      "Queue full. Oldest pending item removed."
+    );
+
+    queue.shift();
+  }
+
+  queue.push(item);
+
+  lastQueueActivity =
+    Date.now();
+
+  logInfo(
+    `Message queued | Queue=${queue.length}`
   );
-};
-                     
+
+  startQueue();
+}
+
+// ======================================================
+// START QUEUE
+// ======================================================
+
+function startQueue() {
+
+  if (queueRunning) {
+    return;
+  }
+
+  if (!queue.length) {
+    return;
+  }
+
+  queueRunning = true;
+
+  lastQueueActivity =
+    Date.now();
+
+  processQueue()
+    .catch(error => {
+
+      logError(
+        "Queue processor crashed",
+        error
+      );
+
+    })
+    .finally(() => {
+
+      queueRunning = false;
+
+      lastQueueActivity =
+        Date.now();
+
+      // Automatic recovery.
+      if (
+        queue.length > 0
+      ) {
+
+        setTimeout(() => {
+          startQueue();
+        }, 1000);
+
+      }
+
+    });
+}
+
+// ======================================================
+// SAFE API SEND WITH RETRIES
+// ======================================================
+
+async function safeQueueSend(
+  api,
+  message,
+  threadID,
+  messageID
+) {
+
+  for (
+    let attempt = 1;
+    attempt <= MAX_SEND_RETRIES;
+    attempt++
+  ) {
+
+    try {
+
+      const success =
+        await new Promise(
+          resolve => {
+
+            let finished = false;
+
+            const done =
+              value => {
+
+                if (finished) {
+                  return;
+                }
+
+                finished = true;
+
+                resolve(value);
+              };
+
+            try {
+
+              api.sendMessage(
+                message,
+                threadID,
+                error => {
+
+                  if (error) {
+
+                    logError(
+                      `Queue send attempt ${attempt}`,
+                      error
+                    );
+
+                    done(false);
+                    return;
+                  }
+
+                  done(true);
+                },
+                messageID
+              );
+
+            } catch (error) {
+
+              logError(
+                "Queue send exception",
+                error
+              );
+
+              done(false);
+            }
+          }
+        );
+
+      if (success) {
+        return true;
+      }
+
+    } catch (error) {
+
+      logError(
+        "Safe send failed",
+        error
+      );
+    }
+
+    if (
+      attempt <
+      MAX_SEND_RETRIES
+    ) {
+
+      const retry =
+        Math.min(
+          RETRY_DELAY *
+            attempt,
+          30000
+        );
+
+      await sleep(retry);
+    }
+  }
+
+  return false;
+}
+
+// ======================================================
+// PROCESS QUEUE
+// ======================================================
+
+async function processQueue() {
+
+  while (
+    queue.length > 0
+  ) {
+
+    lastQueueActivity =
+      Date.now();
+
+    const item =
+      queue[0];
+
+    if (!item) {
+      queue.shift();
+      continue;
+    }
+
+    try {
+
+      // ----------------------------------------------
+      // RELOAD SETTINGS
+      // ----------------------------------------------
+
+      loadData();
+
+      // ----------------------------------------------
+      // BOT OFF
+      // ----------------------------------------------
+
+      if (!data.active) {
+
+        await sleep(1000);
+
+        continue;
+      }
+
+      // ----------------------------------------------
+      // USER COOLDOWN
+      // ----------------------------------------------
+
+      const key =
+        `${item.threadID}:${item.senderID}`;
+
+      const last =
+        userLastReply.get(key) || 0;
+
+      const elapsed =
+        Date.now() - last;
+
+      const cooldown =
+        Number(data.cooldown) || 0;
+
+      const remaining =
+        cooldown - elapsed;
+
+      if (
+        remaining > 0
+      ) {
+
+        await sleep(
+          Math.min(
+            remaining,
+            5000
+          )
+        );
+
+        continue;
+      }
+
+      // ----------------------------------------------
+      // TYPING
+      // ----------------------------------------------
+
+      typing(
+        item.api,
+        item.threadID
+      );
+
+      // ----------------------------------------------
+      // DELAY
+      // ----------------------------------------------
+
+      const delay =
+        Math.max(
+          0,
+          Math.min(
+            Number(data.delay) || 0,
+            10000
+          )
+        );
+
+      if (
+        delay > 0
+      ) {
+
+        await sleep(delay);
+      }
+
+      // ----------------------------------------------
+      // CHECK AGAIN
+      // ----------------------------------------------
+
+      loadData();
+
+      if (!data.active) {
+        continue;
+      }
+
+      // ----------------------------------------------
+      // BUILD REPLY
+      // ----------------------------------------------
+
+      const reply =
+        `♾️ [GOJO SATORU]\n\n${randomReply()}`;
+
+      // ----------------------------------------------
+      // SEND
+      // ----------------------------------------------
+
+      const sent =
+        await safeQueueSend(
+          item.api,
+          reply,
+          item.threadID,
+          item.messageID
+        );
+
+      // ----------------------------------------------
+      // SUCCESS
+      // ----------------------------------------------
+
+      if (sent) {
+
+        userLastReply.set(
+          key,
+          Date.now()
+        );
+
+        data.totalReplies =
+          Number(
+            data.totalReplies || 0
+          ) + 1;
+
+        saveData();
+
+        queue.shift();
+
+        logInfo(
+          `Reply sent | Remaining=${queue.length} | Total=${data.totalReplies}`
+        );
+
+        lastQueueActivity =
+          Date.now();
+
+        continue;
+      }
+
+      // ----------------------------------------------
+      // FAILED AFTER RETRIES
+      // ----------------------------------------------
+
+      logInfo(
+        "Message could not be sent after retries. Removing failed item."
+      );
+
+      queue.shift();
+
+      await sleep(
+        3000
+      );
+
+    } catch (error) {
+
+      logError(
+        "Queue item failed",
+        error
+      );
+
+      // Remove only the broken item
+      // so it cannot permanently block
+      // every item behind it.
+      queue.shift();
+
+      await sleep(
+        3000
+      );
+    }
+  }
+}
+
+// ======================================================
+// QUEUE WATCHDOG
+// ======================================================
+
+function startWatchdog() {
+
+  if (
+    watchdogRunning
+  ) {
+    return;
+  }
+
+  watchdogRunning = true;
+
+  setInterval(() => {
+
+    try {
+
+      // Queue exists but processor stopped.
+      if (
+        queue.length > 0 &&
+        !queueRunning
+      ) {
+
+        logInfo(
+          "WATCHDOG: Queue stopped. Restarting processor."
+        );
+
+        startQueue();
+
+        return;
+      }
+
+      // Queue processor has not moved
+      // for a long time.
+      if (
+        queue.length > 0 &&
+        queueRunning &&
+        Date.now() -
+          lastQueueActivity >
+          STUCK_TIMEOUT
+      ) {
+
+        logInfo(
+          "WATCHDOG: Queue appears stuck. Attempting recovery."
+        );
+
+        queueRunning =
+          false;
+
+        setTimeout(
+          () => {
+            startQueue();
+          },
+          1000
+        );
+
+      }
+
+    } catch (error) {
+
+      logError(
+        "Watchdog error",
+        error
+      );
+
+    }
+
+  }, WATCHDOG_INTERVAL);
+
+  logInfo(
+    "♾️ Infinity Watchdog started."
+  );
+}
+
+// ======================================================
+// MEMORY CLEANUP
+// ======================================================
+
+function cleanupMemory() {
+
+  try {
+
+    while (
+      seenMessages.size >
+      MAX_SEEN
+    ) {
+
+      const oldest =
+        seenMessages
+          .values()
+          .next()
+          .value;
+
+      if (
+        oldest === undefined
+      ) {
+        break;
+      }
+
+      seenMessages.delete(
+        oldest
+      );
+    }
+
+    // Remove old cooldown entries.
+    const now =
+      Date.now();
+
+    const MAX_COOLDOWN_MEMORY =
+      60 * 60 * 1000;
+
+    for (
+      const [
+        key,
+        timestamp
+      ] of userLastReply.entries()
+    ) {
+
+      if (
+        now - timestamp >
+        MAX_COOLDOWN_MEMORY
+      ) {
+
+        userLastReply.delete(
+          key
+        );
+      }
+    }
+
+  } catch (error) {
+
+    logError(
+      "Memory cleanup failed",
+      error
+    );
+  }
+}
+
+// ======================================================
+// MAINTENANCE LOOP
+// ======================================================
+
+setInterval(() => {
+
+  try {
+
+    cleanupMemory();
+
+    loadData();
+
+    if (
+      queue.length > 0 &&
+      !queueRunning &&
+      data.active
+    ) {
+
+      startQueue();
+    }
+
+  } catch (error) {
+
+    logError(
+      "Maintenance failed",
+      error
+    );
+
+  }
+
+}, 60000);
+
+// ===========================
