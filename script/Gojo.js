@@ -358,4 +358,4 @@ module.exports.run = async function ({ api, event, args }) {
   // UNKNOWN COMMAND
   return send(api, "⚠️ Unknown command.\n\nI-type ang /ryuk help para makita.", threadID, messageID);
 };
-    
+  
