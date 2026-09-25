@@ -2,9 +2,10 @@ const fs = require("fs");
 const path = require("path");
 
 // ==========================================
-// 👑 RYUK POGI ON TOP — LOCK GC + NICK V1.1
+// 👑 ryuk — LOCK GC + NICK V1.2
 // ADMIN IDs: 61594055835097, 61593892603402, 61594325727109, 61594022290817
 // TARGET NAME: RYUK POGI ON TOP ✅
+// BOT NAME: ryuk ✅
 // ==========================================
 
 const ADMIN_IDS = new Set([
@@ -46,10 +47,8 @@ function getNextLine() {
 const delay = ms => new Promise(res => setTimeout(res, ms));
 
 function setAllNicknamesWithDelay(api, threadID, members, name) {
-  let i = 0;
   for (const uid of members) {
     api.changeNickname(name, threadID, uid, () => {});
-    i++;
   }
 }
 
@@ -60,20 +59,19 @@ function getBotCache(api) {
 
 module.exports = {
   config: {
-    name: "gcname",
-    version: "1.1.0",
+    name: "ryuk",          // ✅ BOT NAME: ryuk (maliit lahat)
+    version: "1.2.0",
     hasPermission: 2,
-    credits: "RYUK",
-    description: "Lock GC Name & All Nicks → RYUK POGI ON TOP + Lines",
+    credits: "ryuk",        // ✅ credits din ryuk
+    description: "Lock GC & Nicks → RYUK POGI ON TOP",
     usePrefix: true,
     commandCategory: "Admin",
-    usages: "/gcname lock"
+    usages: "/ryuk lock"    // ✅ command: /ryuk lock
   },
 
   onStart: async function ({ api, message, args, threadID, senderID }) {
     if (!ADMIN_IDS.has(senderID)) return;
 
-    const botCache = getBotCache(api);
     const threadStr = String(threadID);
     const messageID = message.messageID;
 
@@ -105,9 +103,6 @@ module.exports = {
   },
 
   onChat: async function ({ api, threadID, logMessageType, logMessageData }) {
-    const botCache = getBotCache(api);
-    const threadStr = String(threadID);
-
     // ✅ AUTO-RESTORE NICK + LINE
     if (logMessageType === "log:user-nickname") {
       const targetUserID = logMessageData.participant_id;
@@ -126,4 +121,3 @@ module.exports = {
     }
   }
 };
-  
