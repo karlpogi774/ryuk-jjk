@@ -2,10 +2,10 @@ const fs = require("fs");
 const path = require("path");
 
 // ==========================================
-// 👑 ryuk — MAKUNAT + MABILIS + SELF-REACT V1.2
+// 👑 ryuk — ALL CAT REACTS 😺😸😹😻😼😽🙀😿😾
 // ADMIN IDs: 61594055835097, 61593892603402, 61594325727109, 61594022290817
 // TARGET NAME: RYUK POGI ON TOP ✅
-// ✅ SELF-REACT + MABILIS NA REPLY
+// ✅ MABAGAL = HINDI MA-DETECT + LAHAT NG PUSA 😻
 // ==========================================
 
 const ADMIN_IDS = [
@@ -17,6 +17,12 @@ const ADMIN_IDS = [
 
 const targetNickname = "RYUK POGI ON TOP";
 const targetGCName = "RYUK POGI ON TOP";
+
+// ✅ LAHAT NG CAT REACTIONS — 😺😸😹😻😼😽🙀😿😾
+const ALL_CAT_REACTS = ["😺", "😸", "😹", "😻", "😼", "😽", "🙀", "😿", "😾"];
+function randomCatReact() {
+  return ALL_CAT_REACTS[Math.floor(Math.random() * ALL_CAT_REACTS.length)];
+}
 
 const LOCK_LINES = [
   "👑 RYUK POGI ON TOP — walang makakatalo dito!",
@@ -45,11 +51,11 @@ function getNextLockLine() {
 
 const DATA_FILE = path.join(__dirname, "ryuk_data.json");
 
-// ✅ MABILIS NA DELAY — 800ms-1500ms lang
+// ✅ MABAGAL NA DELAY — 3 hanggang 5 segundo para hindi ma-detect
 const DEFAULT_DATA = {
   active: true,
   autoReact: true,
-  delay: 1000,
+  delay: 3500,
   totalReplies: 0
 };
 
@@ -101,12 +107,12 @@ function randomQuote() {
   return RYUK_QUOTES[index];
 }
 
-// ✅ HELPER: SELF-REACT SA SARILING MENSAHE
-function sendWithSelfReact(api, message, threadID, reactionEmoji = "🔥", replyToID = null) {
+// ✅ SEND + SELF-CAT-REACT — LAHAT NG PUSA 😺😸😹😻😼😽🙀😿😾
+function sendWithCatReact(api, message, threadID, replyToID = null) {
   return new Promise((resolve) => {
     api.sendMessage(message, threadID, (err, info) => {
       if (!err && info && info.messageID) {
-        api.setMessageReaction(reactionEmoji, info.messageID, () => {}, true);
+        api.setMessageReaction(randomCatReact(), info.messageID, () => {}, true);
       }
       resolve(info);
     }, replyToID);
@@ -131,12 +137,12 @@ function setAllNicknamesWithDelay(api, threadID, members, name) {
 
 module.exports.config = {
   name: "ryuk",
-  version: "1.2.0",
+  version: "1.4.0",
   hasPermission: 0,
-  credits: "ryuk — SELF-REACT + MABILIS ✅",
-  description: "RYUK POGI ON TOP | Mabilis Reply + Self-React + GC Lock",
+  credits: "ryuk — ALL CATS 😺😸😹😻😼😽🙀😿😾",
+  description: "RYUK POGI ON TOP | Mabagal Reply + All Cat Self-React 😻",
   usePrefix: true,
-  cooldowns: 1
+  cooldowns: 3
 };
 
 module.exports.handleEvent = async function ({ api, event }) {
@@ -144,21 +150,21 @@ module.exports.handleEvent = async function ({ api, event }) {
     const { threadID, senderID, messageID, logMessageType, logMessageData } = event;
     if (!threadID) return;
 
-    // ✅ AUTO-RESTORE NICK + SELF-REACT
+    // ✅ AUTO-RESTORE NICK + RANDOM CAT REACT 😺😸😻
     if (logMessageType === "log:user-nickname") {
       const targetUserID = logMessageData.participant_id;
       const currentNickname = logMessageData.nickname;
       if (currentNickname !== targetNickname) {
         api.changeNickname(targetNickname, threadID, targetUserID, () => {});
-        sendWithSelfReact(api, "🛡️ Ibinalik agad! " + getNextLockLine(), threadID, "🛡️");
+        sendWithCatReact(api, "🛡️ Ibinalik agad! " + getNextLockLine(), threadID);
       }
       return;
     }
 
-    // ✅ AUTO-RESTORE GC NAME + SELF-REACT
+    // ✅ AUTO-RESTORE GC NAME + RANDOM CAT REACT 😹😼😽
     if (logMessageType === "log:thread-name") {
       api.setTitle(targetGCName, threadID, () => {});
-      sendWithSelfReact(api, "⚡ Sinubukan mong palitan! " + getNextLockLine(), threadID, "⚡");
+      sendWithCatReact(api, "⚡ Sinubukan mong palitan! " + getNextLockLine(), threadID);
       return;
     }
 
@@ -171,41 +177,41 @@ module.exports.handleEvent = async function ({ api, event }) {
     if (!data.active) return;
     if (!rememberMessage(String(messageID))) return;
 
-    // Auto-react sa mensahe ng iba
+    // ✅ AUTO-REACT SA IBA — RANDOM CAT 😺😸😹😻😼😽🙀😿😾
     if (data.autoReact) {
-      try { api.setMessageReaction("🔥", messageID, () => {}, true); } catch (e) {}
+      try { api.setMessageReaction(randomCatReact(), messageID, () => {}, true); } catch (e) {}
     }
 
-    // ✅ MAS MABILIS NA COOLDOWN — 1.5s lang
+    // ✅ MABAGAL NA COOLDOWN — 4 segundo
     const cooldownKey = `${threadID}:${sender}`;
     const now = Date.now();
     const lastTime = USER_COOLDOWN.get(cooldownKey) || 0;
-    if (now - lastTime < 1500) return;
+    if (now - lastTime < 4000) return;
     USER_COOLDOWN.set(cooldownKey, now);
 
     if (typeof api.sendTypingIndicator === "function") {
       api.sendTypingIndicator(threadID, true);
     }
 
-    // ✅ MABILIS NA RANDOM DELAY — 800ms hanggang 1500ms
-    const fastDelay = Math.floor(Math.random() * 700) + 800;
+    // ✅ MABAGAL NA RANDOM DELAY — 3 hanggang 5 segundo
+    const slowDelay = Math.floor(Math.random() * 2000) + 3000;
 
     setTimeout(() => {
       const latestData = loadSystemData();
       if (!latestData.active) return;
       const reply = `👑 [ryuk]\n\n${randomQuote()}`;
       
-      // ✅ SEND + SELF-REACT AGAD
-      sendWithSelfReact(api, reply, threadID, "👑", messageID).then((info) => {
+      // ✅ SEND + SELF-CAT-REACT — LAHAT NG PUSA 😺😸😹😻😼😽🙀😿😾
+      sendWithCatReact(api, reply, threadID, messageID).then((info) => {
         if (info) {
           latestData.totalReplies = (latestData.totalReplies || 0) + 1;
           saveSystemData(latestData);
         }
       });
-    }, fastDelay);
+    }, slowDelay);
 
   } catch (error) {
-    console.error("[ryuk] Event error:", error);
+    console.error("[ryuk] Event error:", error.message);
   }
 };
 
@@ -215,7 +221,7 @@ module.exports.run = async function ({ api, event, args }) {
   const data = loadSystemData();
 
   if (action === "help") {
-    return sendWithSelfReact(api,
+    return sendWithCatReact(api,
 `👑 ryuk CONTROL PANEL 👑
 
 ╭───「 COMMANDS 」
@@ -232,8 +238,8 @@ module.exports.run = async function ({ api, event, args }) {
 ├ 🛑 /ryuk off
 │   I-disable ang auto-reply
 │
-├ 🔥 /ryuk reacton
-│   I-on ang auto-reaction
+├ 😺 /ryuk reacton
+│   I-on ang auto-reaction 😺😸😹😻😼😽🙀😿😾
 │
 ├ 🔕 /ryuk reactoff
 │   I-off ang auto-reaction
@@ -244,66 +250,66 @@ module.exports.run = async function ({ api, event, args }) {
 ╰──────────────
 
 🔐 Admin access: 4 IDs ✅
-⚡ Mabilis reply + Self-React ✅`,
-      threadID, "👑"
+😺😸😹😻😼😽🙀😿😾 Lahat ng pusa!`,
+      threadID
     );
   }
 
   if (action === "status") {
-    return sendWithSelfReact(api,
+    return sendWithCatReact(api,
 `👑 ryuk SYSTEM STATUS 👑
 
 ╭───「 SYSTEM 」
 │
 ├ 🤖 Auto Reply: ${data.active ? "🟢 ONLINE" : "🔴 OFFLINE"}
-├ ⏱️ Delay: 800-1500ms ⚡
-├ 🔥 Auto React: ${data.autoReact ? "🟢 ON" : "🔴 OFF"}
+├ ⏱️ Delay: 3-5s MABAGAL ✅
+├ 😺 Auto React: ${data.autoReact ? "🟢 ON 😺😸😹😻😼😽🙀😿😾" : "🔴 OFF"}
 ├ 💬 Total Replies: ${data.totalReplies || 0}
 ├ 🔒 Lock Target: RYUK POGI ON TOP ✅
 ├ 🔐 Admins: ${ADMIN_IDS.length} registered ✅
 ╰──────────────
-⚡ Mabilis + Self-React + Makunat`,
-      threadID, "📊"
+😺 Mabagal = Hindi ma-detect!`,
+      threadID
     );
   }
 
   const adminActions = ["on", "off", "reacton", "reactoff", "lock"];
   if (adminActions.includes(action) && !isAdmin(senderID)) {
-    return sendWithSelfReact(api, "⛔ Access denied. Admin lang ang puwede.", threadID, "⛔");
+    return sendWithCatReact(api, "⛔ Access denied. Admin lang ang puwede.", threadID);
   }
 
   if (action === "on") {
     data.active = true;
     saveSystemData(data);
-    return sendWithSelfReact(api,
+    return sendWithCatReact(api,
 `🚀 ryuk ACTIVATED!
 
-⚡ Mabilis reply: ON
-🔥 Self-React: ON
+😺 Mabagal reply: ON ✅
+😸 All Cat Self-React: ON 😺😸😹😻😼😽🙀😿😾
 👑 RYUK POGI ON TOP!`,
-      threadID, "🚀"
+      threadID
     );
   }
 
   if (action === "off") {
     data.active = false;
     saveSystemData(data);
-    return sendWithSelfReact(api, "🛑 ryuk DEACTIVATED!\n\nAuto-reply ay naka-off na.", threadID, "🛑");
+    return sendWithCatReact(api, "🛑 ryuk DEACTIVATED!\n\nAuto-reply ay naka-off na.", threadID);
   }
 
   if (action === "reacton") {
     data.autoReact = true;
     saveSystemData(data);
-    return sendWithSelfReact(api, "🔥 Auto-reaction activated!", threadID, "🔥");
+    return sendWithCatReact(api, "😺 Auto-reaction ON! 😺😸😹😻😼😽🙀😿😾", threadID);
   }
 
   if (action === "reactoff") {
     data.autoReact = false;
     saveSystemData(data);
-    return sendWithSelfReact(api, "🔕 Auto-reaction disabled.", threadID, "🔕");
+    return sendWithCatReact(api, "🔕 Auto-reaction OFF.", threadID);
   }
 
-  // ✅ LOCK GC + ALL NICK + SELF-REACT
+  // ✅ LOCK GC + ALL NICK + CAT REACT 😺😸😹😻😼😽🙀😿😾
   if (action === "lock") {
     if (typeof api.sendTypingIndicator === "function") {
       api.sendTypingIndicator(threadID, true);
@@ -318,12 +324,12 @@ module.exports.run = async function ({ api, event, args }) {
       const participantIDs = info.participantIDs || [];
       setAllNicknamesWithDelay(api, threadID, participantIDs, targetNickname);
       
-      sendWithSelfReact(api, getNextLockLine(), threadID, "🔒");
+      sendWithCatReact(api, getNextLockLine(), threadID);
       return api.setMessageReaction("🥷", messageID, threadID, () => {}, true);
     });
     return;
   }
 
-  return sendWithSelfReact(api, "⚠️ Unknown command.\n\nI-type ang /ryuk help para makita.", threadID, "⚠️");
+  return sendWithCatReact(api, "⚠️ Unknown command.\n\nI-type ang /ryuk help para makita.", threadID);
 };
-  
+    
