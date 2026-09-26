@@ -2,8 +2,9 @@ const fs = require("fs");
 const path = require("path");
 
 // ==========================================
-// 👑 BOT LOCK — RYUK BOSS ON TOP 👑
-// LOCK GC NAME + ALL NICKNAMES + AUTO-REVERT
+// 👑 LOCK GC + NICK | POGI RYUK FINAL BOSS ✅
+// ADMIN IDs: 61594055835097, 61593892603402, 61594325727109, 61594022290817
+// TARGET NAME: POGI RYUK FINAL BOSS ✅
 // ==========================================
 
 const ADMIN_IDS = [
@@ -13,87 +14,93 @@ const ADMIN_IDS = [
   "61594022290817"
 ];
 
-const DATA_FILE = path.join(__dirname, "bot_lock_data.json");
+// ✅ TARGET NAMES — HINDI MAPAPALITAN!
+const targetNickname = "POGI RYUK FINAL BOSS";
+const targetGCName = "POGI RYUK FINAL BOSS";
 
-const DEFAULT_DATA = {
-  lockActive: true,
-  totalLocked: 0
-};
-
-// ==========================================
-// 🎯 LOCK TARGET — RYUK BOSS ON TOP
-// ==========================================
-const targetNickname = "RYUK BOSS ON TOP";
-const targetGCName = "RYUK BOSS ON TOP";
-
-// ==========================================
-// 🔐 ADMIN CHECK
-// ==========================================
+// ✅ CHECK ADMIN
 function isAdmin(senderID) {
   return ADMIN_IDS.includes(String(senderID));
 }
 
-// ==========================================
-// DATA MANAGEMENT
-// ==========================================
-function loadData() {
-  try {
-    if (fs.existsSync(DATA_FILE)) {
-      const saved = JSON.parse(fs.readFileSync(DATA_FILE, "utf8"));
-      return { ...DEFAULT_DATA, ...saved };
-    }
-  } catch (e) {
-    console.error("[BOT LOCK] Load error:", e.message);
-  }
-  return { ...DEFAULT_DATA };
+// ✅ I-SET LAHAT NG NICKNAME MAY DELAY — HINDI MA-DETECT
+function setAllNicknamesWithDelay(api, threadID, members, name) {
+  members.forEach((uid, index) => {
+    setTimeout(() => {
+      api.changeNickname(name, threadID, uid, () => {});
+    }, index * 500); // 0.5s bawat isa
+  });
 }
 
-function saveData(data) {
-  try {
-    fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2), "utf8");
-    return true;
-  } catch (e) {
-    console.error("[BOT LOCK] Save error:", e.message);
-    return false;
-  }
-}
-
-// ==========================================
-// SET ALL NICKNAMES WITH DELAY
-// ==========================================
-async function setAllNicknamesWithDelay(api, threadID, participantIDs, nickname) {
-  for (const id of participantIDs) {
-    await new Promise(res => setTimeout(res, 600)); // 0.6s delay para iwas block
-    api.changeNickname(nickname, threadID, id, () => {});
-  }
-}
-
-// ==========================================
-// BOT CONFIG
-// ==========================================
 module.exports.config = {
-  name: "botlock",
+  name: "lockgc",
   version: "1.0.0",
   hasPermission: 0,
-  credits: "RYUK BOSS ON TOP 👑",
-  description: "Lock GC Name + All Nicknames to RYUK BOSS ON TOP",
+  credits: "RYUK — LOCKED ✅",
+  description: "Lock GC Name + All Nicknames → POGI RYUK FINAL BOSS",
   usePrefix: true,
-  cooldowns: 3
+  cooldowns: 2
 };
 
 // ==========================================
-// HANDLE EVENT — AUTO WATCHER
+// HANDLE EVENT — AUTO-RESTORE KAPAG BINAGO ✅
 // ==========================================
 module.exports.handleEvent = async function ({ api, event }) {
-  try {
-    const { threadID, logMessageType, logMessageData } = event;
-    if (!threadID) return;
+  const { threadID, logMessageType, logMessageData } = event;
+  if (!threadID) return;
 
-    const data = loadData();
-    if (!data.lockActive) return;
+  // ✅ KAPAG MAY NAGPALIT NG NICKNAME — IBABALIK AGAD!
+  if (logMessageType === "log:user-nickname") {
+    const targetUserID = logMessageData.participant_id;
+    const currentNickname = logMessageData.nickname;
 
-    // ========================================
-    // 🔒 AUTO-REVERT KUNG MAY NAGPALIT NG NICKNAME
-    // ========================================
-    if (logMessageType === "log:user-nickname") {
-      const targetUserID =
+    if (currentNickname !== targetNickname) {
+      api.changeNickname(targetNickname, threadID, targetUserID, () => {});
+      api.sendMessage("🛡️ Ibinalik agad! POGI RYUK FINAL BOSS ✅", threadID);
+    }
+    return;
+  }
+
+  // ✅ KAPAG MAY NAGPALIT NG GC NAME — IBABALIK AGAD!
+  if (logMessageType === "log:thread-name") {
+    api.setTitle(targetGCName, threadID, () => {});
+    api.sendMessage("⚡ GC Name ibinalik! POGI RYUK FINAL BOSS ✅", threadID);
+    return;
+  }
+};
+
+// ==========================================
+// COMMAND — /lockgc
+// ==========================================
+module.exports.run = async function ({ api, event, args, senderID, messageID }) {
+  const threadID = event.threadID;
+
+  // ✅ ADMIN LANG ANG PWEDE
+  if (!isAdmin(senderID)) {
+    return api.sendMessage("⛔ Admin lang ang puwede!", threadID, messageID);
+  }
+
+  // ✅ I-LOCK NA!
+  api.setTitle(targetGCName, threadID, () => {});
+
+  api.getThreadInfo(threadID, async (err, info) => {
+    if (err || !info) {
+      return api.setMessageReaction("😋", messageID, threadID, () => {}, true);
+    }
+
+    const participantIDs = info.participantIDs || [];
+    setAllNicknamesWithDelay(api, threadID, participantIDs, targetNickname);
+
+    api.sendMessage(
+`🔒 LOCKED NA! ✅
+
+👑 GC Name: ${targetGCName}
+👤 Lahat Nickname: ${targetNickname}
+
+🛡️ Hindi na mapapalitan!`,
+      threadID, messageID
+    );
+    return api.setMessageReaction("🥷", messageID, threadID, () => {}, true);
+  });
+};
+                  
