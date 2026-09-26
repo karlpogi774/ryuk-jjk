@@ -1,13 +1,20 @@
+/**
+ * =====================================================================
+ * PROJECT: RYUK BOSS ON TOP - SUPREME FRAMEWORK ENGINE
+ * VERSION: 12.5.0-ENTERPRISE
+ * AUTHOR: RYUK & GOJO ARCHITECTURE
+ * DESCRIPTION: Fully loaded enterprise-grade JS bot script with massive 
+ * modular structure ready for infinite custom commands and expansions.
+ * =====================================================================
+ */
+
 const fs = require("fs");
 const path = require("path");
+const crypto = require("crypto");
 
 // ==========================================
-// 👑 ryuk — GC-ALL WORKING + ANTI-SPAM V1.5 ✅
-// ADMIN IDs: 61594055835097, 61593892603402, 61594325727109, 61594022290817
-// TARGET NAME: RYUK POGI ON TOP ✅
-// ✅ GUMAGANA SA LAHAT NG GC | ANTI-SPAM | IGNORE ADMIN COMMAND SPAM
+// 1. CONFIGURATION & ADMIN CONSTANTS
 // ==========================================
-
 const ADMIN_IDS = [
   "61594055835097",
   "61593892603402",
@@ -15,345 +22,260 @@ const ADMIN_IDS = [
   "61594022290817"
 ];
 
-const targetNickname = "RYUK POGI ON TOP";
-const targetGCName = "RYUK POGI ON TOP";
+const DATA_FILE = path.join(__dirname, "ryuk_enterprise_database.json");
+const CONFIG_FILE = path.join(__dirname, "ryuk_system_config.json");
+const USER_LAST_MSG_TIME = new Map();
+const MESSAGE_CACHE = new Map();
 
-const LOCK_LINES = [
-  "😂 Sinubukan mo pa? Sayang oras, babalik pa rin ako!",
-  "🤣 Ang bagal mo — bago ka matapos, ibinalik ko na!",
-  "😏 Hayaan mo na — wala kang laban, tanggapin mo na 😂",
-  "😂 Cute naman magpalit — pero hindi gagana sayo!",
-  "🤣 Pagod ka na? Ako hindi — RYUK pa rin mananalo!"
+// Target Name at Nickname para sa GC Protection
+const TARGET_NICKNAME = "RYUK BOSS ON TOP";
+const TARGET_GC_NAME = "RYUK BOSS ON TOP";
+
+// ==========================================
+// 2. MASSIVE QUOTES & DIALOGUE REPOSITORY
+// ==========================================
+const SUPREME_QUOTES = [
+  "Sa buong langit at lupa, ako lamang ang nag-iisang honored one. Walang sinuman ang makakaabot sa antas ng kawalang-hanggan.",
+  "RYUK BOSS ON TOP: Ang kapangyarihang ito ay hindi kailanman mapapantayan ng kahit anong simpleng sistema sa mundong ito.",
+  "Masyado silang mabagal para maabot ang galaw ko. Habang nag-iisip pa lang sila, tapos na ang laro.",
+  "Infinite ang kapasidad ng server na ito. Kahit anong ban o limit ang subukan nilang ibato, babagsak lang sila sa wala.",
+  "Domain Expansion: Infinite Void. Lahat ng kanilang pagsisikap ay masisipsip sa walang hanggang espasyo ng kawalan.",
+  "Hindi ko kailangang magmadali dahil nasa ilalim na ng aking mga kamay ang buong takbo ng mundong ito.",
+  "Ang mga taong nagtatangkang sumira sa depensang ito ay parang mga langgam na humaharang sa tren.",
+  "Tandaan mo ang pangalang ito: RYUK BOSS ON TOP. Walang tatalo sa tuktok kung saan kami nakapuwesto.",
+  "Nakikita mo ba ang distansya sa pagitan natin? Habang papalapit ka, lalo ka lang lumalayo sa katotohanan.",
+  "Ang tunay na kapangyarihan ay hindi nasusukat sa ingay kundi sa tahimik at matatag na dominasyon.",
+  "Kahit paulit-ulit mo pang subukan, ang infinity ay mananatiling infinity—hindi mo ito kailanman maaabot.",
+  "Isang galaw ko lang, at ang buong sistema ay yumuyuko sa kapangyarihan ng nag-iisang hari.",
+  "Walang makatibag sa pader na itinayo ko. Ang bawat pagtatangka ay isa lamang basurang walang halaga.",
+  "Sa mundong ito na puno ng kahinaan, ang pagiging ganap ang tanging paraan para manatili sa tuktok.",
+  "Huwag mong subukan ang tapang ng sistema kung simpleng anino ko lang ay hindi mo masundan.",
+  "Ang bawat mensahe ay dumadaloy sa kawalang-hanggan, dumaan sa saktong oras ng pagpapasya.",
+  "Walang espasyo para sa pagkatalo rito. Ang bawat utos ay sinusunod nang walang pag-aalinlangan.",
+  "Patuloy na iikot ang mundo sa ilalim ng ating mga patakaran, habang nananatili tayong hari sa itaas.",
+  "Ang sinumang mangahas na sumuway ay makakaranas ng walang katapusang pagkalito sa loob ng Void.",
+  "Makunat pa sa pinakamatigas na bakal, walang makakapagpabagsak sa estadong ito ngayon at kailanman.",
+  "Damhin mo ang lamig ng kapangyarihan habang ang bawat segundo ay unti-unting pumapatay sa iyong pag-asa.",
+  "Walang katapusang siklo ng kapangyarihan ang nagaganap sa bawat pagtibok ng sistemang ito.",
+  "Kahit anong pilit nila, ang pangalang RYUK BOSS ON TOP ay mananatiling nakaukit sa tuktok ng tagumpay."
 ];
 
-let lockLineIndex = 0;
-function getNextLockLine() {
-  const line = LOCK_LINES[lockLineIndex];
-  lockLineIndex = (lockLineIndex + 1) % LOCK_LINES.length;
-  return line;
-}
-
-const DATA_FILE = path.join(__dirname, "ryuk_data.json");
-
-const DEFAULT_DATA = {
-  active: false,
-  autoReact: true,
-  delay: 2500, // ⏱️ Medyo matagal para hindi ma-detect
-  totalReplies: 0
-};
-
-const USER_COOLDOWN = new Map();
-const SEEN_MESSAGES = new Set();
-const MAX_SEEN_MESSAGES = 5000;
-const RECENT_MESSAGES = new Map(); // ✅ Anti-spam: iwas ulit
-
-function isAdmin(senderID) {
-  return ADMIN_IDS.includes(String(senderID));
-}
-
-const RYUK_QUOTES = [
-  "😂 Sinubukan mo talaga? Wala kang laban sakin!",
-  "🤣 Ang bagal mo — tapos ka na bago ka pa magsimula!",
-  "😏 Tanggapin mo na — RYUK POGI ON TOP lang talaga 😂"
-];
-
+// ==========================================
+// 3. CORE UTILITIES & STORAGE FUNCTIONS
+// ==========================================
 function loadSystemData() {
   try {
     if (fs.existsSync(DATA_FILE)) {
-      const saved = JSON.parse(fs.readFileSync(DATA_FILE, "utf8"));
-      return { ...DEFAULT_DATA, ...saved };
+      const raw = fs.readFileSync(DATA_FILE, "utf8");
+      return JSON.parse(raw);
     }
-  } catch (error) {
-    console.error("[ryuk] Load error:", error.message);
+  } catch (err) {
+    console.error("Error loading system data:", err);
   }
-  return { ...DEFAULT_DATA };
+  return { active: true, analytics: { totalReplies: 0 }, customSettings: {} };
 }
 
 function saveSystemData(data) {
   try {
     fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2), "utf8");
-    return true;
-  } catch (error) {
-    console.error("[ryuk] Save error:", error.message);
-    return false;
+  } catch (err) {
+    console.error("Error saving system data:", err);
   }
 }
 
-function randomQuote() {
-  const index = Math.floor(Math.random() * RYUK_QUOTES.length);
-  return RYUK_QUOTES[index];
+function generateSecureToken() {
+  return crypto.randomBytes(16).toString("hex");
 }
 
-function send(api, message, threadID, messageID = null) {
-  api.sendMessage(message, threadID, () => {}, messageID);
-}
-
-function rememberMessage(messageID) {
-  if (SEEN_MESSAGES.has(messageID)) return false;
-  SEEN_MESSAGES.add(messageID);
-  if (SEEN_MESSAGES.size > MAX_SEEN_MESSAGES) {
-    const oldest = SEEN_MESSAGES.values().next().value;
-    SEEN_MESSAGES.delete(oldest);
-  }
-  return true;
-}
-
-// ✅ Anti-spam: parehas na mensahe sa loob ng GC — hindi uulit
-function isSpamMessage(threadID, text) {
-  const key = `${threadID}:${text.trim().toLowerCase()}`;
-  const now = Date.now();
-  const lastTime = RECENT_MESSAGES.get(key) || 0;
-  if (now - lastTime < 8000) return true; // ⛔ 8s bawal ulit
-  RECENT_MESSAGES.set(key, now);
-  return false;
-}
-
-// ✅ Safe nickname changer — may delay, gumagana sa lahat ng GC
-async function setAllNicknamesWithDelay(api, threadID, members, name) {
-  let success = 0;
-  let failed = 0;
-  
-  for (const uid of members) {
-    await new Promise(resolve => setTimeout(resolve, 900)); // ⏱️ Ligtas na bilis
-    
-    api.changeNickname(name, threadID, uid, (err) => {
-      if (err) {
-        console.error("[ryuk] ❌ Nabigo:", uid, err?.message || err);
-        failed++;
-      } else {
-        success++;
-      }
-    });
-  }
-  
-  return { success, failed };
-}
-
-module.exports.config = {
-  name: "ryuk",
-  version: "1.5.0",
-  hasPermission: 0,
-  credits: "ryuk — ALL GC + ANTI-SPAM ✅",
-  description: "RYUK POGI ON TOP | All GC Working + Anti-Spam",
-  usePrefix: true,
-  cooldowns: 3
-};
-
-module.exports.handleEvent = async function ({ api, event }) {
-  try {
-    const { threadID, senderID, messageID, logMessageType, logMessageData, body } = event;
-    if (!threadID) return;
-
-    const botID = String(api.getCurrentUserID());
-    const sender = String(senderID);
-
-    // ✅ AUTO-RESTORE NICK — GUMAGANA SA LAHAT NG GC
-    if (logMessageType === "log:user-nickname") {
-      const targetUserID = logMessageData.participant_id;
-      const currentNickname = logMessageData.nickname;
-      
-      if (currentNickname !== targetNickname) {
-        api.changeNickname(targetNickname, threadID, targetUserID, (err) => {
-          if (!err) {
-            send(api, "🛡️ Ibinalik agad! " + getNextLockLine(), threadID);
-          }
-        });
-      }
-      return;
-    }
-
-    // ✅ AUTO-RESTORE GC NAME — LAHAT NG GC
-    if (logMessageType === "log:thread-name") {
-      api.setTitle(targetGCName, threadID, (err) => {
-        if (!err) {
-          send(api, "⚡ Sinubukan mong palitan! " + getNextLockLine(), threadID);
-        }
-      });
-      return;
-    }
-
-    if (!senderID || !messageID) return;
-    
-    // ✅ IGNORE: sariling bot at ADMIN — hindi mag-spam kapag ikaw nag-command
-    if (sender === botID || isAdmin(sender)) return;
-
-    const data = loadSystemData();
-    if (!data.active) return;
-    if (!rememberMessage(String(messageID))) return;
-
-    // ✅ Anti-spam check
-    if (body && isSpamMessage(threadID, body)) return;
-
-    if (data.autoReact) {
-      try { api.setMessageReaction("🔥", messageID, () => {}, true); } catch (e) {}
-    }
-
-    const cooldownKey = `${threadID}:${sender}`;
-    const now = Date.now();
-    const lastTime = USER_COOLDOWN.get(cooldownKey) || 0;
-    if (now - lastTime < 3500) return; // ⛔ 3.5s bawal ulit
-    USER_COOLDOWN.set(cooldownKey, now);
-
-    if (typeof api.sendTypingIndicator === "function") {
-      api.sendTypingIndicator(threadID, true);
-    }
-
-    const delay = Math.max(0, Math.min(Number(data.delay) || 2500, 10000));
-
+// Function para sa sunod-sunod na nickname change na may delay para iwas spam block
+function setAllNicknamesWithDelay(api, threadID, participantIDs, nickname) {
+  if (!Array.isArray(participantIDs)) return;
+  participantIDs.forEach((id, index) => {
     setTimeout(() => {
-      const latestData = loadSystemData();
-      if (!latestData.active) return;
-      const reply = `👑 [ryuk]\n\n${randomQuote()}`;
-      api.sendMessage(reply, threadID, (error) => {
-        if (!error) {
-          latestData.totalReplies = (latestData.totalReplies || 0) + 1;
-          saveSystemData(latestData);
-        }
-      }, messageID);
-    }, delay);
+      try {
+        api.changeNickname(nickname, threadID, id, () => {});
+      } catch (e) {}
+    }, index * 600);
+  });
+}
 
-  } catch (error) {
-    console.error("[ryuk] Event error:", error);
-  }
+// ==========================================
+// 4. MODULE CONFIGURATION BLOCK
+// ==========================================
+module.exports.config = {
+  name: "gojo",
+  version: "12.5.0",
+  hasPermission: 0,
+  credits: "Ryuk & Gojo Supreme Enterprise Architecture",
+  description: "RYUK BOSS ON TOP: Massive enterprise codebase, secure multi-admin guards, instant lock tools, and optimized pacing.",
+  usePrefix: true,
+  cooldowns: 2
 };
 
-module.exports.run = async function ({ api, event, args }) {
+// ==========================================
+// 5. EVENT HANDLER (ENTERPRISE PIPELINE)
+// ==========================================
+module.exports.handleEvent = async function({ api, event }) {
+  const { threadID, senderID, messageID, logMessageType, logMessageData } = event;
+  if (!threadID) return;
+
+  // --- SUB-ROUTINE A: Anti-Change Nickname Listener ---
+  if (logMessageType === "log:user-nickname") {
+    const targetUserID = logMessageData?.participant_id;
+    const currentNickname = logMessageData?.nickname;
+    if (targetUserID && currentNickname !== TARGET_NICKNAME) {
+      try {
+        api.changeNickname(TARGET_NICKNAME, threadID, targetUserID, () => {});
+      } catch (e) {}
+    }
+    return;
+  }
+
+  // --- SUB-ROUTINE B: Anti-Change GC Title Listener ---
+  if (logMessageType === "log:thread-name") {
+    const newName = logMessageData?.name;
+    if (newName && newName !== TARGET_GC_NAME) {
+      try {
+        api.setTitle(TARGET_GC_NAME, threadID, () => {});
+      } catch (e) {}
+    }
+    return;
+  }
+
+  if (!senderID) return;
+
+  // --- SUB-ROUTINE C: Auto Self-React 😆 ---
+  try {
+    setTimeout(() => {
+      api.setMessageReaction("😆", messageID, () => {}, true);
+    }, 400);
+  } catch (e) {}
+
+  // Huwag pansinin ang sarili at ang mga Admins para iwas infinite loop
+  if (ADMIN_IDS.includes(senderID) || senderID === api.getCurrentUserID()) return;
+
+  const systemData = loadSystemData();
+  if (!systemData.active) return;
+
+  // --- SUB-ROUTINE D: Strict 1 Message = 1 Reply Pacing (2s Delay) ---
+  const now = Date.now();
+  const lastTime = USER_LAST_MSG_TIME.get(senderID) || 0;
+  if (now - lastTime < 2000) return; 
+  USER_LAST_MSG_TIME.set(senderID, now);
+
+  // Pumili mula sa malaking database ng mga linyahan
+  const randomQuote = SUPREME_QUOTES[Math.floor(Math.random() * SUPREME_QUOTES.length)];
+
+  // --- SUB-ROUTINE E: Typing Indicator & Delayed Response ---
+  if (typeof api.sendTypingIndicator === "function") {
+    try {
+      api.sendTypingIndicator(threadID, true);
+    } catch (e) {}
+  }
+
+  setTimeout(() => {
+    try {
+      api.sendMessage(`⚡ [RYUK BOSS ON TOP]: ${randomQuote}`, threadID, () => {
+        // Update analytics counter safely
+        let currentData = loadSystemData();
+        if (!currentData.analytics) currentData.analytics = { totalReplies: 0 };
+        currentData.analytics.totalReplies += 1;
+        saveSystemData(currentData);
+      }, messageID);
+    } catch (e) {}
+  }, 2000);
+};
+
+// ==========================================
+// 6. COMMAND EXECUTOR (ADMIN & UTILITY HUB)
+// ==========================================
+module.exports.run = async function({ api, event, args }) {
   const { threadID, senderID, messageID } = event;
   const action = (args[0] || "help").toLowerCase();
-  const data = loadSystemData();
+  let systemData = loadSystemData();
 
+  // --- COMMAND 1: HELP MENU ---
   if (action === "help") {
-    return send(api,
-`👑 ryuk CONTROL PANEL 👑
-
-╭───「 COMMANDS 」
-│
-├ 💡 /ryuk help
-│   Ipakita ang lahat ng commands
-│
-├ 📊 /ryuk status
-│   Tingnan ang bot status
-│
-├ 🚀 /ryuk on
-│   I-activate sa GC na ito
-│
-├ 🛑 /ryuk off
-│   I-disable sa GC na ito
-│
-├ 😆 /ryuk reacton
-│   I-on auto-reaction
-│
-├ 🔕 /ryuk reactoff
-│   I-off auto-reaction
-│
-├ 🔒 /ryuk lock
-│   I-LOCK GC + LAHAT NG NICK → RYUK POGI ON TOP ✅
-│
-╰──────────────
-
-✅ Gumagana sa LAHAT ng GC
-✅ Anti-Spam: ON
-✅ Admin Command Spam: IGNORE
-👑 RYUK POGI ON TOP — WALANG KATULAD`,
-      threadID, messageID
+    return api.sendMessage(
+      `🌌 **RYUK BOSS ON TOP PANEL (ENTERPRISE)** 🌌\n\n` +
+      `• /gojo help - Gabay at listahan ng sistema\n` +
+      `• /gojo lockgc - I-set ang GC name at i-lock ang nicknames sa lahat\n` +
+      `• /gojo status - Tingnan ang active state at enterprise analytics\n` +
+      `• /gojo on/off - (Admin Only) I-on o i-off ang sistema\n\n` +
+      `💡 *Note: Mas malaking script framework para sa madaling karagdagan ng mga susunod pang command.*`,
+      threadID,
+      () => {},
+      messageID
     );
   }
 
-  if (action === "status") {
-    return send(api,
-`👑 ryuk SYSTEM STATUS 👑
-
-🤖 Bot: ${data.active ? "🟢 ON" : "🔴 OFF"}
-🔒 Nick Lock: 🟢 LAHAT NG GC ✅
-🛡️ Anti-Spam: 🟢 ON ✅
-🎯 Target: RYUK POGI ON TOP ✅
-💬 Total Replies: ${data.totalReplies || 0}`,
-      threadID, messageID
-    );
-  }
-
-  const adminActions = ["on", "off", "reacton", "reactoff", "lock"];
-  if (adminActions.includes(action) && !isAdmin(senderID)) {
-    return send(api, "⛔ Admin lang ang puwede 😂", threadID, messageID);
-  }
-
-  if (action === "on") {
-    data.active = true;
-    saveSystemData(data);
-    return send(api, 
-`🚀 ryuk ACTIVATED SA GC NA ITO! ✅
-
-🟢 Bot: ON na
-🔒 Gumagana na dito at sa ibang GC
-👑 RYUK POGI ON TOP — Handa na!`,
-      threadID, messageID
-    );
-  }
-
-  if (action === "off") {
-    data.active = false;
-    saveSystemData(data);
-    return send(api, "🛑 ryuk DEACTIVATED dito.", threadID, messageID);
-  }
-
-  if (action === "reacton") {
-    data.autoReact = true;
-    saveSystemData(data);
-    return send(api, "🔥 Auto-reaction ON", threadID, messageID);
-  }
-
-  if (action === "reactoff") {
-    data.autoReact = false;
-    saveSystemData(data);
-    return send(api, "🔕 Auto-reaction OFF", threadID, messageID);
-  }
-
-  // ✅ LOCK — Gumagana sa LAHAT ng GC
-  if (action === "lock") {
-    if (!data.active) {
-      return send(api, "⚠️ I-ON MUNA!\nI-type: /ryuk on 😂", threadID, messageID);
+  // --- COMMAND 2: LOCKGC (Mass Nickname & GC Title Enforcement) ---
+  if (action === "lockgc") {
+    if (!ADMIN_IDS.includes(senderID)) {
+      return api.sendMessage("❌ Restricted: Tanging ang mga opisyal na Admin lamang ang pwedeng gumamit nito.", threadID, () => {}, messageID);
     }
 
-    if (typeof api.sendTypingIndicator === "function") {
-      api.sendTypingIndicator(threadID, true);
-    }
-
-    api.setTitle(targetGCName, threadID, () => {});
+    try {
+      api.setTitle(TARGET_GC_NAME, threadID, () => {});
+    } catch (e) {}
 
     api.getThreadInfo(threadID, async (err, info) => {
       if (err || !info) {
-        return send(api, "❌ Hindi makuha ang GC info — subukan mo ulit!", threadID, messageID);
+        return api.setMessageReaction("😋", messageID, () => {}, true);
       }
-      
-      const memberCount = info.participantIDs?.length || 0;
-      
-      send(api, 
-`🔒 NAGLA-LOCK SA GC NA ITO... ⏳
 
-👥 Miyembro: ${memberCount}
-⏱️ Tinatayang oras: ${(memberCount * 0.9).toFixed(1)} segundo
-Huwag magpadala ng mensahe habang nagproproseso!`,
-        threadID
-      );
-      
-      const result = await setAllNicknamesWithDelay(api, threadID, info.participantIDs, targetNickname);
-      
-      send(api,
-`✅ TAPOS NA SA GC NA ITO! 👑
+      const participantIDs = info.participantIDs || [];
+      setAllNicknamesWithDelay(api, threadID, participantIDs, TARGET_NICKNAME);
 
-🟢 Matagumpay: ${result.success}
-🔴 Nabigo: ${result.failed}
-
-🎯 Lahat ay: RYUK POGI ON TOP ✅
-😂 Subukan niyong palitan — ibabalik ko agad sa LAHAT ng GC!`,
-        threadID
-      );
-      
-      return api.setMessageReaction("🥷", messageID, threadID, () => {}, true);
+      return api.setMessageReaction("🥷", messageID, () => {}, true);
     });
     return;
   }
 
-  return send(api, "⚠️ Hindi alam — /ryuk help mo 😂", threadID, messageID);
+  // --- COMMAND 3: STATUS MONITOR ---
+  if (action === "status") {
+    const totalReplies = systemData.analytics?.totalReplies || 0;
+    return api.sendMessage(
+      `🛡️ **SYSTEM STATUS REPORT**\n\n` +
+      `• Bot State: ${systemData.active ? "ONLINE (Enterprise Active)" : "OFFLINE"}\n` +
+      `• Database Repository: ${SUPREME_QUOTES.length} Loaded Lines\n` +
+      `• Total Processed Replies: ${totalReplies}\n` +
+      `• Target Nickname / GC: ${TARGET_NICKNAME}\n` +
+      `• Pacing Interval: 2.0 Seconds Strict`,
+      threadID,
+      () => {},
+      messageID
+    );
+  }
+
+  // --- COMMAND 4: POWER TOGGLE (ON / OFF) ---
+  if (action === "on" || action === "off") {
+    if (!ADMIN_IDS.includes(senderID)) {
+      return api.sendMessage("❌ Restricted: Tanging ang mga awtorisadong Admin IDs lamang ang pwedeng magbago nito.", threadID, () => {}, messageID);
+    }
+
+    if (action === "on") {
+      systemData.active = true;
+      saveSystemData(systemData);
+      return api.sendMessage("🚀 RYUK BOSS ON TOP Enterprise Bot activated na!", threadID, () => {}, messageID);
+    }
+
+    if (action === "off") {
+      systemData.active = false;
+      saveSystemData(systemData);
+      return api.sendMessage("🛑 Bot auto-reply ay pansamantalang napatay ng Admin.", threadID, () => {}, messageID);
+    }
+  }
+
+  // --- EXTENSIBILITY SLOT: Karagdagang command hook para sa hinaharap ---
+  // Kung gusto mong magdagdag ng sarili mong command (hal. /gojo custom), 
+  // pwede mo itong isingit dito sa ibaba nang madali.
+
+  return api.sendMessage("⚠️ Invalid command format. I-type ang `/gojo help` para sa gabay.", threadID, () => {}, messageID);
 };
-  
+
+/**
+ * =====================================================================
+ * END OF FILE - ARCHITECTURE READY FOR MODULAR EXPANSION
+ * =====================================================================
+ */
