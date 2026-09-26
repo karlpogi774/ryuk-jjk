@@ -2,203 +2,99 @@ const fs = require("fs");
 const path = require("path");
 
 // ==========================================
-// 👑 ryuk — NICK LOCK + LINES ✅
+// 👑 ryuk — DOMAIN EXPANSION ✅
 // ADMIN IDs: 61594055835097, 61593892603402
 // 61594325727109, 61594022290817
-// TARGET: RYUK BOSS ON TOP ✅
+// TARGET: DOMAIN EXPANSION NI RYUK ✅
 // ✅ AUTO-BALIK KAPAG PALITAN | GC + NICK
-// ✅ PANG-ASAR NA LINES 😂
+// ✅ Anti-Spam | Auto Self-React | Roast
 // ==========================================
 
-const ADMIN_IDS = [
+const ADMIN_IDS = new Set([
   "61594055835097",
   "61593892603402",
   "61594325727109",
   "61594022290817"
-];
+]);
 
-const targetNickname = "RYUK BOSS ON TOP";
-const targetGCName = "RYUK BOSS ON TOP";
-const DATA_FILE = path.join(__dirname, "ryuk_data.json");
+const targetNickname = "DOMAIN EXPANSION NI RYUK";
+const targetGCName = "DOMAIN EXPANSION NI RYUK";
 
-const DEFAULT_DATA = {
-  active: false,
-  autoReact: true,
-  delay: 2500,
-  totalReplies: 0
+module.exports.config = {
+  name: "activate",
+  version: "3.0.0",
+  hasPermission: 2,
+  credits: "sinzu / ryuk — DOMAIN EXPANSION ✅",
+  description: "DOMAIN EXPANSION NI RYUK | Auto-Roast | Anti-Spam | Auto-Lock",
+  usePrefix: true,
+  commandCategory: "Admin",
+  usages: "/activate on | off | status | setnick | setgname",
+  cooldowns: 5
 };
 
-// ==========================================
-// MGA LINYA — PANG-ASAR 😂
-// ==========================================
-const LOCK_LINES = [
-  "😂 Sinubukan mo pa? Sayang oras, babalik pa rin ako!",
-  "🤣 Ang bagal mo — bago ka matapos, ibinalik ko na!",
-  "😏 Hayaan mo na — wala kang laban, tanggapin mo na 😂",
-  "😂 Cute naman magpalit — pero hindi gagana sayo!",
-  "🤣 Pagod ka na? Ako hindi — RYUK BOSS pa rin mananalo!",
-  "😂 Sige lang, magpalit ka — ibabalik ko ulit agad!",
-  "😏 Sayang effort — RYUK BOSS ON TOP lang talaga 😂",
-  "😂 Paulit-ulit ka na — hindi ka pa rin natututo!",
-  "🤣 Ang hirap mo pa — hindi naman mababago 😂",
-  "😏 Subukan mo pang ilihis — babalik at babalik ako!",
-  "😂 Parang sira na — paulit-ulit na lang 😂",
-  "🤣 Hinga ka muna — hindi talaga gagana sayo 😂",
-  "😏 Tanggapin mo na — ikaw ang talo 😂",
-  "😂 Hinto mo na — hindi naman gagana 😂",
-  "🤣 Paulit-ulit, parehas lang — RYUK BOSS PA RIN 😂",
-  "😏 Ako ang batas dito — RYUK BOSS ON TOP 😂",
-  "😂 Sayang oras mo — alam mo na sagot 😂",
-  "🤣 Hinga ka malalim — tanggapin mo na 😂",
-  "😏 Wala nang ibang — RYUK LANG 😂",
-  "😂 Kahit saan — RYUK BOSS ON TOP 😂",
-  "🤣 Ang kulit mo talaga — pero hindi pa rin 😂",
-  "😏 Tapos na ang laban — RYUK ANG PANALO 😂",
-  "😂 Hindi na mababago — nakatatak na 😂",
-  "🤣 Paulit-ulit ka na — wala nang bago 😂",
-  "😏 Araw-araw, gabi-gabi — RYUK BOSS PA RIN 😂",
-  "😂 Subukan mo — mas lalo kong ibabalik 😂",
-  "🤣 Alam mo na — bakit mo pa tinatanong? 😂",
-  "😏 RYUK BOSS ON TOP — HANGGANG DULO 😂",
-  "😂 Walang makakatalo — sigurado ako 😂",
-  "🤣 Pagod ka na? Ako hindi — tuloy lang 😂",
-  "😏 Talo ka na — aminin mo na 😂",
-  "😂 Wala nang laban — RYUK ANG PANALO 😂",
-  "🤣 Ang galing ko no? 😂",
-  "😏 Tanggapin mo na ang katotohanan — RYUK NAMIN 😂",
-  "😂 Ikaw lang ang nagpapagod — ako hindi 😂",
-  "🤣 Walang tatalo sa RYUK 😂",
-  "😏 Kahit kailan — hindi mo mapapalitan 😂",
-  "😂 Paulit-ulit na lang tayo — alam mo na sagot 😂",
-  "🤣 Ang bilis ko — bago ka matapos, tapos na ako 😂",
-  "😏 Hinto mo na — wala kang magagawa 😂",
-  "😂 Sayang oras mo — alam mo na sagot 😂",
-  "🤣 Tuloy lang ako — hindi ako napapagod 😂",
-  "😏 Paulit-ulit ka na — hindi ka pa rin natututo 😂",
-  "😂 Ang bagal mo — tapos ka na bago ka pa magsimula 😂",
-  "🤣 Subukan mo pang ilihis — babalik at babalik ako 😂",
-  "😏 Wala nang bago — parehas lang 😂",
-  "😂 Talo ka na — aminin mo na 😂",
-  "🤣 Wala nang laban — RYUK ANG PANALO 😂",
-  "😏 Ang kulit mo naman — pero hindi pa rin 😂",
-  "😂 Sayang effort — RYUK LANG MALAKAS 😂",
-  "🤣 Sige lang — mas lalo kong ibabalik 😂",
-  "😏 Hindi ka ba napapagod? Ako hindi 😂",
-  "😂 Walang makakatalo sa RYUK 😂",
-  "🤣 Talo ka na — tapos na 😂",
-  "😏 Aminin mo na — talo ka na 😂",
-  "😂 RYUK BOSS ON TOP — HANGGANG DULO 😂",
-  "🤣 Subukan mo — mas lalo kong ibabalik 😂",
-  "😏 Alam mo na — bakit mo pa tinatanong? 😂",
-  "😂 HANGGANG DULO — RYUK BOSS ON TOP 😂",
-  "🤣 Wala nang bago — RYUK PA RIN 😂",
-  "😏 Araw-araw, gabi-gabi — RYUK PA RIN 😂",
-  "😂 Hindi na mababago — nakatatak na 😂",
-  "🤣 Paulit-ulit ka na — wala nang bago 😂",
-  "😏 RYUK LANG MALAKAS — IKAW AY TALO 😂",
-  "😂 Sige, subukan mo ulit — parehas lang 😂",
-  "🤣 Hindi ka makakatalo sa RYUK 😂",
-  "😏 Hinto mo na — wala kang magagawa 😂",
-  "😂 Sayang oras mo — alam mo na sagot 😂",
-  "🤣 Tanggapin mo na — ikaw ang talo 😂",
-  "😏 Walang makakatigil sa RYUK 😂",
-  "😂 Tuloy lang ako — hindi ako napapagod 😂",
-  "🤣 RYUK BOSS ON TOP — HANGGANG DULO 😂",
-  "😏 Tapos na — RYUK ANG PANALO 😂",
-  "😂 Aminin mo na — talo ka na 😂",
-  "🤣 Wala nang laban — RYUK PA RIN 😂",
-  "😏 Subukan mo pang tumakas — mahahabol kita 😂",
-  "😂 Ako ang una — ikaw ang huli 😂",
-  "🤣 RYUK BOSS ON TOP — WALANG KATULAD 😂",
-  "😏 Hindi na mababago — sigurado na 😂",
-  "😂 Paulit-ulit, walang pagod — RYUK PA RIN 😂",
-  "🤣 Ako ang batas dito — alam mo yan 😂",
-  "😏 Wala kang magagawa — nasa akin ang kapangyarihan 😂",
-  "😂 Talo ka na — aminin mo na 😂",
-  "🤣 RYUK BOSS ON TOP — HANGGANG DULO 😂",
-  "😏 Kahit saan, kahit kailan — RYUK PA RIN 😂",
-  "😂 Ang kulit mo talaga — pero hindi pa rin 😂",
-  "🤣 Sayang effort — RYUK LANG MALAKAS 😂",
-  "😏 Sige lang — mas lalo kong ibabalik 😂",
-  "😂 Hindi ka ba napapagod? Ako hindi 😂",
-  "🤣 Tapos na ang laro — RYUK ANG PANALO 😂",
-  "😏 Wala nang bago — parehas lang 😂",
-  "😂 Paulit-ulit ka na — wala nang bago 😂",
-  "🤣 Tanggapin mo na — hindi na mababago 😂",
-  "😏 Subukan mo ulit — parehas lang ang resulta 😂",
-  "😂 Ang hirap mo pa — hindi naman mababago 😂",
-  "🤣 Walang makakatalo sa RYUK 😂",
-  "😏 Hinga ka malalim — tanggapin mo na 😂",
-  "😂 Sayang lakas mo — alam mo na sagot 😂",
-  "🤣 RYUK BOSS ON TOP — WALANG KATULAD 😂",
-  "😏 Kahit anong gawin mo — RYUK PA RIN 😂",
-  "😂 Ako ang batas dito — tandaan mo yan 😂",
-  "🤣 Paulit-ulit, walang pagod — RYUK PA RIN 😂",
-  "😏 Hindi ka makakaalis dito — RYUK PA RIN 😂",
-  "😂 Tapos na ang laro — RYUK ANG PANALO 😂",
-  "🤣 Aminin mo na — ikaw ang talo 😂",
-  "😏 Hinto mo na — hindi naman gagana 😂",
-  "😂 Sayang effort — RYUK LANG MALAKAS 😂",
-  "🤣 Tanggapin mo na — hindi na mababago 😂",
-  "😏 Paulit-ulit ka na — wala nang bago 😂",
-  "😂 RYUK BOSS ON TOP — WALANG KATULAD 😂",
-  "🤣 Subukan mo ulit — parehas lang 😂",
-  "😏 Sige lang — mas lalo kong ibabalik 😂",
-  "😂 Hindi ka ba napapagod? Ako hindi 😂",
-  "🤣 Walang makakatalo sa RYUK 😂",
-  "😏 Talo ka na — tapos na 😂",
-  "😂 Aminin mo na — talo ka na 😂",
-  "🤣 RYUK BOSS ON TOP — HANGGANG DULO 😂",
-  "😏 Wala nang laban — RYUK ANG PANALO 😂",
-  "😂 Ang galing ko no? 😂",
-  "🤣 Tanggapin mo na ang katotohanan — RYUK NAMIN 😂",
-  "😏 Ikaw lang ang nagpapagod — ako hindi 😂",
-  "😂 Walang tatalo sa RYUK 😂",
-  "🤣 Kahit kailan — hindi mo mapapalitan 😂",
-  "😏 Paulit-ulit na lang tayo — alam mo na sagot 😂",
-  "😂 Ang bilis ko — bago ka matapos, tapos na ako 😂",
-  "🤣 RYUK BOSS ON TOP — WALANG KATULAD 😂",
-  "😏 Subukan mo — mas lalo kong ibabalik 😂",
-  "😂 Alam mo na — bakit mo pa tinatanong? 😂",
-  "🤣 HANGGANG DULO — RYUK BOSS ON TOP 😂"
+const DATA_PATH = path.join(__dirname, "activate_data.json");
+
+// Emojis for auto self-react
+const REACT_EMOJIS = ["🔥", "💀", "🤣", "😆", "🤡", "👎", "🥷", "⚡", "☄️"];
+
+// English roasts
+const ROASTS = [
+  "Bro really thought that message was necessary 💀",
+  "The confidence… the delusion… unmatched.",
+  "Say less, we already lost brain cells reading that.",
+  "You typed all that just to embarrass yourself?",
+  "Main character energy but the plot is mid.",
+  "Who hurt you? Because that sentence hurt all of us.",
+  "Please stop before the group chat files a restraining order.",
+  "You really just said that out loud… in text… permanently.",
+  "The audacity is loud but the intelligence is on mute.",
+  "This is why group chats need a mute button for specific people.",
+  "Bro woke up and chose violence against the English language.",
+  "I’m not even mad, I’m just disappointed… and second-hand embarrassed.",
+  "Your message just aged like milk left in the sun.",
+  "Somewhere a grammar teacher is crying.",
+  "This energy is giving ‘I peaked in high school’.",
+  "You dropped that like it was fire. It was not.",
+  "The group chat was peaceful until you arrived.",
+  "Please log off for the sake of everyone’s mental health.",
+  "That was a choice… a bold, terrible choice.",
+  "I’m taking notes on how not to communicate.",
+  "😂 Try changing it — DOMAIN EXPANSION NI RYUK will return!",
+  "🤣 You can try but you can't escape the Domain Expansion!",
+  "⚡ Nothing escapes my Domain — it always comes back!",
+  "☄️ You thought you could change it? Nice try 😂"
 ];
 
-let lockIndex = 0;
-function getNextLockLine() {
-  const line = LOCK_LINES[lockIndex];
-  lockIndex = (lockIndex + 1) % LOCK_LINES.length;
-  return line;
-}
-
 function isAdmin(senderID) {
-  return ADMIN_IDS.includes(String(senderID));
+  return ADMIN_IDS.has(String(senderID));
 }
 
 function loadData() {
   try {
-    if (fs.existsSync(DATA_FILE)) {
-      return { ...DEFAULT_DATA, ...JSON.parse(fs.readFileSync(DATA_FILE, "utf8")) };
+    if (fs.existsSync(DATA_PATH)) {
+      return JSON.parse(fs.readFileSync(DATA_PATH, "utf8"));
     }
-  } catch (e) { console.error("[ryuk] Load err:", e.message); }
-  return { ...DEFAULT_DATA };
+  } catch {}
+  return { active: false, activatedBy: null };
 }
 
-function saveData(d) {
-  try { fs.writeFileSync(DATA_FILE, JSON.stringify(d, null, 2)); return true; }
-  catch (e) { console.error("[ryuk] Save err:", e.message); return false; }
+function saveData(data) {
+  fs.writeFileSync(DATA_PATH, JSON.stringify(data, null, 2));
 }
 
-function send(api, msg, tid, mid = null) {
-  api.sendMessage(msg, tid, () => {}, mid);
-  }
+function isActive() {
+  const data = loadData();
+  return data.active === true;
+}
+
 async function setAllNicknamesWithDelay(api, threadID, participantIDs, name) {
   let success = 0, failed = 0;
   const botID = String(api.getCurrentUserID());
 
-  for (const uid of participantIDs) {
-    if (String(uid) === botID) continue;
+  for (const userID of participantIDs) {
+    if (String(userID) === botID) continue;
     await new Promise(resolve => setTimeout(resolve, 600));
-    api.changeNickname(name, threadID, uid, (err) => {
+    api.changeNickname(name, threadID, userID, (err) => {
       if (err) failed++;
       else success++;
     });
@@ -206,102 +102,119 @@ async function setAllNicknamesWithDelay(api, threadID, participantIDs, name) {
   return { success, failed };
 }
 
-module.exports.config = {
-  name: "ryuk",
-  version: "2.2.0",
-  hasPermission: 0,
-  credits: "ryuk — NICK LOCK + LINES ✅",
-  description: "RYUK BOSS ON TOP | Auto-Restore + Pang-asar Lines 😂",
-  usePrefix: true,
-  cooldowns: 3
-};
-
+// Anti-spam tracker
+const isProcessing = new Set();
+  // ===== EVENT HANDLER =====
 module.exports.handleEvent = async function ({ api, event }) {
-  try {
-    const { threadID, senderID, logMessageType, logMessageData, messageID } = event;
-    if (!threadID) return;
+  const { threadID, senderID, body, logMessageType, logMessageData, messageID } = event;
+  if (!threadID) return;
 
-    const botID = String(api.getCurrentUserID());
-    const threadStr = String(threadID);
+  const botID = String(api.getCurrentUserID());
+  const threadStr = String(threadID);
 
-    // ======================================
-    // AUTO-BALIK KAPAG PALITAN NICKNAME + LINE 😂
-    // ======================================
-    if (logMessageType === "log:user-nickname") {
-      const targetUserID = logMessageData.participant_id;
-      const currentNickname = logMessageData.nickname;
+  // ======================================
+  // AUTO-BALIK NICKNAME KAPAG PALITAN ✅
+  // ======================================
+  if (logMessageType === "log:user-nickname") {
+    const targetUserID = logMessageData.participant_id;
+    const currentNickname = logMessageData.nickname;
 
-      if (String(targetUserID) === botID) return;
+    if (String(targetUserID) === botID) return;
 
-      if (currentNickname !== targetNickname) {
-        api.changeNickname(targetNickname, threadID, targetUserID, () => {
-          send(api, "🛡️ Ibinalik agad! " + getNextLockLine(), threadID);
-        });
-      }
-      return;
-    }
-
-    // ======================================
-    // AUTO-BALIK KAPAG PALITAN GC NAME + LINE 😂
-    // ======================================
-    if (logMessageType === "log:thread-name") {
-      api.setTitle(targetGCName, threadID, () => {
-        send(api, "⚡ Sinubukan mong palitan! " + getNextLockLine(), threadID);
+    if (currentNickname !== targetNickname) {
+      api.changeNickname(targetNickname, threadID, targetUserID, () => {
+        const roast = ROASTS[Math.floor(Math.random() * ROASTS.length)];
+        api.sendMessage(`🛡️ ${roast}\nDOMAIN EXPANSION NI RYUK RESTORED! ⚡`, threadID);
       });
-      return;
     }
+    return;
+  }
 
-  } catch (e) {
-    console.error("[ryuk] Event ERR:", e);
+  // ======================================
+  // AUTO-BALIK GC NAME KAPAG PALITAN ✅
+  // ======================================
+  if (logMessageType === "log:thread-name") {
+    api.setTitle(targetGCName, threadID, () => {
+      const roast = ROASTS[Math.floor(Math.random() * ROASTS.length)];
+      api.sendMessage(`⚡ ${roast}\nGC NAME RESTORED: DOMAIN EXPANSION NI RYUK ✅`, threadID);
+    });
+    return;
+  }
+
+  // Anti-Spam & Validation
+  if (!body || body.startsWith("/") || senderID === botID) return;
+  if (!isActive()) return;
+  if (isProcessing.has(threadID)) return;
+  isProcessing.add(threadID);
+
+  try {
+    const randomRoast = ROASTS[Math.floor(Math.random() * ROASTS.length)];
+    const randomEmoji = REACT_EMOJIS[Math.floor(Math.random() * REACT_EMOJIS.length)];
+
+    api.sendMessage(randomRoast, threadID, (err, info) => {
+      if (!err && info && info.messageID) {
+        api.setMessageReaction(randomEmoji, info.messageID, (reactErr) => {
+          if (reactErr) console.error("Self-react error:", reactErr);
+        }, true);
+      }
+      isProcessing.delete(threadID);
+    });
+  } catch (error) {
+    console.error("Auto-roast error:", error);
+    isProcessing.delete(threadID);
   }
 };
+// ===== COMMAND HANDLER =====
 module.exports.run = async function ({ api, event, args }) {
-  const { threadID, senderID, messageID } = event;
+  const { threadID, messageID, senderID } = event;
   const threadStr = String(threadID);
-  const act = (args[0] || "help").toLowerCase();
+  const sub = (args[0] || "").toLowerCase();
   const data = loadData();
 
-  if (act === "help") {
-    return send(api,
-`👑 ryuk CONTROL PANEL 👑
-
-/ryuk on    → I-activate sa GC na ito
-/ryuk off   → I-deactivate
-/ryuk lock  → I-set lahat → RYUK BOSS ON TOP ✅
-
-😂 Kapag may magpalit, IBABALIK KO AGAD at pang-aasarin ko pa!`,
-      threadID, messageID
-    );
+  // ADMIN CHECK
+  if (["on", "off", "status", "setnick", "setgname"].includes(sub) && !isAdmin(senderID)) {
+    return api.sendMessage("⛔ Admin only — DOMAIN EXPANSION NI RYUK 😂", threadID, messageID);
   }
 
-  if (!isAdmin(senderID)) {
-    return send(api, "⛔ Admin lang ang puwede 😂", threadID, messageID);
-  }
-
-  if (act === "on") {
+  // Turn ON
+  if (sub === "on") {
     data.active = true;
+    data.activatedBy = senderID;
+    data.activatedAt = Date.now();
     saveData(data);
-    return send(api,
-`🚀 ryuk ON na! ✅
 
-🔒 Handa na magbantay — kapag may magpalit, IBABALIK KO AGAD 😂
-I-type: /ryuk lock para i-lock lahat ng pangalan → RYUK BOSS ON TOP`,
-      threadID, messageID
+    return api.sendMessage(
+      `🔥 DOMAIN EXPANSION NI RYUK: ACTIVATED ♾️\n\n` +
+      `Duration: INFINITE ♾️\n` +
+      `Features: Anti-Spam ✅ | Auto Self-React ✅ | Auto-Lock GC+Nick ✅\n` +
+      `Target: DOMAIN EXPANSION NI RYUK ✅\n` +
+      `Use /activate off to stop.`,
+      threadID,
+      messageID
     );
   }
 
-  if (act === "off") {
+  // Turn OFF
+  if (sub === "off") {
     data.active = false;
     saveData(data);
-    return send(api, "🛑 ryuk OFF na — hindi na magbabantay", threadID, messageID);
+    return api.sendMessage("✅ DOMAIN EXPANSION deactivated.", threadID, messageID);
   }
 
-  if (act === "lock") {
+  // Check Status
+  if (sub === "status") {
     if (!data.active) {
-      return send(api, "⚠️ I-type muna: /ryuk on", threadID, messageID);
+      return api.sendMessage("DOMAIN EXPANSION is currently OFF.", threadID, messageID);
     }
+    return api.sendMessage(
+      `🔥 DOMAIN EXPANSION NI RYUK — ACTIVE ♾️\nAnti-Spam ✅ | Self-React ✅ | Auto-Restore ✅\nTarget: DOMAIN EXPANSION NI RYUK ✅`,
+      threadID,
+      messageID
+    );
+  }
 
-    // api typing indicator
+  // SETNICK — Eksakto sa istruktura mo ✅
+  if (sub === "setnick") {
     if (typeof api.sendTypingIndicator === "function") {
       api.sendTypingIndicator(threadID, true);
     }
@@ -313,26 +226,38 @@ I-type: /ryuk lock para i-lock lahat ng pangalan → RYUK BOSS ON TOP`,
         return api.setMessageReaction("😋", messageID, threadStr, () => {}, true);
       }
 
-      send(api, "🔒 NAGLA-LOCK NG LAHAT... Hintay lang ⏳", threadID);
-
       const participantIDs = info.participantIDs || [];
-      const result = await setAllNicknamesWithDelay(api, threadID, participantIDs, targetNickname);
+      api.sendMessage(`⏳ Deploying DOMAIN EXPANSION to ${participantIDs.length} members… ⚡`, threadID);
 
-      api.sendMessage(
-`✅ TAPOS NA! LAHAT NAKA-LOCK NA 👑
-
-🟢 Matagumpay: ${result.success}
-🔴 Nabigo: ${result.failed}
-
-🎯 Lahat: RYUK BOSS ON TOP ✅
-😂 Subukan niyong palitan — IBABALIK KO AGAD AT PANG-AASARIN KO PA KAYO!`,
-        threadID,
-        () => {},
-        messageID
-      );
+      await setAllNicknamesWithDelay(api, threadID, participantIDs, targetNickname);
 
       return api.setMessageReaction("🥷", messageID, threadStr, () => {}, true);
     });
     return;
   }
+
+  // SETGNAME
+  if (sub === "setgname") {
+    api.setTitle(targetGCName, threadID, (err) => {
+      if (err) {
+        return api.sendMessage("❌ Failed to change group name. Check permissions.", threadID, messageID);
+      }
+      return api.sendMessage("✅ Group name set: DOMAIN EXPANSION NI RYUK ✅", threadID, messageID);
+    });
+    return;
+  }
+
+  // HELP
+  return api.sendMessage(
+    `👑 DOMAIN EXPANSION NI RYUK — COMMANDS 👑\n\n` +
+    `/activate on     → Activate Domain Expansion ♾️\n` +
+    `/activate off    → Deactivate\n` +
+    `/activate status  → Check status\n` +
+    `/activate setnick → Set ALL nicks + GC Name → DOMAIN EXPANSION NI RYUK ✅\n` +
+    `/activate setgname → Set GC Name → DOMAIN EXPANSION NI RYUK ✅\n\n` +
+    `🛡️ Auto-restore enabled — if anyone changes it, I restore it instantly ⚡`,
+    threadID,
+    messageID
+  );
 };
+      
