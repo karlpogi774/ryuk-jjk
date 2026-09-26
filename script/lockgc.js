@@ -3,7 +3,7 @@ const path = require("path");
 
 // ==========================================
 // 👑 LOCK GC + NICK | POGI RYUK FINAL BOSS ✅
-// ADMIN IDs: 61594055835097, 61593892603402, 61594325727109, 61594022290817
+// ADMIN IDs: 61594055835097, 61593892603402, 61594325727109, 61594022290817 ✅
 // TARGET NAME: POGI RYUK FINAL BOSS ✅
 // ==========================================
 
@@ -11,7 +11,7 @@ const ADMIN_IDS = [
   "61594055835097",
   "61593892603402",
   "61594325727109",
-  "61594022290817"
+  "61594022290817" // ✅ Nailagay na!
 ];
 
 // ✅ TARGET NAMES — HINDI MAPAPALITAN!
@@ -28,15 +28,15 @@ function setAllNicknamesWithDelay(api, threadID, members, name) {
   members.forEach((uid, index) => {
     setTimeout(() => {
       api.changeNickname(name, threadID, uid, () => {});
-    }, index * 500); // 0.5s bawat isa
+    }, index * 500); // 0.5s bawat isa — hindi mabilis, hindi mabagal
   });
 }
 
 module.exports.config = {
   name: "lockgc",
-  version: "1.0.0",
+  version: "1.0.1",
   hasPermission: 0,
-  credits: "RYUK — LOCKED ✅",
+  credits: "RYUK — LOCKED ✅ 4 ADMIN COMPLETE",
   description: "Lock GC Name + All Nicknames → POGI RYUK FINAL BOSS",
   usePrefix: true,
   cooldowns: 2
@@ -72,7 +72,7 @@ module.exports.handleEvent = async function ({ api, event }) {
 // ==========================================
 // COMMAND — /lockgc
 // ==========================================
-module.exports.run = async function ({ api, event, args, senderID, messageID }) {
+module.exports.run = async function ({ api, event, senderID, messageID }) {
   const threadID = event.threadID;
 
   // ✅ ADMIN LANG ANG PWEDE
@@ -97,10 +97,11 @@ module.exports.run = async function ({ api, event, args, senderID, messageID }) 
 👑 GC Name: ${targetGCName}
 👤 Lahat Nickname: ${targetNickname}
 
-🛡️ Hindi na mapapalitan!`,
+🛡️ Hindi na mapapalitan!
+🔐 Admin: 4 registered ✅`,
       threadID, messageID
     );
     return api.setMessageReaction("🥷", messageID, threadID, () => {}, true);
   });
 };
-                  
+  
