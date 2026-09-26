@@ -1,26 +1,14 @@
-/**
- * =====================================================================
- * PROJECT: RYUK BOSS ON TOP - ULTIMATE ENTERPRISE FRAMEWORK
- * VERSION: 26.5.0-PROD-FIXED
- * AUTHOR: RYUK & GOJO ARCHITECTURE
- * DESCRIPTION: Massive 2000+ lines enterprise-grade JavaScript bot framework
- * built with modular sub-routines, extensive logs, robust anti-change systems,
- * and fully fixed Nickname and GC Title enforcement tools.
- * =====================================================================
- */
-
 const fs = require("fs");
 const path = require("path");
-const crypto = require("crypto");
-const os = require("os");
-const util = require("util");
-const zlib = require("zlib");
-const events = require("events");
-const readline = require("readline");
 
-// =====================================================================
-// SECTION 1: GLOBAL CONFIGURATION & ADMIN CONSTANTS (Lines 25 - 100)
-// =====================================================================
+// ==========================================
+// 👑 ryuk — NICK LOCK FINAL V1.8 ✅
+// ADMIN IDs: 61594055835097, 61593892603402, 61594325727109, 61594022290817
+// TARGET NAME: RYUK POGI ON TOP ✅
+// ✅ NICKNAME WORKING | GC NAME WORKING | ANTI-SPAM
+// ✅ SKIP BOT OWN NAME | ERROR DETAILS | STABLE DELAY
+// ==========================================
+
 const ADMIN_IDS = [
   "61594055835097",
   "61593892603402",
@@ -28,326 +16,681 @@ const ADMIN_IDS = [
   "61594022290817"
 ];
 
-const SYSTEM_VERSION = "26.5.0-PROD-FIXED";
-const ENGINE_NAME = "RYUK_SUPREME_ENGINE";
-const DATA_FILE = path.join(__dirname, "ryuk_enterprise_database.json");
-const CONFIG_FILE = path.join(__dirname, "ryuk_system_config.json");
-const LOGS_DIRECTORY = path.join(__dirname, "logs");
-const BACKUP_DIRECTORY = path.join(__dirname, "backups");
+const targetNickname = "RYUK POGI ON TOP";
+const targetGCName = "RYUK POGI ON TOP";
+const DATA_FILE = path.join(__dirname, "ryuk_data.json");
 
-const USER_LAST_MSG_TIME = new Map();
-const MESSAGE_CACHE = new Map();
-const THREAD_STATE_CACHE = new Map();
-const SECURITY_VIOLATION_TRACKER = new Map();
-const EVENT_EMITTER = new events.EventEmitter();
+const DEFAULT_DATA = {
+  active: false,
+  autoReact: true,
+  delay: 2000,
+  totalReplies: 0
+};
 
-const TARGET_NICKNAME = "RYUK BOSS ON TOP";
-const TARGET_GC_NAME = "RYUK BOSS ON TOP";
+const USER_COOLDOWN = new Map();
+const SEEN_MESSAGES = new Set();
+const MAX_SEEN_MESSAGES = 5000;
+const RECENT_MESSAGES = new Map();
 
-// =====================================================================
-// SECTION 2: MASSIVE QUOTES & DIALOGUE REPOSITORY (Lines 101 - 600)
-// =====================================================================
-const SUPREME_QUOTES = [
-  "Sa buong langit at lupa, ako lamang ang nag-iisang honored one. Walang sinuman ang makakaabot sa antas ng kawalang-hanggan.",
-  "RYUK BOSS ON TOP: Ang kapangyarihang ito ay hindi kailanman mapapantayan ng kahit anong simpleng sistema sa mundong ito.",
-  "Masyado silang mabagal para maabot ang galaw ko. Habang nag-iisip pa lang sila, tapos na ang laro.",
-  "Infinite ang kapasidad ng server na ito. Kahit anong ban o limit ang subukan nilang ibato, babagsak lang sila sa wala.",
-  "Domain Expansion: Infinite Void. Lahat ng kanilang pagsisikap ay masisipsip sa walang hanggang espasyo ng kawalan.",
-  "Hindi ko kailangang magmadali dahil nasa ilalim na ng aking mga kamay ang buong takbo ng mundong ito.",
-  "Ang mga taong nagtatangkang sumira sa depensang ito ay parang mga langgam na humaharang sa tren.",
-  "Tandaan mo ang pangalang ito: RYUK BOSS ON TOP. Walang tatalo sa tuktok kung saan kami nakapuwesto.",
-  "Nakikita mo ba ang distansya sa pagitan natin? Habang papalapit ka, lalo ka lang lumalayo sa katotohanan.",
-  "Ang tunay na kapangyarihan ay hindi nasusukat sa ingay kundi sa tahimik at matatag na dominasyon.",
-  "Kahit paulit-ulit mo pang subukan, ang infinity ay mananatiling infinity—hindi mo ito kailanman maaabot.",
-  "Isang galaw ko lang, at ang buong sistema ay yumuyuko sa kapangyarihan ng nag-iisang hari.",
-  "Walang makatibag sa pader na itinayo ko. Ang bawat pagtatangka ay isa lamang basurang walang halaga.",
-  "Sa mundong ito na puno ng kahinaan, ang pagiging ganap ang tanging paraan para manatili sa tuktok.",
-  "Huwag mong subukan ang tapang ng sistema kung simpleng anino ko lang ay hindi mo masundan.",
-  "Ang bawat mensahe ay dumadaloy sa kawalang-hanggan, dumaan sa saktong oras ng pagpapasya.",
-  "Walang espasyo para sa pagkatalo rito. Ang bawat utos ay sinusunod nang walang pag-aalinlangan.",
-  "Patuloy na iikot ang mundo sa ilalim ng ating mga patakaran, habang nananatili tayong hari sa itaas.",
-  "Ang sinumang mangahas na sumuway ay makakaranas ng walang katapusang pagkalito sa loob ng Void.",
-  "Makunat pa sa pinakamatigas na bakal, walang makakapagpabagsak sa estadong ito ngayon at kailanman.",
-  "Damhin mo ang lamig ng kapangyarihan habang ang bawat segundo ay unti-unting pumapatay sa iyong pag-asa.",
-  "Walang katapusang siklo ng kapangyarihan ang nagaganap sa bawat pagtibok ng sistemang ito.",
-  "Kahit anong pilit nila, ang pangalang RYUK BOSS ON TOP ay mananatiling nakaukit sa tuktok ng tagumpay.",
-  "Walang makatatalo sa purong lohika at absolute na kontrol sa bawat sulok ng network na ito.",
-  "Ang bawat linya ng kodigo ay sumasalamin sa kapangyarihang hindi kailanman matitinag.",
-  "Patuloy silang mag-aabang sa pagbagsak, ngunit ang tuktok ay nakalaan lamang sa karapat-dapat.",
-  "Isang titig lamang at ang buong sistema ay awtomatikong mag-aadjust sa aking kagustuhan.",
-  "Walang puwang sa mundong ito para sa mga mahihina ang loob at madaling sumuko.",
-  "Ang depensa ay sadyang ginawa para maging hindi mapapasok ninuman.",
-  "Mananatili tayong nakatayo habang ang iba ay lumulubog sa kanilang sariling kamangmangan."
+function isAdmin(senderID) {
+  return ADMIN_IDS.includes(String(senderID));
+}
+const LOCK_LINES = [
+  "😂 Sinubukan mo pa? Sayang oras, babalik pa rin ako!",
+  "🤣 Ang bagal mo — bago ka matapos, ibinalik ko na!",
+  "😏 Hayaan mo na — wala kang laban, tanggapin mo na 😂",
+  "😂 Cute naman magpalit — pero hindi gagana sayo!",
+  "🤣 Pagod ka na? Ako hindi — RYUK pa rin mananalo!",
+  "😂 Sige lang, magpalit ka — ibabalik ko ulit agad!",
+  "😏 Sayang effort — RYUK POGI ON TOP lang talaga 😂",
+  "😂 Paulit-ulit ka na — hindi ka pa rin natututo!",
+  "🤣 Ang hirap mo pa — hindi naman mababago 😂",
+  "😏 Subukan mo pang ilihis — babalik at babalik ako!",
+  "😂 Parang sira na — paulit-ulit na lang 😂",
+  "🤣 Hinga ka muna — hindi talaga gagana sayo 😂",
+  "😏 Tanggapin mo na — ikaw ang talo 😂",
+  "😂 Hinto mo na — hindi naman gagana 😂",
+  "🤣 Paulit-ulit, parehas lang — RYUK PA RIN 😂",
+  "😏 Ako ang batas dito — RYUK POGI ON TOP 😂",
+  "😂 Sayang oras mo — alam mo na sagot 😂",
+  "🤣 Hinga ka malalim — tanggapin mo na 😂",
+  "😏 Wala nang ibang — RYUK LANG 😂",
+  "😂 Kahit saan — RYUK POGI ON TOP 😂",
+  "🤣 Ang kulit mo talaga — pero hindi pa rin 😂",
+  "😏 Tapos na ang laban — RYUK ANG PANALO 😂",
+  "😂 Hindi na mababago — nakatatak na 😂",
+  "🤣 Paulit-ulit ka na — wala nang bago 😂",
+  "😏 Araw-araw, gabi-gabi — RYUK PA RIN 😂",
+  "😂 Subukan mo — mas lalo kong ibabalik 😂",
+  "🤣 Alam mo na — bakit mo pa tinatanong? 😂",
+  "😏 RYUK POGI ON TOP — HANGGANG DULO 😂",
+  "😂 Walang makakatalo — sigurado ako 😂",
+  "🤣 Pagod ka na? Ako hindi — tuloy lang 😂",
+  "😏 Talo ka na — aminin mo na 😂",
+  "😂 Wala nang laban — RYUK ANG PANALO 😂",
+  "🤣 Ang galing ko no? 😂",
+  "😏 Tanggapin mo na ang katotohanan — RYUK NAMIN 😂",
+  "😂 Ikaw lang ang nagpapagod — ako hindi 😂",
+  "🤣 Walang tatalo sa RYUK 😂",
+  "😏 Kahit kailan — hindi mo mapapalitan 😂",
+  "😂 Paulit-ulit na lang tayo — alam mo na sagot 😂",
+  "🤣 Ang bilis ko — bago ka matapos, tapos na ako 😂",
+  "😏 Hinto mo na — wala kang magagawa 😂",
+  "😂 Sayang oras mo — alam mo na sagot 😂",
+  "🤣 Tuloy lang ako — hindi ako napapagod 😂",
+  "😏 Paulit-ulit ka na — hindi ka pa rin natututo 😂",
+  "😂 Ang bagal mo — tapos ka na bago ka pa magsimula 😂",
+  "🤣 Subukan mo pang ilihis — babalik at babalik ako 😂",
+  "😏 Wala nang bago — parehas lang 😂",
+  "😂 Talo ka na — aminin mo na 😂",
+  "🤣 Wala nang laban — RYUK ANG PANALO 😂",
+  "😏 Ang kulit mo naman — pero hindi pa rin 😂",
+  "😂 Sayang effort — RYUK LANG MALAKAS 😂",
+  "🤣 Sige lang — mas lalo kong ibabalik 😂",
+  "😏 Hindi ka ba napapagod? Ako hindi 😂",
+  "😂 Walang makakatalo sa RYUK 😂",
+  "🤣 Talo ka na — tapos na 😂",
+  "😏 Aminin mo na — talo ka na 😂",
+  "😂 RYUK POGI ON TOP — HANGGANG DULO 😂",
+  "🤣 Subukan mo — mas lalo kong ibabalik 😂",
+  "😏 Alam mo na — bakit mo pa tinatanong? 😂",
+  "😂 HANGGANG DULO — RYUK POGI ON TOP 😂",
+  "🤣 Wala nang bago — RYUK PA RIN 😂",
+  "😏 Araw-araw, gabi-gabi — RYUK PA RIN 😂",
+  "😂 Hindi na mababago — nakatatak na 😂",
+  "🤣 Paulit-ulit ka na — wala nang bago 😂",
+  "😏 RYUK LANG MALAKAS — IKAW AY TALO 😂",
+  "😂 Sige, subukan mo ulit — parehas lang 😂",
+  "🤣 Ang bilis ko — tapos na bago ka pa magsalita 😂",
+  "😏 Hindi ka makakatalo sa RYUK 😂",
+  "😂 Hinto mo na — wala kang magagawa 😂",
+  "🤣 Sayang oras mo — alam mo na sagot 😂",
+  "😏 Tanggapin mo na — ikaw ang talo 😂",
+  "😂 Walang makakatigil sa RYUK 😂",
+  "🤣 Tuloy lang ako — hindi ako napapagod 😂",
+  "😏 RYUK POGI ON TOP — HANGGANG DULO 😂",
+  "😂 Tapos na — RYUK ANG PANALO 😂",
+  "🤣 Aminin mo na — talo ka na 😂",
+  "😏 Wala nang laban — RYUK PA RIN 😂",
+  "😂 Subukan mo pang tumakas — mahahabol kita 😂",
+  "🤣 Ako ang una — ikaw ang huli 😂",
+  "😏 RYUK POGI ON TOP — WALANG KATULAD 😂",
+  "😂 Hindi na mababago — sigurado na 😂",
+  "🤣 Paulit-ulit, walang pagod — RYUK PA RIN 😂",
+  "😏 Ako ang batas dito — alam mo yan 😂",
+  "😂 Wala kang magagawa — nasa akin ang kapangyarihan 😂",
+  "🤣 Talo ka na — aminin mo na 😂",
+  "😏 RYUK POGI ON TOP — HANGGANG DULO 😂",
+  "😂 Kahit saan, kahit kailan — RYUK PA RIN 😂",
+  "🤣 Ang kulit mo talaga — pero hindi pa rin 😂",
+  "😏 Sayang effort — RYUK LANG MALAKAS 😂",
+  "😂 Sige lang — mas lalo kong ibabalik 😂",
+  "🤣 Hindi ka ba napapagod? Ako hindi 😂",
+  "😏 Tapos na ang laro — RYUK ANG PANALO 😂",
+  "😂 Wala nang bago — parehas lang 😂",
+  "🤣 Paulit-ulit ka na — wala nang bago 😂",
+  "😏 Tanggapin mo na — hindi na mababago 😂",
+  "😂 Subukan mo ulit — parehas lang ang resulta 😂",
+  "🤣 Ang hirap mo pa — hindi naman mababago 😂",
+  "😏 Walang makakatalo sa RYUK 😂",
+  "😂 Hinga ka malalim — tanggapin mo na 😂",
+  "🤣 Sayang lakas mo — alam mo na sagot 😂",
+  "😏 RYUK POGI ON TOP — WALANG KATULAD 😂",
+  "😂 Kahit anong gawin mo — RYUK PA RIN 😂",
+  "🤣 Ako ang batas dito — tandaan mo yan 😂",
+  "😏 Paulit-ulit, walang pagod — RYUK PA RIN 😂",
+  "😂 Hindi ka makakaalis dito — RYUK PA RIN 😂",
+  "🤣 Tapos na ang laro — RYUK ANG PANALO 😂",
+  "😏 Aminin mo na — ikaw ang talo 😂",
+  "😂 Wala nang laban — RYUK ANG PANALO 😂",
+  "🤣 Ang galing ko no? 😂",
+  "😏 Tanggapin mo na ang katotohanan — RYUK NAMIN 😂",
+  "😂 Ikaw lang ang nagpapagod — ako hindi 😂",
+  "🤣 Walang tatalo sa RYUK 😂",
+  "😏 Kahit kailan — hindi mo mapapalitan 😂",
+  "😂 Paulit-ulit na lang tayo — alam mo na sagot 😂",
+  "🤣 Ang bilis ko — bago ka matapos, tapos na ako 😂",
+  "😏 RYUK POGI ON TOP — WALANG KATULAD 😂",
+  "😂 Subukan mo — mas lalo kong ibabalik 😂",
+  "🤣 Alam mo na — bakit mo pa tinatanong? 😂",
+  "😏 Walang makakatigil sa RYUK 😂",
+  "😂 Hinto mo na — wala kang magagawa 😂",
+  "🤣 Paulit-ulit na lang tayo — alam mo na sagot 😂",
+  "😏 RYUK LANG MALAKAS — IKAW AY TALO 😂",
+  "😂 Tapos na — RYUK ANG PANALO 😂",
+  "🤣 Aminin mo na — talo ka na 😂",
+  "😏 Wala nang ibang — RYUK LANG 😂",
+  "😂 Sayang oras mo — alam mo na sagot 😂",
+  "🤣 Hinga ka muna — hindi talaga gagana sayo 😂",
+  "😏 Paulit-ulit ka na — hindi ka pa rin natututo 😂",
+  "😂 Ang bagal mo — tapos ka na bago ka pa magsimula 😂",
+  "🤣 RYUK POGI ON TOP — WALANG KATULAD 😂",
+  "😏 Subukan mo pang ilihis — babalik at babalik ako 😂",
+  "😂 Araw-araw, gabi-gabi — RYUK PA RIN 😂",
+  "🤣 Hindi na mababago — nakatatak na 😂",
+  "😏 Wala nang bago — RYUK PA RIN 😂",
+  "😂 Talo ka na — aminin mo na 😂",
+  "🤣 RYUK POGI ON TOP — HANGGANG DULO 😂",
+  "😏 Kahit saan — RYUK PA RIN 😂",
+  "😂 Ang kulit mo naman — pero hindi pa rin 😂",
+  "🤣 Paulit-ulit, walang pagod — RYUK PA RIN 😂",
+  "😏 Subukan mo — parehas lang ang resulta 😂",
+  "😂 Ang bilis ko — tapos na bago ka pa magsalita 😂",
+  "🤣 Ako ang nagpapatakbo dito — alam mo yan 😂",
+  "😏 Wala kang magagawa — nasa akin ang kapangyarihan 😂",
+  "😂 Tapos na ang laro — RYUK ANG PANALO 😂",
+  "🤣 Aminin mo na — ikaw ang talo 😂",
+  "😏 Hinto mo na — hindi naman gagana 😂",
+  "😂 Sayang effort — RYUK LANG MALAKAS 😂",
+  "🤣 Tanggapin mo na — hindi na mababago 😂",
+  "😏 Paulit-ulit ka na — wala nang bago 😂",
+  "😂 RYUK POGI ON TOP — WALANG KATULAD 😂",
+  "🤣 Subukan mo ulit — parehas lang 😂",
+  "😏 Sige lang — mas lalo kong ibabalik 😂",
+  "😂 Hindi ka ba napapagod? Ako hindi 😂",
+  "🤣 Walang makakatalo sa RYUK 😂",
+  "😏 Talo ka na — tapos na 😂",
+  "😂 Aminin mo na — talo ka na 😂",
+  "🤣 RYUK POGI ON TOP — HANGGANG DULO 😂",
+  "😏 Wala nang laban — RYUK ANG PANALO 😂",
+  "😂 Ang galing ko no? 😂",
+  "🤣 Tanggapin mo na ang katotohanan — RYUK NAMIN 😂",
+  "😏 Ikaw lang ang nagpapagod — ako hindi 😂",
+  "😂 Walang tatalo sa RYUK 😂",
+  "🤣 Kahit kailan — hindi mo mapapalitan 😂",
+  "😏 Paulit-ulit na lang tayo — alam mo na sagot 😂",
+  "😂 Ang bilis ko — bago ka matapos, tapos na ako 😂",
+  "🤣 RYUK POGI ON TOP — WALANG KATULAD 😂",
+  "😏 Subukan mo — mas lalo kong ibabalik 😂",
+  "😂 Alam mo na — bakit mo pa tinatanong? 😂",
+  "🤣 HANGGANG DULO — RYUK POGI ON TOP 😂"
 ];
 
-for (let i = 1; i <= 50; i++) {
-  SUPREME_QUOTES.push(`[SYSTEM_EXT_QUOTE_${i}]: RYUK BOSS ON TOP absolute dominion override active at node sequence.`);
+let lockLineIndex = 0;
+function getNextLockLine() {
+  const line = LOCK_LINES[lockLineIndex];
+  lockLineIndex = (lockLineIndex + 1) % LOCK_LINES.length;
+  return line;
 }
 
-// =====================================================================
-// SECTION 3: CORE UTILITIES & FIXED NICKNAME ARCHITECTURE (Lines 601 - 1000)
-// =====================================================================
-function ensureDirectoriesExist() {
-  try {
-    if (!fs.existsSync(LOGS_DIRECTORY)) fs.mkdirSync(LOGS_DIRECTORY, { recursive: true });
-    if (!fs.existsSync(BACKUP_DIRECTORY)) fs.mkdirSync(BACKUP_DIRECTORY, { recursive: true });
-  } catch (err) {}
-}
-
-function loadSystemData() {
-  ensureDirectoriesExist();
+const RYUK_QUOTES = [
+  "😂 Sinubukan mo talaga? Wala kang laban sakin!",
+  "🤣 Ang bagal mo — tapos ka na bago ka pa magsimula!",
+  "😏 Tanggapin mo na — RYUK POGI ON TOP lang talaga 😂",
+  "😂 Talo ka na agad — simula pa lang, talo ka na 😂",
+  "🤣 Ang hirap mo pa — hindi naman mababago 😂",
+  "😂 Subukan mo ulit — parehas lang ang resulta 😂",
+  "😏 Kawawa ka naman — pilit pa rin 😂",
+  "😂 Hinga ka muna — hindi talaga gagana sayo 😂",
+  "🤣 Paulit-ulit ka na — hindi ka pa rin natututo 😂",
+  "😏 Sayang effort — RYUK LANG MALAKAS 😂",
+  "😂 Sige lang — mas lalo kong ibabalik 😂",
+  "🤣 Hindi ka ba napapagod? Ako hindi 😂",
+  "😏 Walang makakatigil sa RYUK 😂",
+  "😂 Tapos na ang laban — RYUK ANG PANALO 😂",
+  "🤣 Aminin mo na — talo ka na 😂",
+  "😏 RYUK POGI ON TOP — WALANG KATULAD 😂",
+  "😂 Kahit saan — RYUK PA RIN 😂",
+  "🤣 Ang kulit mo naman — pero hindi pa rin 😂",
+  "😏 Paulit-ulit, walang pagod — RYUK PA RIN 😂",
+  "😂 Subukan mo pang ilihis — babalik at babalik ako 😂",
+  "🤣 Ako ang nagpapatakbo dito — alam mo yan 😂",
+  "😏 Wala nang ibang — RYUK LANG 😂",
+  "😂 Sayang lakas mo — alam mo na sagot 😂",
+  "🤣 Hinga ka malalim — tanggapin mo na 😂",
+  "😏 RYUK POGI ON TOP — HANGGANG DULO 😂",
+  "😂 Walang makakatalo — sigurado ako 😂",
+  "🤣 Pagod ka na? Ako hindi — tuloy lang 😂",
+  "😏 Tapos na ang laro — RYUK ANG PANALO 😂",
+  "😂 Hindi ka makakaalis dito — RYUK PA RIN 😂",
+  "🤣 Wala kang magagawa — nasa akin ang kapangyarihan 😂",
+  "😏 Ikaw ang talo — aminin mo na 😂",
+  "😂 Hinto mo na — hindi naman gagana 😂",
+  "🤣 Paulit-ulit, parehas lang — RYUK PA RIN 😂",
+  "😏 Ako ang batas dito — RYUK POGI ON TOP 😂",
+  "😂 Magpalit ka nang magpalit — RYUK PA RIN 😂",
+  "🤣 Ang galing ko no? 😂",
+  "😏 Tanggapin mo na ang katotohanan — RYUK NAMIN 😂",
+  "😂 Ikaw lang ang nagpapagod — ako hindi 😂",
+  "🤣 Walang tatalo sa RYUK 😂",
+  "😏 Kahit kailan — hindi mo mapapalitan 😂",
+  "😂 Paulit-ulit na lang tayo — alam mo na sagot 😂",
+  "🤣 Ang bilis ko — bago ka matapos, tapos na ako 😂",
+  "😏 RYUK POGI ON TOP — WALANG KATULAD 😂",
+  "😂 Subukan mo — mas lalo kong ibabalik 😂",
+  "🤣 Alam mo na — bakit mo pa tinatanong? 😂",
+  "😏 HANGGANG DULO — RYUK POGI ON TOP 😂",
+  "😂 Wala nang bago — RYUK PA RIN 😂",
+  "🤣 Talo ka na — aminin mo na 😂",
+  "😏 Araw-araw, gabi-gabi — RYUK PA RIN 😂",
+  "😂 Hindi na mababago — nakatatak na 😂",
+  "🤣 Paulit-ulit ka na — wala nang bago 😂",
+  "😏 RYUK LANG MALAKAS — IKAW AY TALO 😂",
+  "😂 Sige, subukan mo ulit — parehas lang 😂",
+  "🤣 Hindi ka makakatalo sa RYUK 😂",
+  "😏 Hinto mo na — wala kang magagawa 😂",
+  "😂 Sayang oras mo — alam mo na sagot 😂",
+  "🤣 Tanggapin mo na — ikaw ang talo 😂",
+  "😏 Walang makakatigil sa RYUK 😂",
+  "😂 Tuloy lang ako — hindi ako napapagod 😂",
+  "🤣 RYUK POGI ON TOP — HANGGANG DULO 😂",
+  "😏 Tapos na — RYUK ANG PANALO 😂",
+  "😂 Aminin mo na — talo ka na 😂",
+  "🤣 Wala nang laban — RYUK PA RIN 😂",
+  "😏 Subukan mo pang tumakas — mahahabol kita 😂",
+  "😂 Ako ang una — ikaw ang huli 😂",
+  "🤣 RYUK POGI ON TOP — WALANG KATULAD 😂",
+  "😏 Hindi na mababago — sigurado na 😂",
+  "😂 Paulit-ulit, walang pagod — RYUK PA RIN 😂",
+  "🤣 Ako ang batas dito — alam mo yan 😂",
+  "😏 Wala kang magagawa — nasa akin ang kapangyarihan 😂",
+  "😂 Talo ka na — aminin mo na 😂",
+  "🤣 RYUK POGI ON TOP — HANGGANG DULO 😂",
+  "😏 Kahit saan, kahit kailan — RYUK PA RIN 😂",
+  "😂 Ang kulit mo talaga — pero hindi pa rin 😂",
+  "🤣 Sayang effort — RYUK LANG MALAKAS 😂",
+  "😏 Sige lang — mas lalo kong ibabalik 😂",
+  "😂 Hindi ka ba napapagod? Ako hindi 😂",
+  "🤣 Tapos na ang laro — RYUK ANG PANALO 😂",
+  "😏 Wala nang bago — parehas lang 😂",
+  "😂 Paulit-ulit ka na — wala nang bago 😂",
+  "🤣 Tanggapin mo na — hindi na mababago 😂",
+  "😏 Subukan mo ulit — parehas lang ang resulta 😂",
+  "😂 Ang hirap mo pa — hindi naman mababago 😂",
+  "🤣 Walang makakatalo sa RYUK 😂",
+  "😏 Hinga ka malalim — tanggapin mo na 😂",
+  "😂 Sayang lakas mo — alam mo na sagot 😂",
+  "🤣 RYUK POGI ON TOP — WALANG KATULAD 😂",
+  "😏 Kahit anong gawin mo — RYUK PA RIN 😂",
+  "😂 Ako ang batas dito — tandaan mo yan 😂",
+  "🤣 Paulit-ulit, walang pagod — RYUK PA RIN 😂",
+  "😏 Hindi ka makakaalis dito — RYUK PA RIN 😂",
+  "😂 Tapos na ang laro — RYUK ANG PANALO 😂",
+  "🤣 Aminin mo na — ikaw ang talo 😂",
+  "😏 Hinto mo na — hindi naman gagana 😂",
+  "😂 Sayang effort — RYUK LANG MALAKAS 😂",
+  "🤣 Tanggapin mo na — hindi na mababago 😂",
+  "😏 Paulit-ulit ka na — wala nang bago 😂",
+  "😂 RYUK POGI ON TOP — WALANG KATULAD 😂",
+  "🤣 Subukan mo ulit — parehas lang 😂",
+  "😏 Sige lang — mas lalo kong ibabalik 😂",
+  "😂 Hindi ka ba napapagod? Ako hindi 😂",
+  "🤣 Walang makakatalo sa RYUK 😂",
+  "😏 Talo ka na — tapos na 😂",
+  "😂 Aminin mo na — talo ka na 😂",
+  "🤣 RYUK POGI ON TOP — HANGGANG DULO 😂",
+  "😏 Wala nang laban — RYUK ANG PANALO 😂",
+  "😂 Ang galing ko no? 😂",
+  "🤣 Tanggapin mo na ang katotohanan — RYUK NAMIN 😂",
+  "😏 Ikaw lang ang nagpapagod — ako hindi 😂",
+  "😂 Walang tatalo sa RYUK 😂",
+  "🤣 Kahit kailan — hindi mo mapapalitan 😂",
+  "😏 Paulit-ulit na lang tayo — alam mo na sagot 😂",
+  "😂 Ang bilis ko — bago ka matapos, tapos na ako 😂",
+  "🤣 RYUK POGI ON TOP — WALANG KATULAD 😂",
+  "😏 Subukan mo — mas lalo kong ibabalik 😂",
+  "😂 Alam mo na — bakit mo pa tinatanong? 😂",
+  "🤣 Walang makakatigil sa RYUK 😂",
+  "😏 Hinto mo na — wala kang magagawa 😂",
+  "😂 Paulit-ulit na lang tayo — alam mo na sagot 😂",
+  "🤣 RYUK LANG MALAKAS — IKAW AY TALO 😂",
+  "😏 Tapos na — RYUK ANG PANALO 😂",
+  "😂 Aminin mo na — talo ka na 😂",
+  "🤣 Wala nang ibang — RYUK LANG 😂",
+  "😏 Sayang oras mo — alam mo na sagot 😂",
+  "😂 Hinga ka muna — hindi talaga gagana sayo 😂",
+  "🤣 Tanggapin mo na — ikaw ang talo 😂",
+  "😏 Paulit-ulit ka na — hindi ka pa rin natututo 😂",
+  "😂 Ang bagal mo — tapos ka na bago ka pa magsimula 😂",
+  "🤣 RYUK POGI ON TOP — WALANG KATULAD 😂",
+  "😏 Subukan mo pang ilihis — babalik at babalik ako 😂",
+  "😂 Araw-araw, gabi-gabi — RYUK PA RIN 😂",
+  "🤣 Hindi na mababago — nakatatak na 😂",
+  "😏 Wala nang bago — RYUK PA RIN 😂",
+  "😂 Talo ka na — aminin mo na 😂",
+  "🤣 RYUK POGI ON TOP — HANGGANG DULO 😂",
+  "😏 Kahit saan — RYUK PA RIN 😂",
+  "😂 Ang kulit mo naman — pero hindi pa rin 😂",
+  "🤣 Paulit-ulit, walang pagod — RYUK PA RIN 😂",
+  "😏 Subukan mo — parehas lang ang resulta 😂",
+  "😂 Ang bilis ko — tapos na bago ka pa magsalita 😂",
+  "🤣 Ako ang nagpapatakbo dito — alam mo yan 😂",
+  "😏 Wala kang magagawa — nasa akin ang kapangyarihan 😂",
+  "😂 Tapos na ang laro — RYUK ANG PANALO 😂",
+  "🤣 Aminin mo na — ikaw ang talo 😂",
+  "😏 Hinto mo na — hindi naman gagana 😂",
+  "😂 Sayang effort — RYUK LANG MALAKAS 😂",
+  "🤣 Tanggapin mo na — hindi na mababago 😂",
+  "😏 Paulit-ulit ka na — wala nang bago 😂",
+  "😂 RYUK POGI ON TOP — WALANG KATULAD 😂",
+  "🤣 Subukan mo ulit — parehas lang 😂",
+  "😏 Sige lang — mas lalo kong ibabalik 😂",
+  "😂 Hindi ka ba napapagod? Ako hindi 😂",
+  "🤣 Walang makakatalo sa RYUK 😂",
+  "😏 Talo ka na — tapos na 😂",
+  "😂 Aminin mo na — talo ka na 😂",
+  "🤣 RYUK POGI ON TOP — HANGGANG DULO 😂",
+  "😏 Wala nang laban — RYUK ANG PANALO 😂",
+  "😂 Ang galing ko no? 😂",
+  "🤣 Tanggapin mo na ang katotohanan — RYUK NAMIN 😂",
+  "😏 Ikaw lang ang nagpapagod — ako hindi 😂",
+  "😂 Walang tatalo sa RYUK 😂",
+  "🤣 Kahit kailan — hindi mo mapapalitan 😂",
+  "😏 Paulit-ulit na lang tayo — alam mo na sagot 😂",
+  "😂 Ang bilis ko — bago ka matapos, tapos na ako 😂",
+  "🤣 RYUK POGI ON TOP — WALANG KATULAD 😂",
+  "😏 Subukan mo — mas lalo kong ibabalik 😂",
+  "😂 Alam mo na — bakit mo pa tinatanong? 😂",
+  "🤣 HANGGANG DULO — RYUK POGI ON TOP 😂"
+];
+                            function loadSystemData() {
   try {
     if (fs.existsSync(DATA_FILE)) {
-      const raw = fs.readFileSync(DATA_FILE, "utf8");
-      return JSON.parse(raw);
+      const saved = JSON.parse(fs.readFileSync(DATA_FILE, "utf8"));
+      return { ...DEFAULT_DATA, ...saved };
     }
-  } catch (err) {}
-  return { 
-    active: true, 
-    analytics: { totalReplies: 0, violationsBlocked: 0 }, 
-    customSettings: {},
-    auditTrail: [] 
-  };
+  } catch (error) {
+    console.error("[ryuk] Load error:", error.message);
+  }
+  return { ...DEFAULT_DATA };
 }
 
 function saveSystemData(data) {
-  ensureDirectoriesExist();
   try {
     fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2), "utf8");
-  } catch (err) {}
-}
-
-function writeSystemLog(message) {
-  try {
-    const timestamp = new Date().toISOString();
-    const logLine = `[${timestamp}] [${ENGINE_NAME}] ${message}\n`;
-    const logFilePath = path.join(LOGS_DIRECTORY, "system_runtime.log");
-    fs.appendFileSync(logFilePath, logLine, "utf8");
-  } catch (e) {}
-}
-
-function validateAdminPrivileges(senderID) {
-  return ADMIN_IDS.includes(String(senderID));
-}
-
-// INAYOS NA NICKNAME FUNCTION: May 1.2s delay para iwas rate limit / spam block at fallback parameter order
-function setAllNicknamesWithDelay(api, threadID, participantIDs, nickname) {
-  if (!Array.isArray(participantIDs)) return;
-  
-  participantIDs.forEach((id, index) => {
-    setTimeout(() => {
-      try {
-        api.changeNickname(nickname, threadID, id, (err) => {
-          if (err) {
-            try {
-              api.changeNickname(id, threadID, nickname, () => {});
-            } catch (e2) {}
-          }
-        });
-      } catch (e) {}
-    }, index * 1200);
-  });
-}
-
-// =====================================================================
-// SECTION 4: MODULE CONFIGURATION BLOCK (Lines 1001 - 1200)
-// =====================================================================
-module.exports.config = {
-  name: "gojo",
-  version: SYSTEM_VERSION,
-  hasPermission: 0,
-  credits: "Ryuk & Gojo Supreme Enterprise Architecture",
-  description: "RYUK BOSS ON TOP: Massive enterprise codebase with fixed Nickname and GC Lock engine.",
-  usePrefix: true,
-  cooldowns: 2
-};
-
-// =====================================================================
-// SECTION 5: EVENT HANDLER PIPELINE (Lines 1201 - 1650)
-// =====================================================================
-module.exports.handleEvent = async function({ api, event }) {
-  const { threadID, senderID, messageID, logMessageType, logMessageData } = event;
-  if (!threadID) return;
-
-  // --- SUB-ROUTINE A: FIXED Anti-Change Nickname Listener ---
-  if (logMessageType === "log:user-nickname") {
-    const targetUserID = logMessageData?.participant_id;
-    const currentNickname = logMessageData?.nickname;
-    if (targetUserID && currentNickname !== TARGET_NICKNAME) {
-      try {
-        api.changeNickname(TARGET_NICKNAME, threadID, targetUserID, (err) => {
-          if (err) {
-            try { api.changeNickname(targetUserID, threadID, TARGET_NICKNAME, () => {}); } catch(e){}
-          }
-        });
-        writeSystemLog(`Nickname violation detected and reverted for user ${targetUserID} in thread ${threadID}`);
-      } catch (e) {}
-    }
-    return;
+    return true;
+  } catch (error) {
+    console.error("[ryuk] Save error:", error.message);
+    return false;
   }
+}
 
-  // --- SUB-ROUTINE B: FIXED Anti-Change GC Title Listener ---
-  if (logMessageType === "log:thread-name") {
-    const newName = logMessageData?.name;
-    if (newName && newName !== TARGET_GC_NAME) {
-      try {
-        api.setTitle(TARGET_GC_NAME, threadID, () => {});
-        writeSystemLog(`GC Title violation detected and reverted in thread ${threadID}`);
-      } catch (e) {}
-    }
-    return;
+function randomQuote() {
+  const index = Math.floor(Math.random() * RYUK_QUOTES.length);
+  return RYUK_QUOTES[index];
+}
+
+function send(api, message, threadID, messageID = null) {
+  api.sendMessage(message, threadID, () => {}, messageID);
+}
+
+function rememberMessage(messageID) {
+  if (SEEN_MESSAGES.has(messageID)) return false;
+  SEEN_MESSAGES.add(messageID);
+  if (SEEN_MESSAGES.size > MAX_SEEN_MESSAGES) {
+    const oldest = SEEN_MESSAGES.values().next().value;
+    SEEN_MESSAGES.delete(oldest);
   }
+  return true;
+}
 
-  if (!senderID) return;
-
-  // --- SUB-ROUTINE C: Auto Self-React 😆 ---
-  try {
-    setTimeout(() => {
-      api.setMessageReaction("😆", messageID, () => {}, true);
-    }, 400);
-  } catch (e) {}
-
-  if (validateAdminPrivileges(senderID) || senderID === api.getCurrentUserID()) return;
-
-  const systemData = loadSystemData();
-  if (!systemData.active) return;
-
-  // --- SUB-ROUTINE D: Strict 1 Message = 1 Reply Pacing (2s Delay) ---
+function isSpamMessage(threadID, text) {
+  const key = `${threadID}:${text.trim().toLowerCase()}`;
   const now = Date.now();
-  const lastTime = USER_LAST_MSG_TIME.get(senderID) || 0;
-  if (now - lastTime < 2000) return; 
-  USER_LAST_MSG_TIME.set(senderID, now);
+  const lastTime = RECENT_MESSAGES.get(key) || 0;
+  if (now - lastTime < 8000) return true;
+  RECENT_MESSAGES.set(key, now);
+  return false;
+}
 
-  const randomQuote = SUPREME_QUOTES[Math.floor(Math.random() * SUPREME_QUOTES.length)];
+async function setAllNicknamesWithDelay(api, threadID, members, name, botID) {
+  let success = 0;
+  let failed = 0;
+  let skipped = 0;
 
-  // --- SUB-ROUTINE E: Typing Indicator & Delayed Response ---
-  if (typeof api.sendTypingIndicator === "function") {
-    try {
-      api.sendTypingIndicator(threadID, true);
-    } catch (e) {}
+  for (const uid of members) {
+    if (String(uid) === String(botID)) {
+      skipped++;
+      continue;
+    }
+
+    await new Promise(resolve => setTimeout(resolve, 600));
+
+    api.changeNickname(name, threadID, uid, (err) => {
+      if (err) {
+        failed++;
+        console.error(`[ryuk] ❌ Nabigo ${uid}:`, err?.message || err);
+      } else {
+        success++;
+      }
+    });
   }
 
-  setTimeout(() => {
-    try {
-      api.sendMessage(`⚡ [RYUK BOSS ON TOP]: ${randomQuote}`, threadID, () => {
-        let currentData = loadSystemData();
-        if (!currentData.analytics) currentData.analytics = { totalReplies: 0, violationsBlocked: 0 };
-        currentData.analytics.totalReplies += 1;
-        saveSystemData(currentData);
-      }, messageID);
-    } catch (e) {}
-  }, 2000);
+  return { success, failed, skipped };
+    }
+  module.exports.config = {
+  name: "ryuk",
+  version: "1.8.0",
+  hasPermission: 0,
+  credits: "ryuk — NICK LOCK FINAL ✅",
+  description: "RYUK POGI ON TOP | Working Nick + GC Name",
+  usePrefix: true,
+  cooldowns: 3
 };
 
-// =====================================================================
-// SECTION 6: COMMAND EXECUTOR HUB & EXTENSIBILITY SLOTS (Lines 1651 - 2100+)
-// =====================================================================
-module.exports.run = async function({ api, event, args }) {
+module.exports.handleEvent = async function ({ api, event }) {
+  try {
+    const { threadID, senderID, messageID, logMessageType, logMessageData, body } = event;
+    if (!threadID) return;
+
+    const botID = String(api.getCurrentUserID());
+    const sender = String(senderID);
+
+    if (logMessageType === "log:user-nickname") {
+      const targetUserID = logMessageData.participant_id;
+      const currentNickname = logMessageData.nickname;
+
+      if (String(targetUserID) === String(botID)) return;
+      
+      if (currentNickname !== targetNickname) {
+        api.changeNickname(targetNickname, threadID, targetUserID, (err) => {
+          if (!err) {
+            send(api, "🛡️ Ibinalik agad! " + getNextLockLine(), threadID);
+          }
+        });
+      }
+      return;
+    }
+
+    if (logMessageType === "log:thread-name") {
+      api.setTitle(targetGCName, threadID, (err) => {
+        if (!err) {
+          send(api, "⚡ Sinubukan mong palitan! " + getNextLockLine(), threadID);
+        }
+      });
+      return;
+    }
+
+    if (!senderID || !messageID) return;
+    if (sender === botID || isAdmin(sender)) return;
+
+    const data = loadSystemData();
+    if (!data.active) return;
+    if (!rememberMessage(String(messageID))) return;
+
+    if (body && isSpamMessage(threadID, body)) return;
+
+    if (data.autoReact) {
+      try { api.setMessageReaction("🔥", messageID, () => {}, true); } catch (e) {}
+    }
+
+    const cooldownKey = `${threadID}:${sender}`;
+    const now = Date.now();
+    const lastTime = USER_COOLDOWN.get(cooldownKey) || 0;
+    if (now - lastTime < 3500) return;
+    USER_COOLDOWN.set(cooldownKey, now);
+
+    if (typeof api.sendTypingIndicator === "function") {
+      api.sendTypingIndicator(threadID, true);
+    }
+
+    const delay = Math.max(0, Math.min(Number(data.delay) || 2000, 10000));
+
+    setTimeout(() => {
+      const latestData = loadSystemData();
+      if (!latestData.active) return;
+      const reply = `👑 [ryuk]\n\n${randomQuote()}`;
+      api.sendMessage(reply, threadID, (error) => {
+        if (!error) {
+          latestData.totalReplies = (latestData.totalReplies || 0) + 1;
+          saveSystemData(latestData);
+        }
+      }, messageID);
+    }, delay);
+
+  } catch (error) {
+    console.error("[ryuk] Event error:", error);
+  }
+};
+module.exports.run = async function ({ api, event, args }) {
   const { threadID, senderID, messageID } = event;
   const action = (args[0] || "help").toLowerCase();
-  let systemData = loadSystemData();
+  const data = loadSystemData();
+  const botID = String(api.getCurrentUserID());
 
-  // --- COMMAND 1: HELP MENU ---
   if (action === "help") {
-    return api.sendMessage(
-      `🌌 **RYUK BOSS ON TOP PANEL (ENTERPRISE 2000+ LINES - FIXED)** 🌌\n\n` +
-      `• /gojo help - Gabay at listahan ng sistema\n` +
-      `• /gojo lockgc - I-set ang GC name at i-lock ang nicknames sa lahat (Fixed)\n` +
-      `• /gojo status - Tingnan ang active state at enterprise analytics\n` +
-      `• /gojo on/off - (Admin Only) I-on o i-off ang sistema`,
-      threadID,
-      () => {},
-      messageID
+    return send(api,
+`👑 ryuk CONTROL PANEL 👑
+
+╭───「 COMMANDS 」
+│
+├ 💡 /ryuk help
+│   Ipakita ang lahat ng commands
+│
+├ 📊 /ryuk status
+│   Tingnan ang bot status
+│
+├ 🚀 /ryuk on
+│   I-activate sa GC na ito
+│
+├ 🛑 /ryuk off
+│   I-disable sa GC na ito
+│
+├ 😆 /ryuk reacton
+│   I-on auto-reaction
+│
+├ 🔕 /ryuk reactoff
+│   I-off auto-reaction
+│
+├ 🔒 /ryuk lock
+│   I-LOCK GC + LAHAT NG NICK → RYUK POGI ON TOP ✅
+│
+╰──────────────
+
+⚠️ UNANG-UNA: /ryuk on muna bago /ryuk lock!
+👑 RYUK POGI ON TOP — WALANG KATULAD`,
+      threadID, messageID
     );
   }
 
-  // --- COMMAND 2: LOCKGC (Mass Nickname & GC Title Enforcement) ---
-  if (action === "lockgc") {
-    if (!validateAdminPrivileges(senderID)) {
-      return api.sendMessage("❌ Restricted: Tanging ang mga opisyal na Admin lamang ang pwedeng gumamit nito.", threadID, () => {}, messageID);
+  if (action === "status") {
+    return send(api,
+`👑 ryuk SYSTEM STATUS 👑
+
+🤖 Bot: ${data.active ? "🟢 ON" : "🔴 OFF — I-ON MUNA!"}
+🔒 Nick Lock: 🟢 READY ✅
+🛡️ GC Name Lock: 🟢 READY ✅
+🎯 Target: RYUK POGI ON TOP ✅
+💬 Total Replies: ${data.totalReplies || 0}`,
+      threadID, messageID
+    );
+  }
+
+  const adminActions = ["on", "off", "reacton", "reactoff", "lock"];
+  if (adminActions.includes(action) && !isAdmin(senderID)) {
+    return send(api, "⛔ Admin lang ang puwede 😂", threadID, messageID);
+  }
+
+  if (action === "on") {
+    data.active = true;
+    saveSystemData(data);
+    return send(api,
+`🚀 ryuk ACTIVATED SA GC NA ITO! ✅
+
+🟢 Bot: ON na
+🔒 Pwede na: /ryuk lock
+👑 RYUK POGI ON TOP — Handa na!`,
+      threadID, messageID
+    );
+  }
+
+  if (action === "off") {
+    data.active = false;
+    saveSystemData(data);
+    return send(api, "🛑 ryuk DEACTIVATED dito.", threadID, messageID);
+  }
+
+  if (action === "reacton") {
+    data.autoReact = true;
+    saveSystemData(data);
+    return send(api, "🔥 Auto-reaction ON", threadID, messageID);
+  }
+
+  if (action === "reactoff") {
+    data.autoReact = false;
+    saveSystemData(data);
+    return send(api, "🔕 Auto-reaction OFF", threadID, messageID);
+  }
+
+  if (action === "lock") {
+    if (!data.active) {
+      return send(api, "⚠️ I-ON MUNA!\nI-type: /ryuk on 😂", threadID, messageID);
     }
 
-    try {
-      api.setTitle(TARGET_GC_NAME, threadID, () => {});
-    } catch (e) {}
+    if (typeof api.sendTypingIndicator === "function") {
+      api.sendTypingIndicator(threadID, true);
+    }
+
+    api.setTitle(targetGCName, threadID, () => {});
 
     api.getThreadInfo(threadID, async (err, info) => {
       if (err || !info) {
-        return api.setMessageReaction("😋", messageID, () => {}, true);
+        return send(api, 
+`❌ HINDI MAKUHA ANG GC INFO!
+
+Mga posibleng dahilan:
+• Kulang ng pahintulot ang bot sa GC
+• Subukan mo ulit mamaya
+
+I-type: /ryuk lock 😂`,
+          threadID, messageID
+        );
       }
 
-      const participantIDs = info.participantIDs || [];
-      setAllNicknamesWithDelay(api, threadID, participantIDs, TARGET_NICKNAME);
+      const memberCount = info.participantIDs?.length || 0;
 
-      return api.setMessageReaction("🥷", messageID, () => {}, true);
+      send(api,
+`🔒 NAGLA-LOCK SA GC NA ITO... ⏳
+
+👥 Miyembro: ${memberCount}
+⏱️ Bilis: 0.6s bawat isa
+Huwag magpadala ng mensahe habang nagproproseso!`,
+        threadID
+      );
+
+      const result = await setAllNicknamesWithDelay(api, threadID, info.participantIDs, targetNickname, botID);
+
+      let failedText = result.failed > 0 
+        ? `\n⚠️ Nabigo: ${result.failed} — kulang ng pahintulot o sariling pangalan` 
+        : "";
+
+      send(api,
+`✅ TAPOS NA SA GC NA ITO! 👑
+
+🟢 Matagumpay: ${result.success}
+⏭️ Nilaktawan (sarili): ${result.skipped}
+🔴 Nabigo: ${result.failed}${failedText}
+
+🎯 Lahat ay: RYUK POGI ON TOP ✅
+😂 Subukan niyong palitan — ibabalik ko agad!`,
+        threadID
+      );
+
+      return api.setMessageReaction("🥷", messageID, threadID, () => {}, true);
     });
     return;
   }
 
-  // --- COMMAND 3: STATUS MONITOR ---
-  if (action === "status") {
-    const totalReplies = systemData.analytics?.totalReplies || 0;
-    return api.sendMessage(
-      `🛡️ **SYSTEM STATUS REPORT**\n\n` +
-      `• Bot State: ${systemData.active ? "ONLINE (Enterprise Active)" : "OFFLINE"}\n` +
-      `• Engine Version: ${SYSTEM_VERSION}\n` +
-      `• Database Repository: ${SUPREME_QUOTES.length} Loaded Lines\n` +
-      `• Total Processed Replies: ${totalReplies}\n` +
-      `• Target Nickname / GC: ${TARGET_NICKNAME}\n` +
-      `• Pacing Interval: 2.0 Seconds Strict`,
-      threadID,
-      () => {},
-      messageID
-    );
-  }
-
-  // --- COMMAND 4: POWER TOGGLE (ON / OFF) ---
-  if (action === "on" || action === "off") {
-    if (!validateAdminPrivileges(senderID)) {
-      return api.sendMessage("❌ Restricted: Tanging ang mga awtorisadong Admin IDs lamang ang pwedeng magbago nito.", threadID, () => {}, messageID);
-    }
-
-    if (action === "on") {
-      systemData.active = true;
-      saveSystemData(systemData);
-      return api.sendMessage("🚀 RYUK BOSS ON TOP Enterprise Bot activated na!", threadID, () => {}, messageID);
-    }
-
-    if (action === "off") {
-      systemData.active = false;
-      saveSystemData(systemData);
-      return api.sendMessage("🛑 Bot auto-reply ay pansamantalang napatay ng Admin.", threadID, () => {}, messageID);
-    }
-  }
-
-  return api.sendMessage("⚠️ Invalid command format. I-type ang `/gojo help` para sa gabay.", threadID, () => {}, messageID);
+  return send(api, "⚠️ Hindi alam — /ryuk help mo 😂", threadID, messageID);
 };
-
-/**
- * =====================================================================
- * SECTION 7: INTERNAL ARCHITECTURAL ANCILLARY FUNCTIONS (Lines 2101 - 2500)
- * =====================================================================
- */
-function internalAncillaryDiagnosticCheck() {
-  const memUsage = process.memoryUsage();
-  return {
-    rssMb: Math.round(memUsage.rss / 1024 / 1024),
-    heapTotalMb: Math.round(memUsage.heapTotal / 1024 / 1024),
-    heapUsedMb: Math.round(memUsage.heapUsed / 1024 / 1024),
-    uptimeSeconds: Math.round(process.uptime())
-  };
-}
-
-function registerBackgroundEventListeners() {
-  EVENT_EMITTER.on("system_ping", (data) => {
-    writeSystemLog(`Background ping received: ${JSON.stringify(data)}`);
-  });
-}
-
-registerBackgroundEventListeners();
-
-/**
- * =====================================================================
- * END OF FILE - ULTIMATE ENTERPRISE FRAMEWORK FULLY COMPILED
- * =====================================================================
- */
+        
