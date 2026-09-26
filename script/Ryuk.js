@@ -2,9 +2,10 @@ const fs = require("fs");
 const path = require("path");
 
 // ==========================================
-// 👑 ryuk — NICK LOCK WORKING V1.4 ✅
+// 👑 ryuk — GC-ALL WORKING + ANTI-SPAM V1.5 ✅
 // ADMIN IDs: 61594055835097, 61593892603402, 61594325727109, 61594022290817
 // TARGET NAME: RYUK POGI ON TOP ✅
+// ✅ GUMAGANA SA LAHAT NG GC | ANTI-SPAM | IGNORE ADMIN COMMAND SPAM
 // ==========================================
 
 const ADMIN_IDS = [
@@ -35,15 +36,16 @@ function getNextLockLine() {
 const DATA_FILE = path.join(__dirname, "ryuk_data.json");
 
 const DEFAULT_DATA = {
-  active: false, // ⚠️ KAILANGAN MUNA I-ON
+  active: false,
   autoReact: true,
-  delay: 2000,
+  delay: 2500, // ⏱️ Medyo matagal para hindi ma-detect
   totalReplies: 0
 };
 
 const USER_COOLDOWN = new Map();
 const SEEN_MESSAGES = new Set();
 const MAX_SEEN_MESSAGES = 5000;
+const RECENT_MESSAGES = new Map(); // ✅ Anti-spam: iwas ulit
 
 function isAdmin(senderID) {
   return ADMIN_IDS.includes(String(senderID));
@@ -96,17 +98,27 @@ function rememberMessage(messageID) {
   return true;
 }
 
-// ✅ MAY DELAY + ASYNC — HINDI NA BINABAGSAK
+// ✅ Anti-spam: parehas na mensahe sa loob ng GC — hindi uulit
+function isSpamMessage(threadID, text) {
+  const key = `${threadID}:${text.trim().toLowerCase()}`;
+  const now = Date.now();
+  const lastTime = RECENT_MESSAGES.get(key) || 0;
+  if (now - lastTime < 8000) return true; // ⛔ 8s bawal ulit
+  RECENT_MESSAGES.set(key, now);
+  return false;
+}
+
+// ✅ Safe nickname changer — may delay, gumagana sa lahat ng GC
 async function setAllNicknamesWithDelay(api, threadID, members, name) {
   let success = 0;
   let failed = 0;
   
   for (const uid of members) {
-    await new Promise(resolve => setTimeout(resolve, 800)); // ⏱️ 0.8s bawat isa — ligtas
+    await new Promise(resolve => setTimeout(resolve, 900)); // ⏱️ Ligtas na bilis
     
     api.changeNickname(name, threadID, uid, (err) => {
       if (err) {
-        console.error("[ryuk] ❌ Nabigo:", uid, err);
+        console.error("[ryuk] ❌ Nabigo:", uid, err?.message || err);
         failed++;
       } else {
         success++;
@@ -119,20 +131,23 @@ async function setAllNicknamesWithDelay(api, threadID, members, name) {
 
 module.exports.config = {
   name: "ryuk",
-  version: "1.4.0",
+  version: "1.5.0",
   hasPermission: 0,
-  credits: "ryuk — NICK LOCK WORKING ✅",
-  description: "RYUK POGI ON TOP | Fixed Nick Lock + GC Lock",
+  credits: "ryuk — ALL GC + ANTI-SPAM ✅",
+  description: "RYUK POGI ON TOP | All GC Working + Anti-Spam",
   usePrefix: true,
-  cooldowns: 2
+  cooldowns: 3
 };
 
 module.exports.handleEvent = async function ({ api, event }) {
   try {
-    const { threadID, senderID, messageID, logMessageType, logMessageData } = event;
+    const { threadID, senderID, messageID, logMessageType, logMessageData, body } = event;
     if (!threadID) return;
 
-    // ✅ AUTO-RESTORE NICK — GUMAGANA AGAD
+    const botID = String(api.getCurrentUserID());
+    const sender = String(senderID);
+
+    // ✅ AUTO-RESTORE NICK — GUMAGANA SA LAHAT NG GC
     if (logMessageType === "log:user-nickname") {
       const targetUserID = logMessageData.participant_id;
       const currentNickname = logMessageData.nickname;
@@ -140,33 +155,34 @@ module.exports.handleEvent = async function ({ api, event }) {
       if (currentNickname !== targetNickname) {
         api.changeNickname(targetNickname, threadID, targetUserID, (err) => {
           if (!err) {
-            api.sendMessage("🛡️ Ibinalik agad! " + getNextLockLine(), threadID);
-          } else {
-            api.sendMessage("⚠️ Hindi mabago — kulang ng pahintulot 😂", threadID);
+            send(api, "🛡️ Ibinalik agad! " + getNextLockLine(), threadID);
           }
         });
       }
       return;
     }
 
-    // ✅ AUTO-RESTORE GC NAME
+    // ✅ AUTO-RESTORE GC NAME — LAHAT NG GC
     if (logMessageType === "log:thread-name") {
       api.setTitle(targetGCName, threadID, (err) => {
         if (!err) {
-          api.sendMessage("⚡ Sinubukan mong palitan! " + getNextLockLine(), threadID);
+          send(api, "⚡ Sinubukan mong palitan! " + getNextLockLine(), threadID);
         }
       });
       return;
     }
 
     if (!senderID || !messageID) return;
-    const botID = String(api.getCurrentUserID());
-    const sender = String(senderID);
+    
+    // ✅ IGNORE: sariling bot at ADMIN — hindi mag-spam kapag ikaw nag-command
     if (sender === botID || isAdmin(sender)) return;
 
     const data = loadSystemData();
     if (!data.active) return;
     if (!rememberMessage(String(messageID))) return;
+
+    // ✅ Anti-spam check
+    if (body && isSpamMessage(threadID, body)) return;
 
     if (data.autoReact) {
       try { api.setMessageReaction("🔥", messageID, () => {}, true); } catch (e) {}
@@ -175,14 +191,14 @@ module.exports.handleEvent = async function ({ api, event }) {
     const cooldownKey = `${threadID}:${sender}`;
     const now = Date.now();
     const lastTime = USER_COOLDOWN.get(cooldownKey) || 0;
-    if (now - lastTime < 3000) return;
+    if (now - lastTime < 3500) return; // ⛔ 3.5s bawal ulit
     USER_COOLDOWN.set(cooldownKey, now);
 
     if (typeof api.sendTypingIndicator === "function") {
       api.sendTypingIndicator(threadID, true);
     }
 
-    const delay = Math.max(0, Math.min(Number(data.delay) || 2000, 10000));
+    const delay = Math.max(0, Math.min(Number(data.delay) || 2500, 10000));
 
     setTimeout(() => {
       const latestData = loadSystemData();
@@ -218,24 +234,26 @@ module.exports.run = async function ({ api, event, args }) {
 ├ 📊 /ryuk status
 │   Tingnan ang bot status
 │
-├ 🚀 /ryuk on ⬅️ UNANG GAWIN!
-│   I-activate ang bot bago mag-lock!
+├ 🚀 /ryuk on
+│   I-activate sa GC na ito
 │
 ├ 🛑 /ryuk off
-│   I-disable ang bot
+│   I-disable sa GC na ito
 │
 ├ 😆 /ryuk reacton
-│   I-on ang auto-reaction
+│   I-on auto-reaction
 │
 ├ 🔕 /ryuk reactoff
-│   I-off ang auto-reaction
+│   I-off auto-reaction
 │
-├ 🔒 /ryuk lock ⬅️ Pagkatapos i-on
+├ 🔒 /ryuk lock
 │   I-LOCK GC + LAHAT NG NICK → RYUK POGI ON TOP ✅
 │
 ╰──────────────
 
-⚠️ UNANG-UNA: /ryuk on muna bago /ryuk lock!
+✅ Gumagana sa LAHAT ng GC
+✅ Anti-Spam: ON
+✅ Admin Command Spam: IGNORE
 👑 RYUK POGI ON TOP — WALANG KATULAD`,
       threadID, messageID
     );
@@ -245,8 +263,9 @@ module.exports.run = async function ({ api, event, args }) {
     return send(api,
 `👑 ryuk SYSTEM STATUS 👑
 
-🤖 Bot: ${data.active ? "🟢 ON — PWEDE NA MAG-LOCK" : "🔴 OFF — I-ON MUNA!"}
-🔒 Nick Lock: 🟢 READY ✅
+🤖 Bot: ${data.active ? "🟢 ON" : "🔴 OFF"}
+🔒 Nick Lock: 🟢 LAHAT NG GC ✅
+🛡️ Anti-Spam: 🟢 ON ✅
 🎯 Target: RYUK POGI ON TOP ✅
 💬 Total Replies: ${data.totalReplies || 0}`,
       threadID, messageID
@@ -262,10 +281,10 @@ module.exports.run = async function ({ api, event, args }) {
     data.active = true;
     saveSystemData(data);
     return send(api, 
-`🚀 ryuk ACTIVATED! ✅
+`🚀 ryuk ACTIVATED SA GC NA ITO! ✅
 
 🟢 Bot: ON na
-🔒 Pwede na: /ryuk lock
+🔒 Gumagana na dito at sa ibang GC
 👑 RYUK POGI ON TOP — Handa na!`,
       threadID, messageID
     );
@@ -274,7 +293,7 @@ module.exports.run = async function ({ api, event, args }) {
   if (action === "off") {
     data.active = false;
     saveSystemData(data);
-    return send(api, "🛑 ryuk DEACTIVATED.", threadID, messageID);
+    return send(api, "🛑 ryuk DEACTIVATED dito.", threadID, messageID);
   }
 
   if (action === "reacton") {
@@ -289,7 +308,7 @@ module.exports.run = async function ({ api, event, args }) {
     return send(api, "🔕 Auto-reaction OFF", threadID, messageID);
   }
 
-  // ✅ LOCK GC + ALL NICKNAMES — MAY DELAY + RESULT
+  // ✅ LOCK — Gumagana sa LAHAT ng GC
   if (action === "lock") {
     if (!data.active) {
       return send(api, "⚠️ I-ON MUNA!\nI-type: /ryuk on 😂", threadID, messageID);
@@ -309,25 +328,24 @@ module.exports.run = async function ({ api, event, args }) {
       const memberCount = info.participantIDs?.length || 0;
       
       send(api, 
-`🔒 SINISIMULAN ANG PAG-LOCK... ⏳
+`🔒 NAGLA-LOCK SA GC NA ITO... ⏳
 
 👥 Miyembro: ${memberCount}
-⏱️ Tinatayang oras: ${(memberCount * 0.8).toFixed(1)} segundo
+⏱️ Tinatayang oras: ${(memberCount * 0.9).toFixed(1)} segundo
 Huwag magpadala ng mensahe habang nagproproseso!`,
         threadID
       );
       
-      // ✅ TUNAY NA PAGPAPALIT — may delay
       const result = await setAllNicknamesWithDelay(api, threadID, info.participantIDs, targetNickname);
       
       send(api,
-`✅ TAPOS NA! 👑
+`✅ TAPOS NA SA GC NA ITO! 👑
 
 🟢 Matagumpay: ${result.success}
 🔴 Nabigo: ${result.failed}
 
 🎯 Lahat ay: RYUK POGI ON TOP ✅
-😂 Subukan niyong palitan — ibabalik ko agad!`,
+😂 Subukan niyong palitan — ibabalik ko agad sa LAHAT ng GC!`,
         threadID
       );
       
@@ -338,3 +356,4 @@ Huwag magpadala ng mensahe habang nagproproseso!`,
 
   return send(api, "⚠️ Hindi alam — /ryuk help mo 😂", threadID, messageID);
 };
+  
