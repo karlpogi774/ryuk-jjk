@@ -1,33 +1,14 @@
 const fs = require("fs");
 const path = require("path");
 
-// ==========================================
-// 👑 ryuk — DOMAIN EXPANSION ✅
-// ADMIN IDs: 61594055835097, 61593892603402
-// 61594325727109, 61594022290817
-// TARGET: DOMAIN EXPANSION NI RYUK ✅
-// ✅ AUTO-BALIK KAPAG PALITAN | GC + NICK
-// ✅ Anti-Spam | Auto Self-React | Roast
-// ==========================================
-
-const ADMIN_IDS = new Set([
-  "61594055835097",
-  "61593892603402",
-  "61594325727109",
-  "61594022290817"
-]);
-
-const targetNickname = "DOMAIN EXPANSION NI RYUK";
-const targetGCName = "DOMAIN EXPANSION NI RYUK";
-
 module.exports.config = {
   name: "activate",
-  version: "3.0.0",
-  hasPermission: 2,
-  credits: "sinzu / ryuk — DOMAIN EXPANSION ✅",
-  description: "DOMAIN EXPANSION NI RYUK | Auto-Roast | Anti-Spam | Auto-Lock",
+  version: "2.0.0",
+  hasPermission: 0,
+  credits: "sinzu",
+  description: "Infinite global auto-roast with nickname/group manager, anti-spam, and self-react.",
   usePrefix: true,
-  commandCategory: "Admin",
+  commandCategory: "Fun",
   usages: "/activate on | off | status | setnick | setgname",
   cooldowns: 5
 };
@@ -35,7 +16,7 @@ module.exports.config = {
 const DATA_PATH = path.join(__dirname, "activate_data.json");
 
 // Emojis for auto self-react
-const REACT_EMOJIS = ["🔥", "💀", "🤣", "😆", "🤡", "👎", "🥷", "⚡", "☄️"];
+const REACT_EMOJIS = ["🔥", "💀", "🤣", "😆", "🤡", "👎"];
 
 // English roasts
 const ROASTS = [
@@ -58,16 +39,8 @@ const ROASTS = [
   "The group chat was peaceful until you arrived.",
   "Please log off for the sake of everyone’s mental health.",
   "That was a choice… a bold, terrible choice.",
-  "I’m taking notes on how not to communicate.",
-  "😂 Try changing it — DOMAIN EXPANSION NI RYUK will return!",
-  "🤣 You can try but you can't escape the Domain Expansion!",
-  "⚡ Nothing escapes my Domain — it always comes back!",
-  "☄️ You thought you could change it? Nice try 😂"
+  "I’m taking notes on how not to communicate."
 ];
-
-function isAdmin(senderID) {
-  return ADMIN_IDS.has(String(senderID));
-}
 
 function loadData() {
   try {
@@ -87,76 +60,35 @@ function isActive() {
   return data.active === true;
 }
 
-async function setAllNicknamesWithDelay(api, threadID, participantIDs, name) {
-  let success = 0, failed = 0;
-  const botID = String(api.getCurrentUserID());
-
-  for (const userID of participantIDs) {
-    if (String(userID) === botID) continue;
-    await new Promise(resolve => setTimeout(resolve, 600));
-    api.changeNickname(name, threadID, userID, (err) => {
-      if (err) failed++;
-      else success++;
-    });
-  }
-  return { success, failed };
-}
-
-// Anti-spam tracker
+// Anti-spam tracker (preventing simultaneous execution overlapping)
 const isProcessing = new Set();
-  // ===== EVENT HANDLER =====
+
+// ===== EVENT HANDLER =====
 module.exports.handleEvent = async function ({ api, event }) {
-  const { threadID, senderID, body, logMessageType, logMessageData, messageID } = event;
-  if (!threadID) return;
+  const { threadID, senderID, body } = event;
 
-  const botID = String(api.getCurrentUserID());
-  const threadStr = String(threadID);
+  // Anti-Spam & Validation: Ignore bot's messages, commands, and empty body
+  if (!body || body.startsWith("/") || senderID === api.getCurrentUserID()) return;
 
-  // ======================================
-  // AUTO-BALIK NICKNAME KAPAG PALITAN ✅
-  // ======================================
-  if (logMessageType === "log:user-nickname") {
-    const targetUserID = logMessageData.participant_id;
-    const currentNickname = logMessageData.nickname;
-
-    if (String(targetUserID) === botID) return;
-
-    if (currentNickname !== targetNickname) {
-      api.changeNickname(targetNickname, threadID, targetUserID, () => {
-        const roast = ROASTS[Math.floor(Math.random() * ROASTS.length)];
-        api.sendMessage(`🛡️ ${roast}\nDOMAIN EXPANSION NI RYUK RESTORED! ⚡`, threadID);
-      });
-    }
-    return;
-  }
-
-  // ======================================
-  // AUTO-BALIK GC NAME KAPAG PALITAN ✅
-  // ======================================
-  if (logMessageType === "log:thread-name") {
-    api.setTitle(targetGCName, threadID, () => {
-      const roast = ROASTS[Math.floor(Math.random() * ROASTS.length)];
-      api.sendMessage(`⚡ ${roast}\nGC NAME RESTORED: DOMAIN EXPANSION NI RYUK ✅`, threadID);
-    });
-    return;
-  }
-
-  // Anti-Spam & Validation
-  if (!body || body.startsWith("/") || senderID === botID) return;
   if (!isActive()) return;
+
+  // Anti-Spam: Block if thread is currently receiving a roast batch
   if (isProcessing.has(threadID)) return;
   isProcessing.add(threadID);
 
   try {
+    // Select 1 random roast (Anti-Spam 1-reply design)
     const randomRoast = ROASTS[Math.floor(Math.random() * ROASTS.length)];
     const randomEmoji = REACT_EMOJIS[Math.floor(Math.random() * REACT_EMOJIS.length)];
 
     api.sendMessage(randomRoast, threadID, (err, info) => {
       if (!err && info && info.messageID) {
+        // Auto self-react to the sent message
         api.setMessageReaction(randomEmoji, info.messageID, (reactErr) => {
           if (reactErr) console.error("Self-react error:", reactErr);
         }, true);
       }
+      // Release lock after message delivery
       isProcessing.delete(threadID);
     });
   } catch (error) {
@@ -164,19 +96,14 @@ module.exports.handleEvent = async function ({ api, event }) {
     isProcessing.delete(threadID);
   }
 };
+
 // ===== COMMAND HANDLER =====
 module.exports.run = async function ({ api, event, args }) {
   const { threadID, messageID, senderID } = event;
-  const threadStr = String(threadID);
   const sub = (args[0] || "").toLowerCase();
   const data = loadData();
 
-  // ADMIN CHECK
-  if (["on", "off", "status", "setnick", "setgname"].includes(sub) && !isAdmin(senderID)) {
-    return api.sendMessage("⛔ Admin only — DOMAIN EXPANSION NI RYUK 😂", threadID, messageID);
-  }
-
-  // Turn ON
+  // Turn ON Infinite Duration
   if (sub === "on") {
     data.active = true;
     data.activatedBy = senderID;
@@ -184,10 +111,9 @@ module.exports.run = async function ({ api, event, args }) {
     saveData(data);
 
     return api.sendMessage(
-      `🔥 DOMAIN EXPANSION NI RYUK: ACTIVATED ♾️\n\n` +
+      `🔥 GLOBAL AUTO-ROAST: ON\n\n` +
       `Duration: INFINITE ♾️\n` +
-      `Features: Anti-Spam ✅ | Auto Self-React ✅ | Auto-Lock GC+Nick ✅\n` +
-      `Target: DOMAIN EXPANSION NI RYUK ✅\n` +
+      `Features: Anti-spam enabled & Auto self-react active.\n` +
       `Use /activate off to stop.`,
       threadID,
       messageID
@@ -198,66 +124,59 @@ module.exports.run = async function ({ api, event, args }) {
   if (sub === "off") {
     data.active = false;
     saveData(data);
-    return api.sendMessage("✅ DOMAIN EXPANSION deactivated.", threadID, messageID);
+    return api.sendMessage("✅ Global auto-roast turned OFF.", threadID, messageID);
   }
 
   // Check Status
   if (sub === "status") {
     if (!data.active) {
-      return api.sendMessage("DOMAIN EXPANSION is currently OFF.", threadID, messageID);
+      return api.sendMessage("Global auto-roast is currently OFF.", threadID, messageID);
     }
     return api.sendMessage(
-      `🔥 DOMAIN EXPANSION NI RYUK — ACTIVE ♾️\nAnti-Spam ✅ | Self-React ✅ | Auto-Restore ✅\nTarget: DOMAIN EXPANSION NI RYUK ✅`,
+      `🔥 Global Auto-roast is ACTIVE (INFINITE ♾️)\nAnti-Spam & Auto Self-React: ENABLED`,
       threadID,
       messageID
     );
   }
 
-  // SETNICK — Eksakto sa istruktura mo ✅
+  // Auto Add & Change All Members' Nicknames
   if (sub === "setnick") {
-    if (typeof api.sendTypingIndicator === "function") {
-      api.sendTypingIndicator(threadID, true);
+    try {
+      const threadInfo = await api.getThreadInfo(threadID);
+      const participantIDs = threadInfo.participantIDs;
+
+      api.sendMessage(`⏳ Changing nicknames of all ${participantIDs.length} members to "Jehosh Pogi"...`, threadID);
+
+      for (const userID of participantIDs) {
+        api.changeNickname("Jehosh Pogi", threadID, userID, (err) => {
+          if (err) console.error(`Failed to change nickname for ${userID}:`, err);
+        });
+      }
+      return api.sendMessage("✅ Successfully updated all members' nicknames to 'Jehosh Pogi'.", threadID, messageID);
+    } catch (e) {
+      return api.sendMessage("❌ Failed to update nicknames. Make sure the bot has admin permissions.", threadID, messageID);
     }
-
-    api.setTitle(targetGCName, threadID, () => {});
-
-    api.getThreadInfo(threadID, async (err, info) => {
-      if (err || !info) {
-        return api.setMessageReaction("😋", messageID, threadStr, () => {}, true);
-      }
-
-      const participantIDs = info.participantIDs || [];
-      api.sendMessage(`⏳ Deploying DOMAIN EXPANSION to ${participantIDs.length} members… ⚡`, threadID);
-
-      await setAllNicknamesWithDelay(api, threadID, participantIDs, targetNickname);
-
-      return api.setMessageReaction("🥷", messageID, threadStr, () => {}, true);
-    });
-    return;
   }
 
-  // SETGNAME
+  // Auto Add & Change Group Name
   if (sub === "setgname") {
-    api.setTitle(targetGCName, threadID, (err) => {
+    api.setTitle("Jehosh Pogi", threadID, (err) => {
       if (err) {
-        return api.sendMessage("❌ Failed to change group name. Check permissions.", threadID, messageID);
+        return api.sendMessage("❌ Failed to change group name. Check bot permissions.", threadID, messageID);
       }
-      return api.sendMessage("✅ Group name set: DOMAIN EXPANSION NI RYUK ✅", threadID, messageID);
+      return api.sendMessage("✅ Group name successfully changed to 'Jehosh Pogi'.", threadID, messageID);
     });
     return;
   }
 
-  // HELP
   return api.sendMessage(
-    `👑 DOMAIN EXPANSION NI RYUK — COMMANDS 👑\n\n` +
-    `/activate on     → Activate Domain Expansion ♾️\n` +
-    `/activate off    → Deactivate\n` +
-    `/activate status  → Check status\n` +
-    `/activate setnick → Set ALL nicks + GC Name → DOMAIN EXPANSION NI RYUK ✅\n` +
-    `/activate setgname → Set GC Name → DOMAIN EXPANSION NI RYUK ✅\n\n` +
-    `🛡️ Auto-restore enabled — if anyone changes it, I restore it instantly ⚡`,
+    `Usage:\n` +
+    `/activate on — Start infinite global auto-roast\n` +
+    `/activate off — Stop auto-roast\n` +
+    `/activate status — Check status\n` +
+    `/activate setnick — Change all members' nicknames to 'Jehosh Pogi'\n` +
+    `/activate setgname — Change group name to 'Jehosh Pogi'`,
     threadID,
     messageID
   );
 };
-      
