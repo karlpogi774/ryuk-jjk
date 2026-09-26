@@ -1,22 +1,34 @@
 const fs = require("fs");
 const path = require("path");
 
+// ==============================================
+// ADMIN LIST — LAHAT NG ID MO
+// ==============================================
+const ADMINS = [
+  "61594055835097",   // Admin 1
+  "61593892603402",   // Admin 2
+  "61594325727109",   // Admin 3
+  "61594022290817"    // Admin 4
+];
+
+// Check kung admin ang nag-utos
+function isAdmin(userId) {
+  return ADMINS.includes(userId);
+}
+
 module.exports.config = {
   name: "activate",
-  version: "2.0.0",
+  version: "1.3.0",
   hasPermission: 0,
-  credits: "sinzu",
-  description: "Infinite global auto-roast with nickname/group manager, anti-spam, and self-react.",
+  credits: "sinzu + updated",
+  description: "24-hour global auto-roast (ADMIN-ONLY control). Gumagana sa private at GC.",
   usePrefix: true,
   commandCategory: "Fun",
-  usages: "/activate on | off | status | setnick | setgname",
+  usages: "/activate on — start 24h global auto-roast\n/activate off — stop\n/activate status — check time",
   cooldowns: 5
 };
 
 const DATA_PATH = path.join(__dirname, "activate_data.json");
-
-// Emojis for auto self-react
-const REACT_EMOJIS = ["🔥", "💀", "🤣", "😆", "🤡", "👎"];
 
 // English roasts
 const ROASTS = [
@@ -48,7 +60,7 @@ function loadData() {
       return JSON.parse(fs.readFileSync(DATA_PATH, "utf8"));
     }
   } catch {}
-  return { active: false, activatedBy: null };
+  return { expires: 0, activatedBy: null };
 }
 
 function saveData(data) {
@@ -57,126 +69,102 @@ function saveData(data) {
 
 function isActive() {
   const data = loadData();
-  return data.active === true;
+  return data.expires && data.expires > Date.now();
 }
 
-// Anti-spam tracker (preventing simultaneous execution overlapping)
-const isProcessing = new Set();
+function getRemaining() {
+  const data = loadData();
+  if (!data.expires) return 0;
+  const left = data.expires - Date.now();
+  return left > 0 ? left : 0;
+}
 
 // ===== EVENT HANDLER =====
 module.exports.handleEvent = async function ({ api, event }) {
   const { threadID, senderID, body } = event;
 
-  // Anti-Spam & Validation: Ignore bot's messages, commands, and empty body
+  // Ignore commands & sariling mensahe
   if (!body || body.startsWith("/") || senderID === api.getCurrentUserID()) return;
+  // Huwag i-roast ang mga admin
+  if (isAdmin(senderID)) return;
 
   if (!isActive()) return;
 
-  // Anti-Spam: Block if thread is currently receiving a roast batch
-  if (isProcessing.has(threadID)) return;
-  isProcessing.add(threadID);
+  // Random 4–7 roasts
+  const count = Math.floor(Math.random() * 4) + 4;
+  const shuffled = [...ROASTS].sort(() => 0.5 - Math.random());
+  const selected = shuffled.slice(0, count);
 
-  try {
-    // Select 1 random roast (Anti-Spam 1-reply design)
-    const randomRoast = ROASTS[Math.floor(Math.random() * ROASTS.length)];
-    const randomEmoji = REACT_EMOJIS[Math.floor(Math.random() * REACT_EMOJIS.length)];
-
-    api.sendMessage(randomRoast, threadID, (err, info) => {
-      if (!err && info && info.messageID) {
-        // Auto self-react to the sent message
-        api.setMessageReaction(randomEmoji, info.messageID, (reactErr) => {
-          if (reactErr) console.error("Self-react error:", reactErr);
-        }, true);
-      }
-      // Release lock after message delivery
-      isProcessing.delete(threadID);
-    });
-  } catch (error) {
-    console.error("Auto-roast error:", error);
-    isProcessing.delete(threadID);
+  for (let i = 0; i < selected.length; i++) {
+    setTimeout(() => {
+      api.sendMessage(selected[i], threadID);
+    }, i * 800);
   }
 };
 
-// ===== COMMAND HANDLER =====
+// ===== COMMAND =====
 module.exports.run = async function ({ api, event, args }) {
   const { threadID, messageID, senderID } = event;
   const sub = (args[0] || "").toLowerCase();
-  const data = loadData();
 
-  // Turn ON Infinite Duration
+  // --- ON/OFF = ADMIN LANG ---
   if (sub === "on") {
-    data.active = true;
+    if (!isAdmin(senderID)) {
+      return api.sendMessage("❌ | Admin lang ang pwedeng magbukas nito!", threadID, messageID);
+    }
+    const data = loadData();
+    const expires = Date.now() + 24 * 60 * 60 * 1000;
+    data.expires = expires;
     data.activatedBy = senderID;
     data.activatedAt = Date.now();
     saveData(data);
 
     return api.sendMessage(
-      `🔥 GLOBAL AUTO-ROAST: ON\n\n` +
-      `Duration: INFINITE ♾️\n` +
-      `Features: Anti-spam enabled & Auto self-react active.\n` +
-      `Use /activate off to stop.`,
+      `🔥 GLOBAL AUTO-ROAST: ON ✅\n\n` +
+      `⏳ Tagal: 24 oras\n` +
+      `📍 Sa lahat ng GC at Private Chat\n` +
+      `Gamitin ang /activate off para itigil agad.`,
       threadID,
       messageID
     );
   }
 
-  // Turn OFF
   if (sub === "off") {
-    data.active = false;
-    saveData(data);
-    return api.sendMessage("✅ Global auto-roast turned OFF.", threadID, messageID);
+    if (!isAdmin(senderID)) {
+      return api.sendMessage("❌ | Admin lang ang pwedeng magpatay nito!", threadID, messageID);
+    }
+    const data = loadData();
+    if (isActive()) {
+      data.expires = 0;
+      saveData(data);
+      return api.sendMessage("✅ Global auto-roast: OFF", threadID, messageID);
+    }
+    return api.sendMessage("Auto-roast ay hindi kasalukuyang nakabukas.", threadID, messageID);
   }
 
-  // Check Status
+  // Status — pwedeng lahat
   if (sub === "status") {
-    if (!data.active) {
-      return api.sendMessage("Global auto-roast is currently OFF.", threadID, messageID);
+    const left = getRemaining();
+    if (left <= 0) {
+      return api.sendMessage("🔥 Global Auto-roast: OFF", threadID, messageID);
     }
+    const hours = Math.floor(left / (1000 * 60 * 60));
+    const mins = Math.floor((left % (1000 * 60 * 60)) / (1000 * 60));
     return api.sendMessage(
-      `🔥 Global Auto-roast is ACTIVE (INFINITE ♾️)\nAnti-Spam & Auto Self-React: ENABLED`,
+      `🔥 Global Auto-roast: ACTIVE ✅\n⏳ Natitirang oras: ${hours}h ${mins}m`,
       threadID,
       messageID
     );
   }
 
-  // Auto Add & Change All Members' Nicknames
-  if (sub === "setnick") {
-    try {
-      const threadInfo = await api.getThreadInfo(threadID);
-      const participantIDs = threadInfo.participantIDs;
-
-      api.sendMessage(`⏳ Changing nicknames of all ${participantIDs.length} members to "Jehosh Pogi"...`, threadID);
-
-      for (const userID of participantIDs) {
-        api.changeNickname("Jehosh Pogi", threadID, userID, (err) => {
-          if (err) console.error(`Failed to change nickname for ${userID}:`, err);
-        });
-      }
-      return api.sendMessage("✅ Successfully updated all members' nicknames to 'Jehosh Pogi'.", threadID, messageID);
-    } catch (e) {
-      return api.sendMessage("❌ Failed to update nicknames. Make sure the bot has admin permissions.", threadID, messageID);
-    }
-  }
-
-  // Auto Add & Change Group Name
-  if (sub === "setgname") {
-    api.setTitle("Jehosh Pogi", threadID, (err) => {
-      if (err) {
-        return api.sendMessage("❌ Failed to change group name. Check bot permissions.", threadID, messageID);
-      }
-      return api.sendMessage("✅ Group name successfully changed to 'Jehosh Pogi'.", threadID, messageID);
-    });
-    return;
-  }
-
+  // Walang tamang utos
   return api.sendMessage(
-    `Usage:\n` +
-    `/activate on — Start infinite global auto-roast\n` +
-    `/activate off — Stop auto-roast\n` +
-    `/activate status — Check status\n` +
-    `/activate setnick — Change all members' nicknames to 'Jehosh Pogi'\n` +
-    `/activate setgname — Change group name to 'Jehosh Pogi'`,
+    `📋 Gamitin:\n` +
+    `/activate on   → Simulan (Admin Only)\n` +
+    `/activate off  → Itigil (Admin Only)\n` +
+    `/activate status → Tingnan kung buhay`,
     threadID,
     messageID
   );
 };
+  
