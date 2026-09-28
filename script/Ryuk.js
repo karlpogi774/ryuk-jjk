@@ -7015,56 +7015,1003 @@ function canAutoReact(
             Number(delay) || 1500
         )
     );
-        }const senderID =
-    getSafeSenderID(
-        event
-    );
-
-const messageID =
-    getSafeMessageID(
-        event
-    );
-
-const body =
-    extractMessageText(
-        event
-    );
-
-return {
+        }function createReplyTask(
     api,
-    threadID,
-    senderID,
-    messageID,
-    body,
-    delay:
-        Math.max(
+    event,
+    data
+) {
+    return {
+        api,
+        threadID:
+            getSafeThreadID(event),
+        senderID:
+            getSafeSenderID(event),
+        messageID:
+            getSafeMessageID(event),
+        body:
+            extractMessageText(event),
+        delay:
+            Math.max(
+                500,
+                Number(
+                    data.replyDelay
+                ) || 2000
+            ),
+        createdAt:
+            Date.now()
+    };
+}
+
+async function executeReplyTask(
+    task
+) {
+    if (
+        !task ||
+        !task.api ||
+        !task.threadID
+    ) {
+        return false;
+    }
+
+    try {
+        await delayExecution(
+            task.delay
+        );
+
+        const data =
+            normalizeData(
+                loadData()
+            );
+
+        if (
+            !data.active ||
+            !data.autoReply
+        ) {
+            return false;
+        }
+
+        if (
+            !shouldTargetUser(
+                task.threadID,
+                task.senderID
+            )
+        ) {
+            return false;
+        }
+
+        const reply =
+            buildAutoReply(
+                task.senderID,
+                task.body
+            );
+
+        const sent =
+            await safeSend(
+                task.api,
+                reply,
+                task.threadID,
+                task.messageID
+            );
+
+        if (sent) {
+            incrementReplyCount();
+        }
+
+        return sent;
+    } catch (error) {
+        recordRuntimeError(
+            error,
+            "reply task"
+        );
+
+        return false;
+    }
+}
+
+const REPLY_QUEUE =
+    new Map();
+
+const REPLY_WORKERS =
+    new Set();
+
+function queueReplyTask(
+    task
+) {
+    if (
+        !task ||
+        !task.threadID
+    ) {
+        return false;
+    }
+
+    const id =
+        String(
+            task.threadID
+        );
+
+    let queue =
+        REPLY_QUEUE.get(id);
+
+    if (
+        !Array.isArray(queue)
+    ) {
+        queue = [];
+        REPLY_QUEUE.set(
+            id,
+            queue
+        );
+    }
+
+    if (
+        queue.length >= 20
+    ) {
+        return false;
+    }
+
+    queue.push(task);
+
+    processReplyQueueSafe(
+        task.api,
+        id
+    );
+
+    return true;
+}
+
+async function processReplyQueueSafe(
+    api,
+    threadID
+) {
+    if (
+        REPLY_WORKERS.has(
+            threadID
+        )
+    ) {
+        return;
+    }
+
+    REPLY_WORKERS.add(
+        threadID
+    );
+
+    try {
+        while (true) {
+            const queue =
+                REPLY_QUEUE.get(
+                    threadID
+                );
+
+            if (
+                !Array.isArray(queue) ||
+                !queue.length
+            ) {
+                break;
+            }
+
+            const task =
+                queue.shift();
+
+            await executeReplyTask(
+                task
+            );
+        }
+    } catch (error) {
+        recordRuntimeError(
+            error,
+            "reply queue"
+        );
+    } finally {
+        REPLY_WORKERS.delete(
+            threadID
+        );
+    }
+}
+
+function clearReplyQueue(
+    threadID
+) {
+    const id =
+        String(
+            threadID || ""
+        );
+
+    REPLY_QUEUE.delete(id);
+    REPLY_WORKERS.delete(id);
+    }function createReactionTask(api, event, data) {
+    return {
+        api,
+        threadID: getSafeThreadID(event),
+        senderID: getSafeSenderID(event),
+        messageID: getSafeMessageID(event),
+        reaction: getRandomReaction(),
+        delay: Math.max(
             500,
+            Number(data.reactionDelay) || 1500
+        )
+    };
+}
+
+async function executeReactionTask(task) {
+    if (
+        !task ||
+        !task.api ||
+        !task.threadID ||
+        !task.messageID
+    ) {
+        return false;
+    }
+
+    try {
+        await delayExecution(task.delay);
+
+        const data =
+            normalizeData(loadData());
+
+        if (!data.active || !data.autoReact) {
+            return false;
+        }
+
+        if (
+            !shouldTargetUser(
+                task.threadID,
+                task.senderID
+            )
+        ) {
+            return false;
+        }
+
+        const success =
+            await safeReaction(
+                task.api,
+                task.reaction,
+                task.messageID
+            );
+
+        if (success) {
+            incrementReactionCount();
+        }
+
+        return success;
+    } catch (error) {
+        recordRuntimeError(
+            error,
+            "reaction task"
+        );
+        return false;
+    }
+}
+
+const REACTION_QUEUE = new Map();
+const REACTION_WORKERS = new Set();
+
+function queueReactionTask(task) {
+    if (!task || !task.threadID) {
+        return false;
+    }
+
+    const id = String(task.threadID);
+    let queue = REACTION_QUEUE.get(id);
+
+    if (!Array.isArray(queue)) {
+        queue = [];
+        REACTION_QUEUE.set(id, queue);
+    }
+
+    if (queue.length >= 20) {
+        return false;
+    }
+
+    queue.push(task);
+    processReactionQueueSafe(task.api, id);
+
+    return true;
+}async function processReactionQueueSafe(
+    api,
+    threadID
+) {
+    if (
+        REACTION_WORKERS.has(
+            threadID
+        )
+    ) {
+        return;
+    }
+
+    REACTION_WORKERS.add(
+        threadID
+    );
+
+    try {
+        while (true) {
+            const queue =
+                REACTION_QUEUE.get(
+                    threadID
+                );
+
+            if (
+                !Array.isArray(queue) ||
+                !queue.length
+            ) {
+                break;
+            }
+
+            const task =
+                queue.shift();
+
+            await executeReactionTask(
+                task
+            );
+        }
+    } catch (error) {
+        recordRuntimeError(
+            error,
+            "reaction queue"
+        );
+    } finally {
+        REACTION_WORKERS.delete(
+            threadID
+        );
+    }
+}
+
+function clearReactionQueue(
+    threadID
+) {
+    const id =
+        String(
+            threadID || ""
+        );
+
+    if (!id) {
+        return false;
+    }
+
+    REACTION_QUEUE.delete(
+        id
+    );
+
+    REACTION_WORKERS.delete(
+        id
+    );
+
+    return true;
+}
+
+function getReactionQueueSize(
+    threadID
+) {
+    const id =
+        String(
+            threadID || ""
+        );
+
+    const queue =
+        REACTION_QUEUE.get(
+            id
+        );
+
+    if (
+        !Array.isArray(queue)
+    ) {
+        return 0;
+    }
+
+    return queue.length;
+}
+
+function clearAllReactionQueues() {
+    REACTION_QUEUE.clear();
+    REACTION_WORKERS.clear();
+}
+
+function getTotalReactionQueues() {
+    return REACTION_QUEUE.size;
+            }function getAllRuntimeQueueSizes(
+    threadID
+) {
+    const id =
+        String(
+            threadID || ""
+        );
+
+    return {
+        nickname:
+            getNicknameTaskCount(id),
+
+        reply:
+            REPLY_QUEUE.has(id)
+                ? REPLY_QUEUE.get(id).length
+                : 0,
+
+        reaction:
+            getReactionQueueSize(id)
+    };
+}
+
+function buildQueueStatusText(
+    threadID
+) {
+    const queues =
+        getAllRuntimeQueueSizes(
+            threadID
+        );
+
+    return [
+        "📦 RYUK QUEUE STATUS",
+        "",
+        `Nickname: ${queues.nickname}`,
+        `Reply: ${queues.reply}`,
+        `Reaction: ${queues.reaction}`,
+        "",
+        `Workers: ${getWorkerCount()}`,
+        `Reaction Workers: ${
+            REACTION_WORKERS.size
+        }`
+    ].join("\n");
+}
+
+async function handleQueueStatus(
+    api,
+    event
+) {
+    const threadID =
+        getSafeThreadID(event);
+
+    const messageID =
+        getSafeMessageID(event);
+
+    if (!threadID) {
+        return false;
+    }
+
+    return safeSend(
+        api,
+        buildQueueStatusText(
+            threadID
+        ),
+        threadID,
+        messageID
+    );
+}
+
+function clearAllThreadQueues(
+    threadID
+) {
+    const id =
+        String(
+            threadID || ""
+        );
+
+    if (!id) {
+        return false;
+    }
+
+    clearNicknameTasks(id);
+    clearReplyQueue(id);
+    clearReactionQueue(id);
+
+    return true;
+            }function getThreadQueueSummary(
+    threadID
+) {
+    const id =
+        String(
+            threadID || ""
+        );
+
+    const nickname =
+        getNicknameTaskCount(id);
+
+    const replyQueue =
+        REPLY_QUEUE.get(id);
+
+    const reactionQueue =
+        REACTION_QUEUE.get(id);
+
+    return {
+        nickname,
+        reply:
+            Array.isArray(replyQueue)
+                ? replyQueue.length
+                : 0,
+        reaction:
+            Array.isArray(reactionQueue)
+                ? reactionQueue.length
+                : 0
+    };
+}
+
+function isThreadBusy(
+    threadID
+) {
+    const id =
+        String(
+            threadID || ""
+        );
+
+    if (!id) {
+        return false;
+    }
+
+    const queues =
+        getThreadQueueSummary(id);
+
+    return (
+        queues.nickname > 0 ||
+        queues.reply > 0 ||
+        queues.reaction > 0 ||
+        REPLY_WORKERS.has(id) ||
+        REACTION_WORKERS.has(id)
+    );
+}
+
+function getThreadActivityText(
+    threadID
+) {
+    const id =
+        String(
+            threadID || ""
+        );
+
+    const queues =
+        getThreadQueueSummary(id);
+
+    return [
+        `Thread: ${id}`,
+        `Nickname Queue: ${queues.nickname}`,
+        `Reply Queue: ${queues.reply}`,
+        `Reaction Queue: ${queues.reaction}`,
+        `Busy: ${
+            isThreadBusy(id)
+                ? "YES"
+                : "NO"
+        }`
+    ].join("\n");
+                           }function getDataFileSize() {
+    try {
+        if (!fs.existsSync(DATA_FILE)) {
+            return 0;
+        }
+
+        return fs.statSync(
+            DATA_FILE
+        ).size;
+    } catch (error) {
+        recordRuntimeError(
+            error,
+            "data file size"
+        );
+
+        return 0;
+    }
+}
+
+function getBackupFileSize() {
+    try {
+        if (!fs.existsSync(BACKUP_FILE)) {
+            return 0;
+        }
+
+        return fs.statSync(
+            BACKUP_FILE
+        ).size;
+    } catch (error) {
+        recordRuntimeError(
+            error,
+            "backup file size"
+        );
+
+        return 0;
+    }
+}
+
+function buildStorageStatus() {
+    return [
+        "💾 RYUK STORAGE",
+        "",
+        `Data: ${getDataFileSize()} bytes`,
+        `Backup: ${getBackupFileSize()} bytes`,
+        `Data File: ${
+            fs.existsSync(DATA_FILE)
+                ? "OK"
+                : "MISSING"
+        }`,
+        `Backup File: ${
+            fs.existsSync(BACKUP_FILE)
+                ? "OK"
+                : "MISSING"
+        }`
+    ].join("\n");
+}
+
+async function handleStorageStatus(
+    api,
+    event
+) {
+    const threadID =
+        getSafeThreadID(event);
+
+    const messageID =
+        getSafeMessageID(event);
+
+    if (!threadID) {
+        return false;
+    }
+
+    return safeSend(
+        api,
+        buildStorageStatus(),
+        threadID,
+        messageID
+    );
+    }function getSafeErrorText(error) {
+    if (!error) {
+        return "Unknown error";
+    }
+
+    if (typeof error === "string") {
+        return error.slice(0, 300);
+    }
+
+    if (error.message) {
+        return String(
+            error.message
+        ).slice(0, 300);
+    }
+
+    return "Unknown error";
+}
+
+function logRyukError(
+    context,
+    error
+) {
+    const text =
+        getSafeErrorText(error);
+
+    console.error(
+        `[RYUK] ${context}: ${text}`
+    );
+}
+
+function recordRuntimeError(
+    error,
+    context
+) {
+    try {
+        const data =
+            normalizeData(
+                loadData()
+            );
+
+        data.errorCount =
+            Number(
+                data.errorCount || 0
+            ) + 1;
+
+        data.lastError =
+            `${context}: ${getSafeErrorText(error)}`;
+
+        data.updatedAt =
+            Date.now();
+
+        saveData(data);
+
+        logRyukError(
+            context,
+            error
+        );
+    } catch (saveError) {
+        logRyukError(
+            "runtime error",
+            saveError
+        );
+    }
+}
+
+function safeLog(
+    message
+) {
+    try {
+        console.log(
+            `[RYUK] ${String(message)}`
+        );
+    } catch (error) {
+        return false;
+    }
+
+    return true;
+    }function isValidReplyDelay(
+    value
+) {
+    const delay =
+        Number(value);
+
+    return (
+        Number.isFinite(delay) &&
+        delay >= 500 &&
+        delay <= 60000
+    );
+}
+
+function isValidReactionDelay(
+    value
+) {
+    const delay =
+        Number(value);
+
+    return (
+        Number.isFinite(delay) &&
+        delay >= 500 &&
+        delay <= 60000
+    );
+}
+
+function setReplyDelay(
+    value
+) {
+    if (
+        !isValidReplyDelay(
+            value
+        )
+    ) {
+        return false;
+    }
+
+    const data =
+        normalizeData(
+            loadData()
+        );
+
+    data.replyDelay =
+        Number(value);
+
+    data.updatedAt =
+        Date.now();
+
+    return saveData(data);
+}
+
+function setReactionDelay(
+    value
+) {
+    if (
+        !isValidReactionDelay(
+            value
+        )
+    ) {
+        return false;
+    }
+
+    const data =
+        normalizeData(
+            loadData()
+        );
+
+    data.reactionDelay =
+        Number(value);
+
+    data.updatedAt =
+        Date.now();
+
+    return saveData(data);
+}
+
+function getDelaySettings() {
+    const data =
+        normalizeData(
+            loadData()
+        );
+
+    return {
+        reply:
             Number(
                 data.replyDelay
-            ) || 2000
-        ),
-    createdAt:
-        Date.now()
-};
+            ),
+
+        reaction:
+            Number(
+                data.reactionDelay
+            )
+    };
+}function buildDelayStatus() {
+    const delays =
+        getDelaySettings();
+
+    return [
+        "⏱️ RYUK DELAY",
+        "",
+        `Auto Reply: ${delays.reply}ms`,
+        `Auto React: ${delays.reaction}ms`,
+        "",
+        "Allowed: 500ms - 60000ms"
+    ].join("\n");
 }
-async function executeReplyTask( task ) { if ( !task || !task.api || !task.threadID ) { return false; }
-try {
-    safeTyping(
-        task.api,
-        task.threadID,
-        true
-    );
 
-    await delayExecution(
-        task.delay
-    );
+async function handleDelayStatus(
+    api,
+    event
+) {
+    const threadID =
+        getSafeThreadID(event);
 
-    safeTyping(
-        task.api,
-        task.threadID,
-        false
-    );
+    const messageID =
+        getSafeMessageID(event);
 
+    if (!threadID) {
+        return false;
+    }
+
+    return safeSend(
+        api,
+        buildDelayStatus(),
+        threadID,
+        messageID
+    );
+}
+
+function parseDelayValue(
+    value
+) {
+    if (
+        value === undefined ||
+        value === null
+    ) {
+        return null;
+    }
+
+    const number =
+        Number(
+            String(value)
+                .trim()
+        );
+
+    if (
+        !Number.isFinite(number)
+    ) {
+        return null;
+    }
+
+    return number;
+}
+
+function formatDelay(
+    value
+) {
+    const number =
+        Number(value);
+
+    if (!Number.isFinite(number)) {
+        return "N/A";
+    }
+
+    return `${number}ms`;
+    }function buildAutoReply(
+    senderID,
+    message
+) {
+    const text =
+        String(
+            message || ""
+        )
+        .trim()
+        .toLowerCase();
+
+    const replies = [
+        "👁️ RYUK: Nakita ko yan.",
+        "🖤 RYUK: Ano bang trip mo?",
+        "💀 RYUK: Tahimik lang ako pero active.",
+        "🔥 RYUK: Sige, narinig kita.",
+        "😈 RYUK: May sagot ako diyan.",
+        "👑 RYUK: Present.",
+        "🤣 RYUK: Grabe ka naman.",
+        "⚡ RYUK: Ayan na nga.",
+        "🥷 RYUK: Relax lang.",
+        "💀 RYUK: Huwag kang kabahan.",
+        "🔥 RYUK: Continue mo lang.",
+        "😆 RYUK: Gets ko na.",
+        "🤡 RYUK: Interesting yan.",
+        "👀 RYUK: Binasa ko.",
+        "🛡️ RYUK: Nandito lang ako."
+    ];
+
+    if (
+        text.includes("ryuk")
+    ) {
+        return (
+            "💀 RYUK: Tinawag mo ako?"
+        );
+    }
+
+    if (
+        text.includes("hello") ||
+        text.includes("hi")
+    ) {
+        return (
+            "👋 RYUK: Hello rin!"
+        );
+    }
+
+    if (
+        text.includes("kamusta") ||
+        text.includes("kumusta")
+    ) {
+        return (
+            "🔥 RYUK: Ayos lang. Ikaw?"
+        );
+    }
+
+    const index =
+        Math.floor(
+            Math.random() *
+            replies.length
+        );
+
+    return replies[index];
+}
+
+function getRandomReplyLine() {
+    const replies =
+        Array.isArray(REPLY_LINES)
+            ? REPLY_LINES
+            : [];
+
+    if (!replies.length) {
+        return "💀 RYUK: Present.";
+    }
+
+    const index =
+        Math.floor(
+            Math.random() *
+            replies.length
+        );
+
+    return replies[index];
+        }function getRandomReaction() {
+    const list =
+        Array.isArray(REACTIONS)
+            ? REACTIONS
+            : ["👍"];
+
+    if (!list.length) {
+        return "👍";
+    }
+
+    const index =
+        Math.floor(
+            Math.random() *
+            list.length
+        );
+
+    return list[index];
+}
+
+function isReactionAllowed(
+    threadID
+) {
+    const data =
+        normalizeData(
+            loadData()
+        );
+
+    if (!data.active) {
+        return false;
+    }
+
+    if (!data.autoReact) {
+        return false;
+    }
+
+    if (!threadID) {
+        return false;
+    }
+
+    return true;
+}
+
+function isReplyAllowed(
+    threadID
+) {
     const data =
         normalizeData(
             loadData()
@@ -7078,156 +8025,1196 @@ try {
         return false;
     }
 
+    if (!threadID) {
+        return false;
+    }
+
+    return true;
+}
+
+function canProcessMessage(
+    event
+) {
+    if (!event) {
+        return false;
+    }
+
+    const threadID =
+        getSafeThreadID(event);
+
+    const messageID =
+        getSafeMessageID(event);
+
+    if (!threadID) {
+        return false;
+    }
+
+    if (!messageID) {
+        return false;
+    }
+
     if (
-        !shouldTargetUser(
-            task.threadID,
-            task.senderID
+        rememberMessage(
+            messageID
         )
     ) {
         return false;
     }
 
-    const reply =
-        buildAutoReply(
-            task.senderID,
-            task.body
+    return true;
+}function buildTargetStatus(
+    threadID
+) {
+    const target =
+        getTarget(
+            threadID
         );
 
-    const sent =
-        await safeSend(
-            task.api,
-            reply,
-            task.threadID,
-            task.messageID
-        );
-
-    if (sent) {
-        incrementReplyCount();
+    if (!target) {
+        return [
+            "🎯 RYUK TARGET",
+            "",
+            "Status: OFF",
+            "Target: NONE"
+        ].join("\n");
     }
 
-    return sent;
-} catch (error) {
-    recordRuntimeError(
-        error,
-        "executeReplyTask"
-    );
-
-    return false;
-} finally {
-    try {
-        safeTyping(
-            task.api,
-            task.threadID,
-            false
-        );
-    } catch {}
+    return [
+        "🎯 RYUK TARGET",
+        "",
+        "Status: ON",
+        `Target: ${target}`,
+        "",
+        "Auto-reply and auto-react",
+        "will follow the target."
+    ].join("\n");
 }
-}
-function scheduleReplyTask( task ) { if ( !task || !task.threadID ) { return false; }
-const current =
-    NICKNAME_QUEUE.get(
-        `reply:${task.threadID}`
-    );
 
-const queue =
-    Array.isArray(current)
-        ? current
-        : [];
-
-if (
-    queue.length >=
-    20
+async function handleTargetStatusMessage(
+    api,
+    event
 ) {
-    return false;
-}
+    const threadID =
+        getSafeThreadID(event);
 
-queue.push(
-    task
-);
+    const messageID =
+        getSafeMessageID(event);
 
-NICKNAME_QUEUE.set(
-    `reply:${task.threadID}`,
-    queue
-);
-
-processReplyQueue(
-    task.api,
-    task.threadID
-);
-
-return true;
-}
-async function processReplyQueue( api, threadID ) { const key = reply:${String( threadID || "" )};
-if (
-    ACTIVE_WORKERS.has(
-        key
-    )
-) {
-    return;
-}
-
-ACTIVE_WORKERS.add(
-    key
-);
-
-try {
-    while (true) {
-        const queue =
-            NICKNAME_QUEUE.get(
-                key
-            );
-
-        if (
-            !Array.isArray(
-                queue
-            ) ||
-            !queue.length
-        ) {
-            break;
-        }
-
-        const task =
-            queue.shift();
-
-        NICKNAME_QUEUE.set(
-            key,
-            queue
-        );
-
-        await executeReplyTask(
-            task
-        );
+    if (!threadID) {
+        return false;
     }
-} catch (error) {
-    recordRuntimeError(
-        error,
-        "processReplyQueue"
-    );
-} finally {
-    ACTIVE_WORKERS.delete(
-        key
-    );
 
-    const queue =
-        NICKNAME_QUEUE.get(
-            key
+    return safeSend(
+        api,
+        buildTargetStatus(
+            threadID
+        ),
+        threadID,
+        messageID
+    );
+}
+
+function targetMatches(
+    threadID,
+    senderID
+) {
+    if (!threadID || !senderID) {
+        return false;
+    }
+
+    const target =
+        getTarget(
+            threadID
         );
+
+    if (!target) {
+        return true;
+    }
+
+    return (
+        String(target) ===
+        String(senderID)
+    );
+}
+
+function clearTargetIfInvalid(
+    threadID
+) {
+    const target =
+        getTarget(
+            threadID
+        );
+
+    if (!target) {
+        return false;
+    }
 
     if (
-        Array.isArray(
-            queue
-        ) &&
-        queue.length
+        !isValidUserID(
+            target
+        )
     ) {
-        setTimeout(
-            () => {
-                processReplyQueue(
-                    api,
-                    threadID
-                );
-            },
-            100
+        removeTarget(
+            threadID
+        );
+
+        return true;
+    }
+
+    return false;
+}function getLockSettings() {
+    const data =
+        normalizeData(
+            loadData()
+        );
+
+    return {
+        nicknameLock:
+            Boolean(
+                data.nicknameLock
+            ),
+
+        gcNameLock:
+            Boolean(
+                data.gcNameLock
+            ),
+
+        nickname:
+            String(
+                data.nickname || ""
+            ),
+
+        gcName:
+            String(
+                data.gcName || ""
+            )
+    };
+}
+
+function buildLockStatus() {
+    const lock =
+        getLockSettings();
+
+    return [
+        "🔒 RYUK LOCK STATUS",
+        "",
+        `Nickname Lock: ${
+            lock.nicknameLock
+                ? "ON"
+                : "OFF"
+        }`,
+        `GC Name Lock: ${
+            lock.gcNameLock
+                ? "ON"
+                : "OFF"
+        }`,
+        "",
+        `Nickname: ${
+            lock.nickname || "NONE"
+        }`,
+        `GC Name: ${
+            lock.gcName || "NONE"
+        }`
+    ].join("\n");
+}
+
+async function handleLockStatus(
+    api,
+    event
+) {
+    const threadID =
+        getSafeThreadID(event);
+
+    const messageID =
+        getSafeMessageID(event);
+
+    if (!threadID) {
+        return false;
+    }
+
+    return safeSend(
+        api,
+        buildLockStatus(),
+        threadID,
+        messageID
+    );
+}
+
+function hasNicknameLock() {
+    return Boolean(
+        getLockSettings()
+            .nicknameLock
+    );
+}
+
+function hasGCNameLock() {
+    return Boolean(
+        getLockSettings()
+            .gcNameLock
+    );
+        }function shouldRestoreNickname(
+    threadID
+) {
+    const settings =
+        getLockSettings();
+
+    if (!settings.nicknameLock) {
+        return false;
+    }
+
+    if (!settings.nickname) {
+        return false;
+    }
+
+    if (!threadID) {
+        return false;
+    }
+
+    return true;
+}
+
+function shouldRestoreGCName() {
+    const settings =
+        getLockSettings();
+
+    if (!settings.gcNameLock) {
+        return false;
+    }
+
+    if (!settings.gcName) {
+        return false;
+    }
+
+    return true;
+}
+
+async function restoreLockedNickname(
+    api,
+    threadID,
+    userID
+) {
+    if (
+        !shouldRestoreNickname(
+            threadID
+        )
+    ) {
+        return false;
+    }
+
+    if (
+        !userID ||
+        !isValidUserID(userID)
+    ) {
+        return false;
+    }
+
+    if (
+        !shouldTargetUser(
+            threadID,
+            userID
+        )
+    ) {
+        return false;
+    }
+
+    const settings =
+        getLockSettings();
+
+    setRestoreGuard(
+        "nick",
+        threadID,
+        userID
+    );
+
+    return safeChangeNickname(
+        api,
+        settings.nickname,
+        threadID,
+        userID
+    );
+}
+
+async function restoreLockedGCName(
+    api,
+    threadID
+) {
+    if (
+        !shouldRestoreGCName()
+    ) {
+        return false;
+    }
+
+    if (!threadID) {
+        return false;
+    }
+
+    const settings =
+        getLockSettings();
+
+    setRestoreGuard(
+        "gname",
+        threadID
+    );
+
+    return safeSetTitle(
+        api,
+        settings.gcName,
+        threadID
+    );
+    }function buildNicknameApplyList(
+    threadID,
+    participantIDs
+) {
+    const ids =
+        Array.isArray(
+            participantIDs
+        )
+            ? participantIDs
+            : [];
+
+    const target =
+        getTarget(
+            threadID
+        );
+
+    if (target) {
+        return ids.filter(
+            id =>
+                String(id) ===
+                String(target)
         );
     }
+
+    return ids.filter(
+        id =>
+            isValidUserID(id)
+    );
 }
+
+async function applySavedNickname(
+    api,
+    event
+) {
+    const threadID =
+        getSafeThreadID(event);
+
+    if (!threadID) {
+        return false;
+    }
+
+    const settings =
+        getLockSettings();
+
+    if (
+        !settings.nicknameLock ||
+        !settings.nickname
+    ) {
+        return false;
+    }
+
+    const participants =
+        await getParticipantIDs(
+            api,
+            threadID
+        );
+
+    const targets =
+        buildNicknameApplyList(
+            threadID,
+            participants
+        );
+
+    if (!targets.length) {
+        return false;
+    }
+
+    for (const userID of targets) {
+        await queueNickname(
+            api,
+            threadID,
+            userID,
+            settings.nickname
+        );
+    }
+
+    return true;
 }
+
+async function applySavedGCName(
+    api,
+    event
+) {
+    const threadID =
+        getSafeThreadID(event);
+
+    if (!threadID) {
+        return false;
+    }
+
+    return restoreLockedGCName(
+        api,
+        threadID
+    );
+                        }async function applySavedLocks(
+    api,
+    event
+) {
+    if (!api || !event) {
+        return false;
+    }
+
+    const threadID =
+        getSafeThreadID(event);
+
+    if (!threadID) {
+        return false;
+    }
+
+    const settings =
+        getLockSettings();
+
+    let changed = false;
+
+    if (
+        settings.gcNameLock &&
+        settings.gcName
+    ) {
+        const result =
+            await applySavedGCName(
+                api,
+                event
+            );
+
+        if (result) {
+            changed = true;
+        }
+    }
+
+    if (
+        settings.nicknameLock &&
+        settings.nickname
+    ) {
+        const result =
+            await applySavedNickname(
+                api,
+                event
+            );
+
+        if (result) {
+            changed = true;
+        }
+    }
+
+    return changed;
+}
+
+function isLockEvent(
+    event
+) {
+    if (!event) {
+        return false;
+    }
+
+    const type =
+        String(
+            event.type || ""
+        ).toLowerCase();
+
+    return (
+        type === "log:user-nickname" ||
+        type === "log:thread-name"
+    );
+}
+
+function getLockEventType(
+    event
+) {
+    if (!event) {
+        return "";
+    }
+
+    return String(
+        event.type || ""
+    ).toLowerCase();
+    }function getEventNicknameData(
+    event
+) {
+    if (!event) {
+        return null;
+    }
+
+    return (
+        event.logMessageData ||
+        event.logMessageData2 ||
+        null
+    );
+}
+
+function getChangedNicknameUser(
+    event
+) {
+    const data =
+        getEventNicknameData(
+            event
+        );
+
+    if (!data) {
+        return "";
+    }
+
+    return String(
+        data.participant_id ||
+        data.author ||
+        data.user_id ||
+        ""
+    );
+}
+
+function getChangedNickname(
+    event
+) {
+    const data =
+        getEventNicknameData(
+            event
+        );
+
+    if (!data) {
+        return "";
+    }
+
+    return String(
+        data.nickname ||
+        ""
+    ).trim();
+}
+
+function getChangedThreadName(
+    event
+) {
+    const data =
+        getEventNicknameData(
+            event
+        );
+
+    if (!data) {
+        return "";
+    }
+
+    return String(
+        data.name ||
+        data.thread_name ||
+        ""
+    ).trim();
+}
+
+function shouldHandleLockEvent(
+    event
+) {
+    const type =
+        getLockEventType(
+            event
+        );
+
+    return (
+        type ===
+            "log:user-nickname" ||
+        type ===
+            "log:thread-name"
+    );
+        }async function handleLockEvent(
+    api,
+    event
+) {
+    if (
+        !api ||
+        !event ||
+        !shouldHandleLockEvent(event)
+    ) {
+        return false;
+    }
+
+    const threadID =
+        getSafeThreadID(event);
+
+    if (!threadID) {
+        return false;
+    }
+
+    const type =
+        getLockEventType(event);
+
+    if (
+        type ===
+        "log:user-nickname"
+    ) {
+        const userID =
+            getChangedNicknameUser(
+                event
+            );
+
+        if (!userID) {
+            return false;
+        }
+
+        if (
+            hasRestoreGuard(
+                "nick",
+                threadID,
+                userID
+            )
+        ) {
+            return false;
+        }
+
+        return restoreLockedNickname(
+            api,
+            threadID,
+            userID
+        );
+    }
+
+    if (
+        type ===
+        "log:thread-name"
+    ) {
+        if (
+            hasRestoreGuard(
+                "gname",
+                threadID
+            )
+        ) {
+            return false;
+        }
+
+        return restoreLockedGCName(
+            api,
+            threadID
+        );
+    }
+
+    return false;
+        }module.exports.handleEvent = async function (
+    {
+        api,
+        event
+    }
+) {
+    try {
+        if (!api || !event) {
+            return;
+        }
+
+        const threadID =
+            getSafeThreadID(event);
+
+        const senderID =
+            getSafeSenderID(event);
+
+        if (!threadID) {
+            return;
+        }
+
+        if (
+            isLockEvent(event)
+        ) {
+            await handleLockEvent(
+                api,
+                event
+            );
+
+            return;
+        }
+
+        if (
+            !senderID ||
+            senderID ===
+                getSafeBotID(api)
+        ) {
+            return;
+        }
+
+        const messageID =
+            getSafeMessageID(event);
+
+        if (!messageID) {
+            return;
+        }
+
+        if (
+            !canProcessMessage(
+                event
+            )
+        ) {
+            return;
+        }
+
+        const data =
+            normalizeData(
+                loadData()
+            );
+
+        if (!data.active) {
+            return;
+        }
+
+        if (
+            !shouldTargetUser(
+                threadID,
+                senderID
+            )
+        ) {
+            return;
+        }
+
+        if (
+            data.autoReact &&
+            isReactionAllowed(
+                threadID
+            )
+        ) {
+            const reactionTask =
+                createReactionTask(
+                    api,
+                    event,
+                    data
+                );
+
+            queueReactionTask(
+                reactionTask
+            );
+        }
+
+        if (
+            data.autoReply &&
+            isReplyAllowed(
+                threadID
+            )
+        ) {
+            const replyTask =
+                createReplyTask(
+                    api,
+                    event,
+                    data
+                );
+
+            queueReplyTask(
+                replyTask
+            );
+        }
+    } catch (error) {
+        recordRuntimeError(
+            error,
+            "handleEvent"
+        );
+    }
+};
+
+module.exports.run = async function (
+    {
+        api,
+        event,
+        args
+    }
+) {
+    const threadID =
+        getSafeThreadID(event);
+
+    const messageID =
+        getSafeMessageID(event);
+
+    if (!api || !threadID) {
+        return;
+    }
+
+    const input =
+        Array.isArray(args)
+            ? args
+            : [];
+
+    const command =
+        String(
+            input[0] || ""
+        )
+        .toLowerCase()
+        .trim();
+
+    const values =
+        input
+            .slice(1)
+            .join(" ")
+            .trim();
+
+    try {
+        if (
+            command === "help" ||
+            command === "h"
+        ) {
+            return safeSend(
+                api,
+                buildDetailedHelp(),
+                threadID,
+                messageID
+            );
+        }
+
+        if (
+            command === "status"
+        ) {
+            return handleStatus(
+                api,
+                event
+            );
+        }
+
+        if (
+            command === "runtime"
+        ) {
+            return handleRuntime(
+                api,
+                event
+            );
+        }
+
+        if (
+            command === "stats"
+        ) {
+            return handleStats(
+                api,
+                event
+            );
+        }
+
+        if (
+            command === "queue"
+        ) {
+            return handleQueueStatus(
+                api,
+                event
+            );
+        }
+
+        if (
+            command === "storage"
+        ) {
+            return handleStorageStatus(
+                api,
+                event
+            );
+        }
+
+        if (
+            command === "delays"
+        ) {
+            return handleDelayStatus(
+                api,
+                event
+            );
+        }
+
+        if (
+            command === "targetstatus"
+        ) {
+            return handleTargetStatusMessage(
+                api,
+                event
+            );
+        }
+
+        if (
+            command === "lockstatus"
+        ) {
+            return handleLockStatus(
+                api,
+                event
+            );
+        }
+
+        if (
+            command === "on"
+        ) {
+            if (!isAdmin(
+                event.senderID
+            )) {
+                return;
+            }
+
+            return updateBooleanSetting(
+                "active",
+                true
+            );
+        }
+
+        if (
+            command === "off"
+        ) {
+            if (!isAdmin(
+                event.senderID
+            )) {
+                return;
+            }
+
+            return updateBooleanSetting(
+                "active",
+                false
+            );
+        }
+
+        if (
+            command === "reacton"
+        ) {
+            if (!isAdmin(
+                event.senderID
+            )) {
+                return;
+            }
+
+            return updateBooleanSetting(
+                "autoReact",
+                true
+            );
+        }
+
+        if (
+            command === "reactoff"
+        ) {
+            if (!isAdmin(
+                event.senderID
+            )) {
+                return;
+            }
+
+            return updateBooleanSetting(
+                "autoReact",
+                false
+            );
+        }
+
+        if (
+            command === "replyon"
+        ) {
+            if (!isAdmin(
+                event.senderID
+            )) {
+                return;
+            }
+
+            return updateBooleanSetting(
+                "autoReply",
+                true
+            );
+        }
+
+        if (
+            command === "replyoff"
+        ) {
+            if (!isAdmin(
+                event.senderID
+            )) {
+                return;
+            }
+
+            return updateBooleanSetting(
+                "autoReply",
+                false
+            );
+        }
+
+        if (
+            command === "setnick"
+        ) {
+            if (!isAdmin(
+                event.senderID
+            )) {
+                return;
+            }
+
+            return handleSetNickname(
+                api,
+                event,
+                values
+            );
+        }
+
+        if (
+            command === "setgname"
+        ) {
+            if (!isAdmin(
+                event.senderID
+            )) {
+                return;
+            }
+
+            return handleSetGCName(
+                api,
+                event,
+                values
+            );
+        }
+
+        if (
+            command === "lock"
+        ) {
+            if (!isAdmin(
+                event.senderID
+            )) {
+                return;
+            }
+
+            return handleLock(
+                api,
+                event
+            );
+        }
+
+        if (
+            command === "unlock"
+        ) {
+            if (!isAdmin(
+                event.senderID
+            )) {
+                return;
+            }
+
+            return handleUnlock(
+                api,
+                event
+            );
+        }
+
+        if (
+            command === "target"
+        ) {
+            if (!isAdmin(
+                event.senderID
+            )) {
+                return;
+            }
+
+            return handleTarget(
+                api,
+                event,
+                values
+            );
+        }
+
+        if (
+            command === "untarget"
+        ) {
+            if (!isAdmin(
+                event.senderID
+            )) {
+                return;
+            }
+
+            return handleUntarget(
+                api,
+                event
+            );
+        }
+
+        if (
+            command === "delay"
+        ) {
+            if (!isAdmin(
+                event.senderID
+            )) {
+                return;
+            }
+
+            const delay =
+                parseDelayValue(
+                    values
+                );
+
+            if (
+                delay === null ||
+                !setReplyDelay(delay)
+            ) {
+                return safeSend(
+                    api,
+                    "❌ Invalid delay.",
+                    threadID,
+                    messageID
+                );
+            }
+
+            return safeSend(
+                api,
+                `✅ Reply delay: ${formatDelay(delay)}`,
+                threadID,
+                messageID
+            );
+        }
+
+        if (
+            command === "save"
+        ) {
+            if (!isAdmin(
+                event.senderID
+            )) {
+                return;
+            }
+
+            return handleSave(
+                api,
+                event
+            );
+        }
+
+        if (
+            command === "reset"
+        ) {
+            if (!isAdmin(
+                event.senderID
+            )) {
+                return;
+            }
+
+            return handleReset(
+                api,
+                event
+            );
+        }
+
+        if (
+            command === "ping"
+        ) {
+            return handlePing(
+                api,
+                event
+            );
+        }
+
+        return safeSend(
+            api,
+            "❌ Unknown RYUK command. Use /ryuk help.",
+            threadID,
+            messageID
+        );
+    } catch (error) {
+        recordRuntimeError(
+            error,
+            "run"
+        );
+
+        return safeSend(
+            api,
+            "⚠️ RYUK encountered an error.",
+            threadID,
+            messageID
+        );
+    }
+};
+
+try {
+    ensureDataFile();
+    initializeRyuk();
+    safeLog(
+        "RYUK module loaded successfully."
+    );
+} catch (error) {
+    console.error(
+        "[RYUK] startup error:",
+        error
+    );
+        }
