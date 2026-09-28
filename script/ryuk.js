@@ -1729,8 +1729,8 @@ function addCommandCount() {
     return data;
         }module.exports.config = {
     name: "ryuk",
-    version: "2.0.0",
-    hasPermission: 0,
+    version: "1.0.0",
+    hasPermission: 1,
     credits: "RYUK",
     description:
         "RYUK auto reply, reaction, nickname lock and GC name lock.",
