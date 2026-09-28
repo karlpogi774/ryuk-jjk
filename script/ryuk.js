@@ -561,7 +561,7 @@ function getCurrentBotID(
   }
 
   return null;
-}const AUTO_REPLIES = [
+      }const AUTO_REPLIES = [
   "👁️ RYUK: Nakita ko yan.",
   "💀 RYUK: Present.",
   "🔥 RYUK: Ayan na naman.",
@@ -713,3229 +713,909 @@ function canReact(
     current;
 
   return true;
-  }function safeSend(
-  api,
-  message,
-  threadID,
-  replyTo
+          }function getTarget(
+  data,
+  threadID
 ) {
-  return new Promise(
-    resolve => {
-      try {
-        if (
-          !api ||
-          typeof api.sendMessage !==
-            "function"
-        ) {
-          resolve(false);
-          return;
-        }
+  if (
+    !data ||
+    !data.target
+  ) {
+    return null;
+  }
 
-        const text =
-          cleanText(message);
-
-        if (!text) {
-          resolve(false);
-          return;
-        }
-
-        const callback =
-          error => {
-            if (error) {
-              console.error(
-                "[RYUK] sendMessage:",
-                error.message ||
-                  error
-              );
-
-              resolve(false);
-              return;
-            }
-
-            resolve(true);
-          };
-
-        if (replyTo) {
-          api.sendMessage(
-            text,
-            threadID,
-            callback,
-            replyTo
-          );
-        } else {
-          api.sendMessage(
-            text,
-            threadID,
-            callback
-          );
-        }
-      } catch (error) {
-        console.error(
-          "[RYUK] safeSend:",
-          error.message ||
-            error
-        );
-
-        resolve(false);
-      }
-    }
+  return (
+    data.target[
+      getThreadKey(
+        threadID
+      )
+    ] || null
   );
 }
 
-function safeReaction(
-  api,
-  reaction,
-  messageID
-) {
-  return new Promise(
-    resolve => {
-      try {
-        if (
-          !api ||
-          typeof api.setMessageReaction !==
-            "function"
-        ) {
-          resolve(false);
-          return;
-        }
-
-        if (
-          !messageID ||
-          !reaction
-        ) {
-          resolve(false);
-          return;
-        }
-
-        api.setMessageReaction(
-          reaction,
-          messageID,
-          error => {
-            if (error) {
-              console.error(
-                "[RYUK] reaction:",
-                error.message ||
-                  error
-              );
-
-              resolve(false);
-              return;
-            }
-
-            resolve(true);
-          },
-          true
-        );
-      } catch (error) {
-        console.error(
-          "[RYUK] safeReaction:",
-          error.message ||
-            error
-        );
-
-        resolve(false);
-      }
-    }
-  );
-}
-
-function safeNickname(
-  api,
-  nickname,
+function setTarget(
+  data,
   threadID,
   userID
 ) {
-  return new Promise(
-    resolve => {
-      try {
-        if (
-          !api ||
-          typeof api.changeNickname !==
-            "function"
-        ) {
-          resolve(false);
-          return;
-        }
+  if (
+    !data.target ||
+    typeof data.target !==
+      "object"
+  ) {
+    data.target = {};
+  }
 
-        const value =
-          cleanText(
-            nickname
-          );
+  data.target[
+    getThreadKey(
+      threadID
+    )
+  ] = String(
+    userID
+  );
 
-        if (
-          !value ||
-          !threadID ||
-          !userID
-        ) {
-          resolve(false);
-          return;
-        }
-
-        api.changeNickname(
-          value,
-          threadID,
-          userID,
-          error => {
-            if (error) {
-              console.error(
-                "[RYUK] nickname:",
-                error.message ||
-                  error
-              );
-
-              resolve(false);
-              return;
-            }
-
-            resolve(true);
-          }
-        );
-      } catch (error) {
-        console.error(
-          "[RYUK] safeNickname:",
-          error.message ||
-            error
-        );
-
-        resolve(false);
-      }
-    }
+  saveData(
+    data
   );
 }
 
-function safeTitle(
-  api,
-  title,
+function removeTarget(
+  data,
   threadID
 ) {
-  return new Promise(
-    resolve => {
-      try {
-        if (
-          !api ||
-          typeof api.setTitle !==
-            "function"
-        ) {
-          resolve(false);
-          return;
-        }
+  if (
+    data.target &&
+    data.target[
+      getThreadKey(
+        threadID
+      )
+    ]
+  ) {
+    delete data.target[
+      getThreadKey(
+        threadID
+      )
+    ];
+  }
 
-        const value =
-          cleanText(title);
-
-        if (
-          !value ||
-          !threadID
-        ) {
-          resolve(false);
-          return;
-        }
-
-        api.setTitle(
-          value,
-          threadID,
-          error => {
-            if (error) {
-              console.error(
-                "[RYUK] group name:",
-                error.message ||
-                  error
-              );
-
-              resolve(false);
-              return;
-            }
-
-            resolve(true);
-          }
-        );
-      } catch (error) {
-        console.error(
-          "[RYUK] safeTitle:",
-          error.message ||
-            error
-        );
-
-        resolve(false);
-      }
-    }
+  saveData(
+    data
   );
 }
 
-function getBotID(api) {
-  try {
-    if (
-      api &&
-      typeof api.getCurrentUserID ===
-        "function"
-    ) {
-      const id =
-        api.getCurrentUserID();
+function isTarget(
+  data,
+  threadID,
+  senderID
+) {
+  const target =
+    getTarget(
+      data,
+      threadID
+    );
 
-      if (id) {
-        return String(id);
-      }
+  if (!target) {
+    return true;
+  }
+
+  return (
+    String(target) ===
+    String(senderID)
+  );
+}
+
+async function applyGroupName(
+  api,
+  threadID,
+  data
+) {
+  if (
+    !data ||
+    !data.active
+  ) {
+    return false;
+  }
+
+  const wanted =
+    getGCName();
+
+  const key =
+    getThreadKey(
+      threadID
+    );
+
+  if (
+    isCooldown(
+      gcNameRestoreLock,
+      key,
+      GCNAME_RESTORE_COOLDOWN
+    )
+  ) {
+    return false;
+  }
+
+  try {
+    const info =
+      await getThreadInfo(
+        api,
+        threadID
+      );
+
+    if (!info) {
+      return false;
     }
+
+    const current =
+      normalizeName(
+        info.threadName
+      );
+
+    /*
+     * Already correct.
+     * No API call and no message.
+     */
+    if (
+      current ===
+      normalizeName(
+        wanted
+      )
+    ) {
+      return true;
+    }
+
+    const success =
+      await safeTitle(
+        api,
+        wanted,
+        threadID
+      );
+
+    if (success) {
+      data.gcNameRestores =
+        Number(
+          data.gcNameRestores ||
+            0
+        ) + 1;
+
+      saveData(
+        data
+      );
+
+      return true;
+    }
+
   } catch (error) {
     console.error(
-      "[RYUK] getBotID:",
+      "[RYUK] GC name apply error:",
       error.message ||
         error
     );
   }
 
-  return null;
-}
-
-function normalizeName(value) {
-  return cleanText(
-    value
-  ).slice(
-    0,
-    100
-  );
-}
-
-function sameName(
-  first,
-  second
-) {
-  return (
-    normalizeName(
-      first
-    ).toLowerCase() ===
-    normalizeName(
-      second
-    ).toLowerCase()
-  );
+  return false;
 }
 
 async function applyNickname(
   api,
   threadID,
-  data,
-  silent
+  userID,
+  data
 ) {
+  if (
+    !data ||
+    !data.active
+  ) {
+    return false;
+  }
+
+  if (!userID) {
+    return false;
+  }
+
+  const key =
+    `${threadID}:${userID}`;
+
+  if (
+    isCooldown(
+      nicknameRestoreLock,
+      key,
+      NICKNAME_RESTORE_COOLDOWN
+    )
+  ) {
+    return false;
+  }
+
   try {
-    const nickname =
-      normalizeName(
-        data.nickname
-      );
-
-    if (!nickname) {
-      return false;
-    }
-
-    const botID =
-      getBotID(api);
-
-    if (!botID) {
-      return false;
-    }
-
-    const key =
-      getThreadKey(
-        threadID
-      );
-
-    const current =
-      now();
-
-    const previous =
-      lastNicknameRestore[
-        key
-      ] || 0;
-
-    if (
-      current -
-        previous <
-      RESTORE_COOLDOWN
-    ) {
-      return false;
-    }
-
-    lastNicknameRestore[
-      key
-    ] = current;
+    const wanted =
+      getNickname();
 
     const success =
       await safeNickname(
         api,
-        nickname,
+        wanted,
         threadID,
-        botID
+        String(userID)
       );
 
     if (success) {
-      data.nickname =
-        nickname;
-
       data.nicknameCount =
         Number(
-          data.nicknameCount
+          data.nicknameCount ||
+            0
         ) + 1;
 
-      data.restoreCount =
-        Number(
-          data.restoreCount
-        ) + 1;
-
-      saveData(data);
+      saveData(
+        data
+      );
 
       return true;
     }
 
-    return false;
   } catch (error) {
-    data.errorCount =
-      Number(
-        data.errorCount
-      ) + 1;
-
-    saveData(data);
-
-    if (!silent) {
-      console.error(
-        "[RYUK] applyNickname:",
-        error.message ||
-          error
-      );
-    }
-
-    return false;
+    console.error(
+      "[RYUK] Nickname apply error:",
+      error.message ||
+        error
+    );
   }
-}
 
-async function applyGCName(
+  return false;
+    }async function setAllNicknames(
   api,
   threadID,
-  data,
-  silent
-) {
-  try {
-    const gcName =
-      normalizeName(
-        data.gcName
-      );
-
-    if (!gcName) {
-      return false;
-    }
-
-    const key =
-      getThreadKey(
-        threadID
-      );
-
-    const current =
-      now();
-
-    const previous =
-      lastGCNameRestore[
-        key
-      ] || 0;
-
-    if (
-      current -
-        previous <
-      RESTORE_COOLDOWN
-    ) {
-      return false;
-    }
-
-    lastGCNameRestore[
-      key
-    ] = current;
-
-    const success =
-      await safeTitle(
-        api,
-        gcName,
-        threadID
-      );
-
-    if (success) {
-      data.gcName =
-        gcName;
-
-      data.gcNameRestores =
-        Number(
-          data.gcNameRestores
-        ) + 1;
-
-      data.restoreCount =
-        Number(
-          data.restoreCount
-        ) + 1;
-
-      saveData(data);
-
-      return true;
-    }
-
-    return false;
-  } catch (error) {
-    data.errorCount =
-      Number(
-        data.errorCount
-      ) + 1;
-
-    saveData(data);
-
-    if (!silent) {
-      console.error(
-        "[RYUK] applyGCName:",
-        error.message ||
-          error
-      );
-    }
-
-    return false;
-  }
-}
-
-function scheduleNicknameRestore(
-  api,
-  threadID,
+  nickname,
   data
 ) {
-  const key =
-    getThreadKey(
+  const info =
+    await getThreadInfo(
+      api,
       threadID
     );
 
-  const restoreKey =
-    "nick:" + key;
-
-  if (
-    pendingRestore[
-      restoreKey
-    ]
-  ) {
-    return;
-  }
-
-  pendingRestore[
-    restoreKey
-  ] = true;
-
-  setTimeout(
-    async () => {
-      try {
-        await applyNickname(
-          api,
-          threadID,
-          data,
-          true
-        );
-      } catch (error) {
-        console.error(
-          "[RYUK] nickname restore:",
-          error.message ||
-            error
-        );
-      } finally {
-        delete pendingRestore[
-          restoreKey
-        ];
-      }
-    },
-    RESTORE_DELAY
-  );
-}
-
-function scheduleGCNameRestore(
-  api,
-  threadID,
-  data
-) {
-  const key =
-    getThreadKey(
-      threadID
-    );
-
-  const restoreKey =
-    "gname:" + key;
-
-  if (
-    pendingRestore[
-      restoreKey
-    ]
-  ) {
-    return;
-  }
-
-  pendingRestore[
-    restoreKey
-  ] = true;
-
-  setTimeout(
-    async () => {
-      try {
-        await applyGCName(
-          api,
-          threadID,
-          data,
-          true
-        );
-      } catch (error) {
-        console.error(
-          "[RYUK] group name restore:",
-          error.message ||
-            error
-        );
-      } finally {
-        delete pendingRestore[
-          restoreKey
-        ];
-      }
-    },
-    RESTORE_DELAY
-  );
-    }function getThreadKey(
-  threadID
-) {
-  return String(
-    threadID || ""
-  );
-}
-
-function now() {
-  return Date.now();
-}
-
-function getTargetData(
-  data,
-  threadID
-) {
-  const key =
-    getThreadKey(
-      threadID
-    );
-
-  if (
-    !data.target ||
-    typeof data.target !==
-      "object"
-  ) {
-    data.target = {};
-  }
-
-  if (
-    !data.target[key] ||
-    typeof data.target[key] !==
-      "object"
-  ) {
-    data.target[key] = {
-      enabled: false,
-      userID: "",
-      name: "",
-      updatedAt: 0
+  if (!info) {
+    return {
+      total: 0,
+      success: 0,
+      failed: 0
     };
   }
 
-  return data.target[key];
+  const participantIDs =
+    Array.isArray(
+      info.participantIDs
+    )
+      ? info.participantIDs
+      : [];
+
+  const uniqueIDs = [
+    ...new Set(
+      participantIDs.map(
+        id =>
+          String(id)
+      )
+    )
+  ];
+
+  let success = 0;
+  let failed = 0;
+
+  for (
+    const userID
+    of uniqueIDs
+  ) {
+    try {
+      const result =
+        await safeNickname(
+          api,
+          nickname,
+          threadID,
+          userID
+        );
+
+      if (result) {
+        success++;
+
+        data.nicknameCount =
+          Number(
+            data.nicknameCount ||
+              0
+          ) + 1;
+      } else {
+        failed++;
+      }
+
+    } catch (error) {
+      failed++;
+
+      console.error(
+        "[RYUK] Setnick error:",
+        error.message ||
+          error
+      );
+    }
+
+    /*
+     * Small controlled delay between
+     * nickname changes.
+     */
+    await wait(
+      NICKNAME_DELAY
+    );
+  }
+
+  saveData(
+    data
+  );
+
+  return {
+    total:
+      uniqueIDs.length,
+    success,
+    failed
+  };
 }
 
-function setTargetData(
-  data,
+async function setNicknameForUser(
+  api,
   threadID,
   userID,
-  name
+  data
 ) {
-  const target =
-    getTargetData(
-      data,
-      threadID
-    );
-
-  target.enabled =
-    true;
-
-  target.userID =
-    String(
-      userID || ""
-    );
-
-  target.name =
-    cleanText(
-      name || ""
-    );
-
-  target.updatedAt =
-    now();
-
-  saveData(data);
-
-  return target;
-}
-
-function clearTargetData(
-  data,
-  threadID
-) {
-  const key =
-    getThreadKey(
-      threadID
-    );
-
   if (
-    !data.target ||
-    typeof data.target !==
-      "object"
-  ) {
-    data.target = {};
-  }
-
-  data.target[key] = {
-    enabled: false,
-    userID: "",
-    name: "",
-    updatedAt: now()
-  };
-
-  saveData(data);
-
-  return true;
-}
-
-function targetEnabled(
-  data,
-  threadID
-) {
-  const target =
-    getTargetData(
-      data,
-      threadID
-    );
-
-  return Boolean(
-    target.enabled &&
-    target.userID
-  );
-}
-
-function isTargetUser(
-  data,
-  threadID,
-  senderID
-) {
-  if (!senderID) {
-    return false;
-  }
-
-  const target =
-    getTargetData(
-      data,
-      threadID
-    );
-
-  if (
-    !target.enabled ||
-    !target.userID
+    !userID
   ) {
     return false;
   }
 
-  return (
-    String(
-      target.userID
-    ) ===
-    String(senderID)
-  );
-}
+  const nickname =
+    getNickname();
 
-function getMentionedUserID(
-  event
-) {
-  try {
-    if (
-      !event ||
-      !event.mentions
-    ) {
-      return null;
-    }
-
-    const mentions =
-      event.mentions;
-
-    const ids =
-      Object.keys(
-        mentions
-      );
-
-    if (
-      ids.length === 0
-    ) {
-      return null;
-    }
-
-    return String(
-      ids[0]
-    );
-  } catch (error) {
-    return null;
-  }
-}
-
-function getMentionedUserName(
-  event,
-  userID
-) {
-  try {
-    if (
-      !event ||
-      !event.mentions ||
-      !userID
-    ) {
-      return "";
-    }
-
-    const mention =
-      event.mentions[
-        userID
-      ];
-
-    if (
-      typeof mention ===
-      "string"
-    ) {
-      return cleanText(
-        mention
-          .replace(
-            /^@/,
-            ""
-          )
-      );
-    }
-
-    if (
-      mention &&
-      typeof mention ===
-        "object"
-    ) {
-      return cleanText(
-        mention.name ||
-          mention.text ||
-          ""
-      );
-    }
-
-    return "";
-  } catch (error) {
-    return "";
-  }
-}
-
-function extractUserIDFromArgs(
-  event
-) {
-  const mentioned =
-    getMentionedUserID(
-      event
-    );
-
-  if (mentioned) {
-    return mentioned;
-  }
-
-  const args =
-    getCommandArgs(
-      event
-    );
-
-  if (
-    args.length === 0
-  ) {
-    return null;
-  }
-
-  const first =
-    String(
-      args[0] || ""
-    ).trim();
-
-  if (
-    /^\d{8,30}$/.test(
-      first
-    )
-  ) {
-    return first;
-  }
-
-  return null;
-}
-
-function getTargetName(
-  event,
-  userID
-) {
-  const mentionedName =
-    getMentionedUserName(
-      event,
-      userID
-    );
-
-  if (
-    mentionedName
-  ) {
-    return mentionedName;
-  }
-
-  const args =
-    getCommandArgs(
-      event
-    );
-
-  if (
-    args.length > 1
-  ) {
-    return cleanText(
-      args
-        .slice(1)
-        .join(" ")
-        .replace(
-          /@\S+/g,
-          ""
-        )
-    );
-  }
-
-  return "";
-}
-
-function getCommandValue(
-  event
-) {
-  return cleanText(
-    getArgumentText(
-      event
-    )
-  );
-}
-
-function validName(
-  value
-) {
-  const name =
-    normalizeName(
-      value
-    );
-
-  if (
-    !name
-  ) {
-    return false;
-  }
-
-  if (
-    name.length < 1
-  ) {
-    return false;
-  }
-
-  return true;
-}
-
-function saveNickname(
-  data,
-  nickname
-) {
-  const value =
-    normalizeName(
-      nickname
-    );
-
-  if (
-    !validName(value)
-  ) {
-    return false;
-  }
-
-  if (
-    sameName(
-      data.nickname,
-      value
-    )
-  ) {
-    return false;
-  }
-
-  data.nickname =
-    value;
-
-  saveData(data);
-
-  return true;
-}
-
-function saveGCName(
-  data,
-  gcName
-) {
-  const value =
-    normalizeName(
-      gcName
-    );
-
-  if (
-    !validName(value)
-  ) {
-    return false;
-  }
-
-  if (
-    sameName(
-      data.gcName,
-      value
-    )
-  ) {
-    return false;
-  }
-
-  data.gcName =
-    value;
-
-  saveData(data);
-
-  return true;
-  }function commandOn(
-  api,
-  event,
-  data
-) {
-  const threadID =
-    getThreadID(event);
-
-  if (!threadID) {
-    return;
-  }
-
-  data.active = true;
-
-  saveData(data);
-
-  safeSend(
+  return await applyNickname(
     api,
-    "💀 RYUK ON",
-    threadID
-  );
-}
-
-function commandOff(
-  api,
-  event,
-  data
-) {
-  const threadID =
-    getThreadID(event);
-
-  if (!threadID) {
-    return;
-  }
-
-  data.active = false;
-
-  saveData(data);
-
-  safeSend(
-    api,
-    "💀 RYUK OFF",
-    threadID
-  );
-}
-
-function commandLock(
-  api,
-  event,
-  data
-) {
-  const threadID =
-    getThreadID(event);
-
-  if (!threadID) {
-    return;
-  }
-
-  data.nicknameLock = true;
-  data.gcNameLock = true;
-
-  saveData(data);
-
-  safeSend(
-    api,
-    "🔒 RYUK LOCK ON",
-    threadID
-  );
-}
-
-function commandUnlock(
-  api,
-  event,
-  data
-) {
-  const threadID =
-    getThreadID(event);
-
-  if (!threadID) {
-    return;
-  }
-
-  data.nicknameLock = false;
-  data.gcNameLock = false;
-
-  saveData(data);
-
-  safeSend(
-    api,
-    "🔓 RYUK LOCK OFF",
-    threadID
-  );
-}
-
-function commandReplyOn(
-  api,
-  event,
-  data
-) {
-  const threadID =
-    getThreadID(event);
-
-  if (!threadID) {
-    return;
-  }
-
-  data.autoReply = true;
-
-  saveData(data);
-
-  safeSend(
-    api,
-    "💬 AUTO REPLY ON",
-    threadID
-  );
-}
-
-function commandReplyOff(
-  api,
-  event,
-  data
-) {
-  const threadID =
-    getThreadID(event);
-
-  if (!threadID) {
-    return;
-  }
-
-  data.autoReply = false;
-
-  saveData(data);
-
-  safeSend(
-    api,
-    "💬 AUTO REPLY OFF",
-    threadID
-  );
-}
-
-function commandReactOn(
-  api,
-  event,
-  data
-) {
-  const threadID =
-    getThreadID(event);
-
-  if (!threadID) {
-    return;
-  }
-
-  data.autoReact = true;
-
-  saveData(data);
-
-  safeSend(
-    api,
-    "⚡ AUTO REACT ON",
-    threadID
-  );
-}
-
-function commandReactOff(
-  api,
-  event,
-  data
-) {
-  const threadID =
-    getThreadID(event);
-
-  if (!threadID) {
-    return;
-  }
-
-  data.autoReact = false;
-
-  saveData(data);
-
-  safeSend(
-    api,
-    "⚡ AUTO REACT OFF",
-    threadID
-  );
-}
-
-async function commandSetNick(
-  api,
-  event,
-  data
-) {
-  const threadID =
-    getThreadID(event);
-
-  if (!threadID) {
-    return;
-  }
-
-  const value =
-    normalizeName(
-      getCommandValue(
-        event
-      )
-    );
-
-  if (!value) {
-    return;
-  }
-
-  data.nickname =
-    value;
-
-  saveData(data);
-
-  const botID =
-    getBotID(api);
-
-  if (!botID) {
-    return;
-  }
-
-  const success =
-    await safeNickname(
-      api,
-      value,
-      threadID,
-      botID
-    );
-
-  if (success) {
-    data.nicknameCount =
-      Number(
-        data.nicknameCount
-      ) + 1;
-
-    saveData(data);
-
-    await safeSend(
-      api,
-      "✅ Nickname set.",
-      threadID
-    );
-  }
-}
-
-async function commandSetGCName(
-  api,
-  event,
-  data
-) {
-  const threadID =
-    getThreadID(event);
-
-  if (!threadID) {
-    return;
-  }
-
-  const value =
-    normalizeName(
-      getCommandValue(
-        event
-      )
-    );
-
-  if (!value) {
-    return;
-  }
-
-  data.gcName =
-    value;
-
-  saveData(data);
-
-  const success =
-    await safeTitle(
-      api,
-      value,
-      threadID
-    );
-
-  if (success) {
-    data.gcNameRestores =
-      Number(
-        data.gcNameRestores
-      ) + 1;
-
-    saveData(data);
-
-    await safeSend(
-      api,
-      "✅ GC name set.",
-      threadID
-    );
-  }
-}
-
-async function commandTarget(
-  api,
-  event,
-  data
-) {
-  const threadID =
-    getThreadID(event);
-
-  if (!threadID) {
-    return;
-  }
-
-  const userID =
-    extractUserIDFromArgs(
-      event
-    );
-
-  if (!userID) {
-    return;
-  }
-
-  const name =
-    getTargetName(
-      event,
-      userID
-    );
-
-  setTargetData(
-    data,
     threadID,
     userID,
-    name
-  );
-
-  await safeSend(
-    api,
-    "🎯 Target set.",
-    threadID
+    data
   );
 }
 
-async function commandUntarget(
+async function setNicknameForNewMembers(
   api,
   event,
   data
 ) {
-  const threadID =
-    getThreadID(event);
-
-  if (!threadID) {
-    return;
-  }
-
-  clearTargetData(
-    data,
-    threadID
-  );
-
-  await safeSend(
-    api,
-    "🎯 Target off.",
-    threadID
-  );
-}function getStatusText(
-  data,
-  threadID
-) {
-  const target =
-    getTargetData(
-      data,
-      threadID
-    );
-
-  const targetStatus =
-    target.enabled &&
-    target.userID
-      ? "ON"
-      : "OFF";
-
-  const targetName =
-    target.name ||
-    target.userID ||
-    "NONE";
-
-  return [
-    "💀 RYUK STATUS",
-    "",
-    "Bot: " +
-      (data.active
-        ? "ON"
-        : "OFF"),
-    "Auto Reply: " +
-      (data.autoReply
-        ? "ON"
-        : "OFF"),
-    "Auto React: " +
-      (data.autoReact
-        ? "ON"
-        : "OFF"),
-    "Nickname Lock: " +
-      (data.nicknameLock
-        ? "ON"
-        : "OFF"),
-    "GC Name Lock: " +
-      (data.gcNameLock
-        ? "ON"
-        : "OFF"),
-    "Nickname: " +
-      (data.nickname ||
-        DEFAULT_NICKNAME),
-    "GC Name: " +
-      (data.gcName ||
-        DEFAULT_GC_NAME),
-    "Target: " +
-      targetStatus,
-    "Target User: " +
-      targetName
-  ].join("\n");
-}
-
-async function commandStatus(
-  api,
-  event,
-  data
-) {
-  const threadID =
-    getThreadID(event);
-
-  if (!threadID) {
-    return;
-  }
-
-  await safeSend(
-    api,
-    getStatusText(
-      data,
-      threadID
-    ),
-    threadID
-  );
-}
-
-async function commandHelp(
-  api,
-  event
-) {
-  const threadID =
-    getThreadID(event);
-
-  if (!threadID) {
-    return;
-  }
-
-  const helpText = [
-    "💀 RYUK COMMANDS",
-    "",
-    "/ryuk on",
-    "/ryuk off",
-    "/ryuk status",
-    "/ryuk lock",
-    "/ryuk unlock",
-    "/ryuk setnick NAME",
-    "/ryuk setgname NAME",
-    "/ryuk target @user",
-    "/ryuk untarget",
-    "/ryuk replyon",
-    "/ryuk replyoff",
-    "/ryuk reacton",
-    "/ryuk reactoff"
-  ].join("\n");
-
-  await safeSend(
-    api,
-    helpText,
-    threadID
-  );
-}
-
-function getCommandAction(
-  event
-) {
   if (
-    !commandIsRyuk(event)
-  ) {
-    return "";
-  }
-
-  const args =
-    getCommandArgs(
-      event
-    );
-
-  return String(
-    args[0] || ""
-  ).toLowerCase();
-}
-
-function isAllowedCommand(
-  action
-) {
-  return [
-    "on",
-    "off",
-    "status",
-    "lock",
-    "unlock",
-    "setnick",
-    "setgname",
-    "target",
-    "untarget",
-    "replyon",
-    "replyoff",
-    "reacton",
-    "reactoff",
-    "help"
-  ].includes(
-    action
-  );
-}
-
-async function runCommand(
-  api,
-  event
-) {
-  const senderID =
-    getSenderID(event);
-
-  if (
-    !isAdmin(senderID)
+    !data ||
+    !data.active ||
+    !data.nicknameLock
   ) {
     return;
   }
 
   if (
-    !commandIsRyuk(event)
+    event.logMessageType !==
+    "log:subscribe"
   ) {
     return;
   }
 
-  const action =
-    getCommandAction(
-      event
-    );
+  const logData =
+    event.logMessageData ||
+    {};
 
-  if (
-    !isAllowedCommand(
-      action
+  const added =
+    Array.isArray(
+      logData.addedParticipants
     )
+      ? logData.addedParticipants
+      : [];
+
+  if (
+    added.length === 0
   ) {
     return;
   }
-
-  const data =
-    loadData();
-
-  switch (action) {
-    case "on":
-      commandOn(
-        api,
-        event,
-        data
-      );
-      break;
-
-    case "off":
-      commandOff(
-        api,
-        event,
-        data
-      );
-      break;
-
-    case "status":
-      await commandStatus(
-        api,
-        event,
-        data
-      );
-      break;
-
-    case "lock":
-      commandLock(
-        api,
-        event,
-        data
-      );
-      break;
-
-    case "unlock":
-      commandUnlock(
-        api,
-        event,
-        data
-      );
-      break;
-
-    case "setnick":
-      await commandSetNick(
-        api,
-        event,
-        data
-      );
-      break;
-
-    case "setgname":
-      await commandSetGCName(
-        api,
-        event,
-        data
-      );
-      break;
-
-    case "target":
-      await commandTarget(
-        api,
-        event,
-        data
-      );
-      break;
-
-    case "untarget":
-      await commandUntarget(
-        api,
-        event,
-        data
-      );
-      break;
-
-    case "replyon":
-      commandReplyOn(
-        api,
-        event,
-        data
-      );
-      break;
-
-    case "replyoff":
-      commandReplyOff(
-        api,
-        event,
-        data
-      );
-      break;
-
-    case "reacton":
-      commandReactOn(
-        api,
-        event,
-        data
-      );
-      break;
-
-    case "reactoff":
-      commandReactOff(
-        api,
-        event,
-        data
-      );
-      break;
-
-    case "help":
-      await commandHelp(
-        api,
-        event
-      );
-      break;
-
-    default:
-      return;
-  }
-  }module.exports.run =
-  async function({
-    api,
-    event
-  }) {
-    try {
-      if (
-        !event ||
-        !api
-      ) {
-        return;
-      }
-
-      const senderID =
-        getSenderID(event);
-
-      if (
-        !isAdmin(senderID)
-      ) {
-        return;
-      }
-
-      if (
-        !commandIsRyuk(event)
-      ) {
-        return;
-      }
-
-      await runCommand(
-        api,
-        event
-      );
-
-    } catch (error) {
-      console.error(
-        "[RYUK] Command error:",
-        error.message ||
-          error
-      );
-
-      try {
-        const data =
-          loadData();
-
-        data.errorCount =
-          Number(
-            data.errorCount
-          ) + 1;
-
-        saveData(data);
-      } catch (_) {}
-    }
-  };
-
-module.exports.handleEvent =
-  async function({
-    api,
-    event
-  }) {
-    try {
-      if (
-        !api ||
-        !event
-      ) {
-        return;
-      }
-
-      const threadID =
-        getThreadID(event);
-
-      const senderID =
-        getSenderID(event);
-
-      if (
-        !threadID ||
-        !senderID
-      ) {
-        return;
-      }
-
-      const messageID =
-        getMessageID(event);
-
-      if (
-        messageID &&
-        alreadyProcessed(
-          messageID
-        )
-      ) {
-        return;
-      }
-
-      if (
-        messageID
-      ) {
-        rememberMessage(
-          messageID
-        );
-      }
-
-      const data =
-        loadData();
-
-      if (
-        isCommand(event)
-      ) {
-        return;
-      }
-
-      if (
-        !data.active
-      ) {
-        return;
-      }
-
-      if (
-        isAdmin(senderID)
-      ) {
-        return;
-      }
-
-      const body =
-        getBody(event);
-
-      if (!body) {
-        return;
-      }
-
-      if (
-        isSpam(senderID)
-      ) {
-        return;
-      }
-
-      const targetActive =
-        targetEnabled(
-          data,
-          threadID
-        );
-
-      if (
-        targetActive &&
-        !isTargetUser(
-          data,
-          threadID,
-          senderID
-        )
-      ) {
-        return;
-      }
-
-      if (
-        data.autoReact &&
-        messageID &&
-        canReact(
-          threadID
-        )
-      ) {
-        const reaction =
-          getAutoReaction();
-
-        await safeReaction(
-          api,
-          reaction,
-          messageID
-        );
-      }
-
-      if (
-        data.autoReply &&
-        canReply(
-          threadID
-        )
-      ) {
-        const reply =
-          getAutoReply();
-
-        await safeSend(
-          api,
-          reply,
-          threadID
-        );
-
-        data.replyCount =
-          Number(
-            data.replyCount
-          ) + 1;
-
-        saveData(data);
-      }
-
-    } catch (error) {
-      console.error(
-        "[RYUK] Event error:",
-        error.message ||
-          error
-      );
-
-      try {
-        const data =
-          loadData();
-
-        data.errorCount =
-          Number(
-            data.errorCount
-          ) + 1;
-
-        saveData(data);
-      } catch (_) {}
-    }
-  };function getLogData(
-  event
-) {
-  if (
-    !event ||
-    !event.logMessageData
-  ) {
-    return {};
-  }
-
-  if (
-    typeof event.logMessageData ===
-    "object"
-  ) {
-    return event.logMessageData;
-  }
-
-  try {
-    return JSON.parse(
-      event.logMessageData
-    );
-  } catch (error) {
-    return {};
-  }
-}
-
-function getLogType(
-  event
-) {
-  if (
-    !event
-  ) {
-    return "";
-  }
-
-  return String(
-    event.logMessageType ||
-      ""
-  ).toLowerCase();
-}
-
-function isGroupNameEvent(
-  event
-) {
-  const type =
-    getLogType(event);
-
-  const data =
-    getLogData(event);
-
-  if (
-    type ===
-      "log:thread-name" ||
-    type.includes(
-      "thread-name"
-    ) ||
-    type.includes(
-      "group-name"
-    )
-  ) {
-    return true;
-  }
-
-  if (
-    data &&
-    (
-      data.name !==
-        undefined ||
-      data.thread_name !==
-        undefined ||
-      data.new_name !==
-        undefined ||
-      data.old_name !==
-        undefined
-    )
-  ) {
-    return true;
-  }
-
-  return false;
-}
-
-function isNicknameEvent(
-  event
-) {
-  const type =
-    getLogType(event);
-
-  const data =
-    getLogData(event);
-
-  if (
-    type ===
-      "log:user-nickname" ||
-    type.includes(
-      "user-nickname"
-    ) ||
-    type.includes(
-      "nickname"
-    )
-  ) {
-    return true;
-  }
-
-  if (
-    data &&
-    (
-      data.nickname !==
-        undefined ||
-      data.new_nickname !==
-        undefined ||
-      data.old_nickname !==
-        undefined
-    )
-  ) {
-    return true;
-  }
-
-  return false;
-}
-
-function getChangedNicknameUserID(
-  event
-) {
-  const data =
-    getLogData(event);
-
-  const possibleIDs = [
-    data.participant_id,
-    data.participantID,
-    data.user_id,
-    data.userID,
-    data.author,
-    data.author_id,
-    data.uid,
-    data.actor_id
-  ];
 
   for (
-    const value of
-      possibleIDs
+    const participant
+    of added
   ) {
     if (
-      value !==
-        undefined &&
-      value !==
-        null &&
-      String(value).trim()
+      !participant
     ) {
-      return String(
-        value
-      );
+      continue;
     }
-  }
 
-  return null;
+    const userID =
+      participant.userFbId ||
+      participant.userId ||
+      participant.id;
+
+    if (
+      !userID
+    ) {
+      continue;
+    }
+
+    await wait(
+      RESTORE_DELAY
+    );
+
+    await setNicknameForUser(
+      api,
+      event.threadID,
+      String(userID),
+      data
+    );
+  }
 }
 
-function getChangedNickname(
-  event
+async function setCurrentGroupName(
+  api,
+  threadID,
+  data
 ) {
-  const data =
-    getLogData(event);
-
-  const possibleNames = [
-    data.nickname,
-    data.new_nickname,
-    data.newNickname,
-    data.name
-  ];
-
-  for (
-    const value of
-      possibleNames
+  if (
+    !data ||
+    !data.active ||
+    !data.gcNameLock
   ) {
-    if (
-      typeof value ===
-        "string" &&
-      value.trim()
-    ) {
-      return cleanText(
-        value
-      );
-    }
+    return false;
   }
 
-  return "";
-}
-
-function shouldRestoreNickname(
+  return await applyGroupName(
+    api,
+    threadID,
+    data
+  );
+      }async function handleNicknameEvent(
   api,
   event,
   data
 ) {
   if (
+    !data ||
+    !data.active ||
     !data.nicknameLock
   ) {
     return false;
   }
 
   if (
-    !isNicknameEvent(event)
+    event.logMessageType !==
+    "log:user-nickname"
   ) {
     return false;
   }
 
-  const botID =
-    getBotID(api);
+  const threadID =
+    event.threadID;
 
-  if (
-    !botID
-  ) {
-    return false;
+  if (!threadID) {
+    return true;
   }
 
-  const changedUserID =
-    getChangedNicknameUserID(
-      event
+  const logData =
+    event.logMessageData ||
+    {};
+
+  const userID =
+    logData.participant_id ||
+    logData.user_id;
+
+  if (!userID) {
+    return true;
+  }
+
+  const currentNickname =
+    normalizeName(
+      logData.nickname
     );
 
-  if (
-    changedUserID &&
-    String(
-      changedUserID
-    ) !==
-      String(botID)
-  ) {
-    return false;
-  }
-
-  const changedNickname =
-    getChangedNickname(
-      event
+  const wantedNickname =
+    normalizeName(
+      getNickname()
     );
 
+  /*
+   * Already correct.
+   * Do nothing.
+   */
   if (
-    changedNickname &&
-    sameName(
-      changedNickname,
-      data.nickname
-    )
+    currentNickname ===
+    wantedNickname
   ) {
-    return false;
+    return true;
   }
+
+  await wait(
+    RESTORE_DELAY
+  );
+
+  await setNicknameForUser(
+    api,
+    threadID,
+    String(userID),
+    data
+  );
 
   return true;
 }
 
-function shouldRestoreGCName(
+async function handleGCNameEvent(
+  api,
   event,
   data
 ) {
   if (
+    !data ||
+    !data.active ||
     !data.gcNameLock
   ) {
     return false;
   }
 
   if (
-    !isGroupNameEvent(event)
+    event.logMessageType !==
+    "log:thread-name"
   ) {
     return false;
+  }
+
+  const threadID =
+    event.threadID;
+
+  if (!threadID) {
+    return true;
   }
 
   const logData =
-    getLogData(event);
+    event.logMessageData ||
+    {};
 
   const changedName =
-    cleanText(
-      logData.name ||
-        logData.thread_name ||
-        logData.new_name ||
-        ""
+    normalizeName(
+      logData.name
     );
 
-  if (
-    changedName &&
-    sameName(
-      changedName,
-      data.gcName
-    )
-  ) {
-    return false;
-  }
-
-  return true;
-}
-
-async function handleRestoreEvents(
-  api,
-  event,
-  data
-) {
-  const threadID =
-    getThreadID(event);
-
-  if (
-    !threadID
-  ) {
-    return;
-  }
-
-  if (
-    shouldRestoreNickname(
-      api,
-      event,
-      data
-    )
-  ) {
-    scheduleNicknameRestore(
-      api,
-      threadID,
-      data
-    );
-  }
-
-  if (
-    shouldRestoreGCName(
-      event,
-      data
-    )
-  ) {
-    scheduleGCNameRestore(
-      api,
-      threadID,
-      data
-    );
-  }
-}function resetRestoreCooldown(
-  threadID,
-  type
-) {
-  const key =
-    getThreadKey(
-      threadID
+  const wantedName =
+    normalizeName(
+      getGCName()
     );
 
+  /*
+   * Messenger may emit the event
+   * more than once. Ignore events
+   * that already contain the correct name.
+   */
   if (
-    type === "nickname"
-  ) {
-    delete lastNicknameRestore[
-      key
-    ];
-    return;
-  }
-
-  if (
-    type === "gcname"
-  ) {
-    delete lastGCNameRestore[
-      key
-    ];
-  }
-}
-
-function restoreSavedSettings(
-  api,
-  event,
-  data
-) {
-  const threadID =
-    getThreadID(event);
-
-  if (
-    !threadID
-  ) {
-    return;
-  }
-
-  if (
-    data.nicknameLock &&
-    data.nickname
-  ) {
-    scheduleNicknameRestore(
-      api,
-      threadID,
-      data
-    );
-  }
-
-  if (
-    data.gcNameLock &&
-    data.gcName
-  ) {
-    scheduleGCNameRestore(
-      api,
-      threadID,
-      data
-    );
-  }
-}
-
-function isOwnNicknameChange(
-  api,
-  event
-) {
-  const botID =
-    getBotID(api);
-
-  if (
-    !botID
-  ) {
-    return false;
-  }
-
-  const changedID =
-    getChangedNicknameUserID(
-      event
-    );
-
-  if (
-    !changedID
+    changedName ===
+    wantedName
   ) {
     return true;
   }
 
-  return (
-    String(
-      changedID
-    ) ===
-    String(botID)
+  await wait(
+    RESTORE_DELAY
   );
-}
 
-function isRelevantRestoreEvent(
-  event
-) {
-  return (
-    isNicknameEvent(event) ||
-    isGroupNameEvent(event)
-  );
-}
-
-async function processRestoreEvent(
-  api,
-  event,
-  data
-) {
-  if (
-    !isRelevantRestoreEvent(
-      event
-    )
-  ) {
-    return;
-  }
-
-  const threadID =
-    getThreadID(event);
-
-  if (
-    !threadID
-  ) {
-    return;
-  }
-
-  if (
-    isNicknameEvent(event) &&
-    data.nicknameLock
-  ) {
-    if (
-      isOwnNicknameChange(
-        api,
-        event
-      )
-    ) {
-      scheduleNicknameRestore(
-        api,
-        threadID,
-        data
-      );
-    }
-  }
-
-  if (
-    isGroupNameEvent(event) &&
-    data.gcNameLock
-  ) {
-    scheduleGCNameRestore(
-      api,
-      threadID,
-      data
-    );
-  }
-}
-
-function updateRestoreCounters(
-  data
-) {
-  if (
-    typeof data.restoreCount !==
-    "number"
-  ) {
-    data.restoreCount = 0;
-  }
-
-  if (
-    typeof data.nicknameCount !==
-    "number"
-  ) {
-    data.nicknameCount = 0;
-  }
-
-  if (
-    typeof data.gcNameRestores !==
-    "number"
-  ) {
-    data.gcNameRestores = 0;
-  }
-
-  if (
-    typeof data.errorCount !==
-    "number"
-  ) {
-    data.errorCount = 0;
-  }
-}
-
-function ensureRuntimeData(
-  data
-) {
-  if (
-    !data ||
-    typeof data !==
-      "object"
-  ) {
-    return cloneDefaultData();
-  }
-
-  if (
-    !data.target ||
-    typeof data.target !==
-      "object"
-  ) {
-    data.target = {};
-  }
-
-  if (
-    typeof data.nickname !==
-      "string" ||
-    !data.nickname.trim()
-  ) {
-    data.nickname =
-      DEFAULT_NICKNAME;
-  }
-
-  if (
-    typeof data.gcName !==
-      "string" ||
-    !data.gcName.trim()
-  ) {
-    data.gcName =
-      DEFAULT_GC_NAME;
-  }
-
-  updateRestoreCounters(
+  /*
+   * applyGroupName() checks the
+   * actual thread name again before
+   * calling setTitle().
+   */
+  await setCurrentGroupName(
+    api,
+    threadID,
     data
   );
 
-  return data;
-}function cleanupCaches() {
-  const current =
-    Date.now();
-
-  const replyKeys =
-    Object.keys(
-      lastReply
-    );
-
-  for (
-    const key of replyKeys
-  ) {
-    if (
-      current -
-        lastReply[key] >
-      60000
-    ) {
-      delete lastReply[
-        key
-      ];
-    }
-  }
-
-  const reactionKeys =
-    Object.keys(
-      lastReaction
-    );
-
-  for (
-    const key of reactionKeys
-  ) {
-    if (
-      current -
-        lastReaction[key] >
-      60000
-    ) {
-      delete lastReaction[
-        key
-      ];
-    }
-  }
-
-  const nicknameKeys =
-    Object.keys(
-      lastNicknameRestore
-    );
-
-  for (
-    const key of nicknameKeys
-  ) {
-    if (
-      current -
-        lastNicknameRestore[key] >
-      60000
-    ) {
-      delete lastNicknameRestore[
-        key
-      ];
-    }
-  }
-
-  const gcNameKeys =
-    Object.keys(
-      lastGCNameRestore
-    );
-
-  for (
-    const key of gcNameKeys
-  ) {
-    if (
-      current -
-        lastGCNameRestore[key] >
-      60000
-    ) {
-      delete lastGCNameRestore[
-        key
-      ];
-    }
-  }
-
-  const pendingKeys =
-    Object.keys(
-      pendingRestore
-    );
-
-  for (
-    const key of pendingKeys
-  ) {
-    if (
-      pendingRestore[key] ===
-      false
-    ) {
-      delete pendingRestore[
-        key
-      ];
-    }
-  }
-}
-
-function ensureDataFile() {
-  try {
-    if (
-      !fs.existsSync(
-        DATA_PATH
-      )
-    ) {
-      saveData(
-        cloneDefaultData()
-      );
-    }
-
-    let data =
-      loadData();
-
-    data =
-      ensureRuntimeData(
-        data
-      );
-
-    if (
-      typeof data.active !==
-        "boolean"
-    ) {
-      data.active = false;
-    }
-
-    if (
-      typeof data.autoReply !==
-        "boolean"
-    ) {
-      data.autoReply = true;
-    }
-
-    if (
-      typeof data.autoReact !==
-        "boolean"
-    ) {
-      data.autoReact = true;
-    }
-
-    if (
-      typeof data.nicknameLock !==
-        "boolean"
-    ) {
-      data.nicknameLock = false;
-    }
-
-    if (
-      typeof data.gcNameLock !==
-        "boolean"
-    ) {
-      data.gcNameLock = false;
-    }
-
-    if (
-      typeof data.replyCount !==
-        "number"
-    ) {
-      data.replyCount = 0;
-    }
-
-    if (
-      typeof data.reactionCount !==
-        "number"
-    ) {
-      data.reactionCount = 0;
-    }
-
-    if (
-      typeof data.nicknameCount !==
-        "number"
-    ) {
-      data.nicknameCount = 0;
-    }
-
-    if (
-      typeof data.restoreCount !==
-        "number"
-    ) {
-      data.restoreCount = 0;
-    }
-
-    if (
-      typeof data.gcNameRestores !==
-        "number"
-    ) {
-      data.gcNameRestores = 0;
-    }
-
-    if (
-      typeof data.errorCount !==
-        "number"
-    ) {
-      data.errorCount = 0;
-    }
-
-    saveData(
-      data
-    );
-
-  } catch (error) {
-    console.error(
-      "[RYUK] Data initialization error:",
-      error.message ||
-        error
-    );
-  }
-}
-
-ensureDataFile();
-
-setInterval(
-  () => {
-    try {
-      cleanupCaches();
-    } catch (error) {
-      console.error(
-        "[RYUK] Cleanup error:",
-        error.message ||
-          error
-      );
-    }
-  },
-  60000
-);function getEventText(
-  event
-) {
-  const body =
-    getBody(event);
-
-  if (body) {
-    return body;
-  }
-
-  const data =
-    getLogData(event);
-
-  if (!data) {
-    return "";
-  }
-
-  const values = [
-    data.name,
-    data.thread_name,
-    data.new_name,
-    data.nickname,
-    data.new_nickname,
-    data.message
-  ];
-
-  for (
-    const value of values
-  ) {
-    if (
-      typeof value ===
-        "string" &&
-      value.trim()
-    ) {
-      return cleanText(
-        value
-      );
-    }
-  }
-
-  return "";
-}
-
-function shouldIgnoreEvent(
-  event
-) {
-  if (
-    !event
-  ) {
-    return true;
-  }
-
-  if (
-    event.type ===
-    "message_reply"
-  ) {
-    return false;
-  }
-
-  if (
-    event.type ===
-    "message_reaction"
-  ) {
-    return false;
-  }
-
-  return false;
-}
-
-function canProcessMessage(
-  event
-) {
-  const messageID =
-    getMessageID(event);
-
-  if (
-    !messageID
-  ) {
-    return true;
-  }
-
-  if (
-    alreadyProcessed(
-      messageID
-    )
-  ) {
-    return false;
-  }
-
-  rememberMessage(
-    messageID
-  );
-
   return true;
 }
 
-function shouldAutoReply(
-  data,
-  event,
-  threadID,
-  senderID
-) {
-  if (
-    !data.active ||
-    !data.autoReply
-  ) {
-    return false;
-  }
-
-  if (
-    !threadID ||
-    !senderID
-  ) {
-    return false;
-  }
-
-  if (
-    isAdmin(senderID)
-  ) {
-    return false;
-  }
-
-  if (
-    targetEnabled(
-      data,
-      threadID
-    ) &&
-    !isTargetUser(
-      data,
-      threadID,
-      senderID
-    )
-  ) {
-    return false;
-  }
-
-  if (
-    !getEventText(event)
-  ) {
-    return false;
-  }
-
-  if (
-    isSpam(senderID)
-  ) {
-    return false;
-  }
-
-  return canReply(
-    threadID
-  );
-}
-
-function shouldAutoReact(
-  data,
-  event,
-  threadID,
-  senderID
-) {
-  if (
-    !data.active ||
-    !data.autoReact
-  ) {
-    return false;
-  }
-
-  if (
-    !threadID ||
-    !senderID
-  ) {
-    return false;
-  }
-
-  if (
-    isAdmin(senderID)
-  ) {
-    return false;
-  }
-
-  if (
-    targetEnabled(
-      data,
-      threadID
-    ) &&
-    !isTargetUser(
-      data,
-      threadID,
-      senderID
-    )
-  ) {
-    return false;
-  }
-
-  const messageID =
-    getMessageID(event);
-
-  if (
-    !messageID
-  ) {
-    return false;
-  }
-
-  return canReact(
-    threadID
-  );
-}
-
-async function processAutoActions(
+async function handleLockEvents(
   api,
   event,
   data
 ) {
-  const threadID =
-    getThreadID(event);
-
-  const senderID =
-    getSenderID(event);
-
   if (
-    !threadID ||
-    !senderID
+    !event ||
+    !event.logMessageType
   ) {
-    return;
+    return false;
   }
 
-  const replyAllowed =
-    shouldAutoReply(
-      data,
-      event,
-      threadID,
-      senderID
-    );
-
-  const reactAllowed =
-    shouldAutoReact(
-      data,
-      event,
-      threadID,
-      senderID
-    );
-
-  const messageID =
-    getMessageID(event);
-
-  if (
-    reactAllowed &&
-    messageID
-  ) {
-    const reaction =
-      getAutoReaction();
-
-    const success =
-      await safeReaction(
-        api,
-        reaction,
-        messageID
-      );
-
-    if (success) {
-      data.reactionCount =
-        Number(
-          data.reactionCount
-        ) + 1;
-
-      saveData(data);
-    }
-  }
-
-  if (
-    replyAllowed
-  ) {
-    const reply =
-      getAutoReply();
-
-    const success =
-      await safeSend(
-        api,
-        reply,
-        threadID
-      );
-
-    if (success) {
-      data.replyCount =
-        Number(
-          data.replyCount
-        ) + 1;
-
-      saveData(data);
-    }
-  }
-      }async function handleMessageEvent(
-  api,
-  event
-) {
-  try {
-    if (
-      !api ||
-      !event
-    ) {
-      return;
-    }
-
-    if (
-      shouldIgnoreEvent(
-        event
-      )
-    ) {
-      return;
-    }
-
-    const threadID =
-      getThreadID(event);
-
-    const senderID =
-      getSenderID(event);
-
-    if (
-      !threadID ||
-      !senderID
-    ) {
-      return;
-    }
-
-    if (
-      isCommand(event)
-    ) {
-      return;
-    }
-
-    if (
-      !canProcessMessage(
-        event
-      )
-    ) {
-      return;
-    }
-
-    const data =
-      ensureRuntimeData(
-        loadData()
-      );
-
-    await processAutoActions(
+  const nicknameHandled =
+    await handleNicknameEvent(
       api,
       event,
       data
     );
 
-  } catch (error) {
-    console.error(
-      "[RYUK] Message handler:",
-      error.message ||
-        error
-    );
-
-    try {
-      const data =
-        ensureRuntimeData(
-          loadData()
-        );
-
-      data.errorCount =
-        Number(
-          data.errorCount
-        ) + 1;
-
-      saveData(data);
-    } catch (_) {}
-  }
-}
-
-async function handleLogEvent(
-  api,
-  event
-) {
-  try {
-    if (
-      !api ||
-      !event
-    ) {
-      return;
-    }
-
-    const threadID =
-      getThreadID(event);
-
-    if (
-      !threadID
-    ) {
-      return;
-    }
-
-    const data =
-      ensureRuntimeData(
-        loadData()
-      );
-
-    await processRestoreEvent(
-      api,
-      event,
-      data
-    );
-
-  } catch (error) {
-    console.error(
-      "[RYUK] Log handler:",
-      error.message ||
-        error
-    );
-
-    try {
-      const data =
-        ensureRuntimeData(
-          loadData()
-        );
-
-      data.errorCount =
-        Number(
-          data.errorCount
-        ) + 1;
-
-      saveData(data);
-    } catch (_) {}
-  }
-}
-
-function isLogEvent(
-  event
-) {
-  const type =
-    getLogType(event);
-
   if (
-    type.startsWith(
-      "log:"
-    )
+    nicknameHandled
   ) {
     return true;
   }
 
-  return (
-    isNicknameEvent(
-      event
-    ) ||
-    isGroupNameEvent(
-      event
-    )
-  );
-}
-
-function isMessageEvent(
-  event
-) {
-  if (
-    !event
-  ) {
-    return false;
-  }
+  const groupNameHandled =
+    await handleGCNameEvent(
+      api,
+      event,
+      data
+    );
 
   if (
-    isLogEvent(event)
-  ) {
-    return false;
-  }
-
-  if (
-    event.type ===
-      "message" ||
-    event.type ===
-      "message_reply" ||
-    event.type ===
-      "message_unsend" ||
-    typeof event.body ===
-      "string"
+    groupNameHandled
   ) {
     return true;
   }
 
   return false;
+      }function getCommandParts(
+  input
+) {
+  if (
+    typeof input !==
+    "string"
+  ) {
+    return [];
+  }
+
+  return input
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
 }
 
-async function dispatchEvent(
-  api,
+function getCommandName(
+  input
+) {
+  const parts =
+    getCommandParts(
+      input
+    );
+
+  if (
+    parts.length === 0
+  ) {
+    return "";
+  }
+
+  return String(
+    parts[0]
+  )
+    .toLowerCase()
+    .replace(
+      /^[/!]/,
+      ""
+    );
+}
+
+function getCommandArgs(
+  input
+) {
+  const parts =
+    getCommandParts(
+      input
+    );
+
+  if (
+    parts.length <= 1
+  ) {
+    return [];
+  }
+
+  return parts
+    .slice(1)
+    .map(
+      item =>
+        String(
+          item
+        ).trim()
+    )
+    .filter(Boolean);
+}
+
+function isRyukCommand(
+  input
+) {
+  return (
+    getCommandName(
+      input
+    ) === "ryuk"
+  );
+}
+
+function getReplyTarget(
   event
 ) {
   if (
-    isLogEvent(event)
+    !event
   ) {
-    await handleLogEvent(
-      api,
-      event
-    );
-
-    return;
+    return null;
   }
 
   if (
-    isMessageEvent(event)
+    event.messageReply &&
+    event.messageReply.senderID
   ) {
-    await handleMessageEvent(
-      api,
-      event
+    return String(
+      event.messageReply.senderID
     );
   }
-  }module.exports.handleEvent =
-  async function({
-    api,
-    event
-  }) {
-    try {
-      if (
-        !api ||
-        !event
-      ) {
-        return;
-      }
 
-      await dispatchEvent(
-        api,
-        event
-      );
+  return null;
+}
 
-    } catch (error) {
-      console.error(
-        "[RYUK] handleEvent:",
-        error.message ||
-          error
-      );
+function getSenderID(
+  event
+) {
+  if (
+    !event
+  ) {
+    return "";
+  }
 
-      try {
-        const data =
-          ensureRuntimeData(
-            loadData()
-          );
+  return String(
+    event.senderID ||
+      ""
+  );
+}
 
-        data.errorCount =
-          Number(
-            data.errorCount
-          ) + 1;
+function getThreadID(
+  event
+) {
+  if (
+    !event
+  ) {
+    return "";
+  }
 
-        saveData(
-          data
-        );
-      } catch (_) {}
-    }
-  };
+  return String(
+    event.threadID ||
+      ""
+  );
+}
 
-module.exports.onLoad =
-  function({
-    api
-  }) {
-    try {
-      ensureDataFile();
+function isCommandMessage(
+  event
+) {
+  const body =
+    event &&
+    typeof event.body ===
+      "string"
+      ? event.body.trim()
+      : "";
 
-      if (
-        api &&
-        typeof api.getCurrentUserID ===
-          "function"
-      ) {
-        const botID =
-          api.getCurrentUserID();
+  return (
+    body.startsWith(
+      "/ryuk"
+    ) ||
+    body.startsWith(
+      "!ryuk"
+    )
+  );
+}
 
-        if (botID) {
-          console.log(
-            "[RYUK] Loaded:",
-            String(botID)
-          );
-        }
-      }
+function getCommandUsage() {
+  return [
+    "/ryuk on",
+    "/ryuk off",
+    "/ryuk status",
+    "/ryuk lock",
+    "/ryuk unlock",
+    "/ryuk setnick",
+    "/ryuk setgname",
+    "/ryuk target <UID>",
+    "/ryuk untarget",
+    "/ryuk replyon",
+    "/ryuk replyoff",
+    "/ryuk reacton",
+    "/ryuk reactoff",
+    "/ryuk help"
+  ];
+}
 
-    } catch (error) {
-      console.error(
-        "[RYUK] onLoad:",
-        error.message ||
-          error
-      );
-    }
-  };function normalizeCommand(
+function buildHelpText() {
+  return [
+    "🥷 RYUK COMMANDS",
+    "",
+    "/ryuk on",
+    "/ryuk off",
+    "/ryuk status",
+    "/ryuk lock",
+    "/ryuk unlock",
+    "/ryuk setnick",
+    "/ryuk setgname",
+    "/ryuk target <UID>",
+    "/ryuk untarget",
+    "/ryuk replyon",
+    "/ryuk replyoff",
+    "/ryuk reacton",
+    "/ryuk reactoff",
+    "/ryuk help"
+  ].join("\n");
+}function getStatusText(
+  data,
+  threadID
+) {
+  const target =
+    getTarget(
+      data,
+      threadID
+    );
+
+  const targetText =
+    target
+      ? String(target)
+      : "WALA";
+
+  return [
+    "🥷 RYUK STATUS",
+    "",
+    `Bot: ${
+      data.active
+        ? "ON"
+        : "OFF"
+    }`,
+    `Auto Reply: ${
+      data.autoReply
+        ? "ON"
+        : "OFF"
+    }`,
+    `Auto React: ${
+      data.autoReact
+        ? "ON"
+        : "OFF"
+    }`,
+    `Nickname Lock: ${
+      data.nicknameLock
+        ? "ON"
+        : "OFF"
+    }`,
+    `GC Name Lock: ${
+      data.gcNameLock
+        ? "ON"
+        : "OFF"
+    }`,
+    `Nickname: ${getNickname()}`,
+    `GC Name: ${getGCName()}`,
+    `Target: ${targetText}`,
+    "",
+    `Replies: ${
+      Number(
+        data.replyCount ||
+          0
+      )
+    }`,
+    `Reactions: ${
+      Number(
+        data.reactionCount ||
+          0
+      )
+    }`,
+    `Nicknames changed: ${
+      Number(
+        data.nicknameCount ||
+          0
+      )
+    }`,
+    `GC restores: ${
+      Number(
+        data.gcNameRestores ||
+          0
+      )
+    }`,
+    `Errors: ${
+      Number(
+        data.errorCount ||
+          0
+      )
+    }`
+  ].join("\n");
+}
+
+function normalizeCommandArg(
   value
 ) {
   return String(
@@ -3945,1741 +1625,2229 @@ module.exports.onLoad =
     .toLowerCase();
 }
 
-function parseRyukCommand(
-  event
+function isOnArg(
+  value
 ) {
-  const body =
-    getBody(event);
-
-  if (
-    !body ||
-    !body.startsWith("/")
-  ) {
-    return {
-      valid: false,
-      command: "",
-      args: [],
-      text: ""
-    };
-  }
-
-  const parts =
-    body
-      .slice(1)
-      .trim()
-      .split(/\s+/);
-
-  if (
-    parts.length === 0
-  ) {
-    return {
-      valid: false,
-      command: "",
-      args: [],
-      text: ""
-    };
-  }
-
-  const command =
-    normalizeCommand(
-      parts[0]
-    );
-
-  if (
-    command !== "ryuk"
-  ) {
-    return {
-      valid: false,
-      command: "",
-      args: [],
-      text: ""
-    };
-  }
-
-  const args =
-    parts.slice(1);
-
-  return {
-    valid: true,
-    command: "ryuk",
-    args: args,
-    text: cleanText(
-      args.join(" ")
-    )
-  };
-}
-
-function isRyukCommand(
-  event
-) {
-  const parsed =
-    parseRyukCommand(
-      event
-    );
-
-  return parsed.valid;
-}
-
-function getRyukAction(
-  event
-) {
-  const parsed =
-    parseRyukCommand(
-      event
-    );
-
-  if (
-    !parsed.valid
-  ) {
-    return "";
-  }
-
-  return normalizeCommand(
-    parsed.args[0] || ""
+  return (
+    normalizeCommandArg(
+      value
+    ) === "on"
   );
 }
 
-function getRyukArguments(
-  event
+function isOffArg(
+  value
 ) {
-  const parsed =
-    parseRyukCommand(
-      event
-    );
+  return (
+    normalizeCommandArg(
+      value
+    ) === "off"
+  );
+}
+
+function getUIDFromArgs(
+  args
+) {
+  if (
+    !Array.isArray(args) ||
+    args.length === 0
+  ) {
+    return null;
+  }
+
+  const value =
+    String(
+      args[0] || ""
+    ).trim();
 
   if (
-    !parsed.valid
+    !value
   ) {
+    return null;
+  }
+
+  /*
+   * Accept only a numeric
+   * Facebook user ID here.
+   */
+  if (
+    !/^\d+$/.test(
+      value
+    )
+  ) {
+    return null;
+  }
+
+  return value;
+}
+
+function resetThreadCooldowns(
+  threadID
+) {
+  const key =
+    getThreadKey(
+      threadID
+    );
+
+  delete lastReply[
+    key
+  ];
+
+  delete lastReaction[
+    key
+  ];
+
+  delete gcNameRestoreLock[
+    key
+  ];
+}
+
+function incrementError(
+  data
+) {
+  data.errorCount =
+    Number(
+      data.errorCount ||
+        0
+    ) + 1;
+
+  saveData(
+    data
+  );
+}
+
+function incrementReply(
+  data
+) {
+  data.replyCount =
+    Number(
+      data.replyCount ||
+        0
+    ) + 1;
+}
+
+function incrementReaction(
+  data
+) {
+  data.reactionCount =
+    Number(
+      data.reactionCount ||
+        0
+    ) + 1;
+}
+
+function isValidThread(
+  event
+) {
+  return Boolean(
+    event &&
+    event.threadID
+  );
+}
+
+function isValidMessage(
+  event
+) {
+  return Boolean(
+    event &&
+    event.messageID
+  );
+}const handleGroupNameChange = async (api, event) => {
+  const threadID = event.threadID;
+  if (!threadID) return;
+
+  const data = getThreadData(threadID);
+  if (!data || !data.autoGname || !data.savedGname) return;
+
+  if (restoreLock.has(threadID)) return;
+
+  restoreLock.add(threadID);
+
+  try {
+    await sleep(1200);
+
+    const threadInfo = await getThreadInfo(api, threadID);
+    if (!threadInfo) return;
+
+    const currentName = String(threadInfo.threadName || "").trim();
+    const savedName = String(data.savedGname || "").trim();
+
+    if (!savedName || currentName === savedName) return;
+
+    await api.setTitle(savedName, threadID);
+
+    data.lastGnameRestore = Date.now();
+    data.gnameRestoreCount = Number(data.gnameRestoreCount || 0) + 1;
+
+    saveData();
+  } catch (error) {
+    logError("GROUP_NAME_RESTORE", error);
+  } finally {
+    setTimeout(() => {
+      restoreLock.delete(threadID);
+    }, 3000);
+  }
+};
+
+const handleNicknameChange = async (api, event) => {
+  const threadID = event.threadID;
+  if (!threadID) return;
+
+  const data = getThreadData(threadID);
+  if (!data || !data.autoNick || !data.savedNick) return;
+
+  if (nicknameRestoreLock.has(threadID)) return;
+
+  nicknameRestoreLock.add(threadID);
+
+  try {
+    await sleep(1200);
+
+    const info = await getThreadInfo(api, threadID);
+    if (!info || !Array.isArray(info.nicknames)) return;
+
+    const savedNick = String(data.savedNick || "").trim();
+    if (!savedNick) return;
+
+    let changed = false;
+
+    for (const member of info.nicknames) {
+      if (!member || !member.id) continue;
+
+      const currentNick = member.nickname || "";
+
+      if (currentNick === savedNick) continue;
+
+      try {
+        await api.changeNickname(
+          savedNick,
+          threadID,
+          member.id
+        );
+
+        changed = true;
+        await sleep(500);
+      } catch (error) {
+        logError(
+          "NICKNAME_RESTORE_" + member.id,
+          error
+        );
+      }
+    }
+
+    if (changed) {
+      data.lastNickRestore = Date.now();
+      data.nickRestoreCount =
+        Number(data.nickRestoreCount || 0) + 1;
+
+      saveData();
+    }
+  } catch (error) {
+    logError("NICKNAME_RESTORE", error);
+  } finally {
+    setTimeout(() => {
+      nicknameRestoreLock.delete(threadID);
+    }, 3000);
+  }
+};
+
+const processGroupChange = async (api, event) => {
+  if (!event || !event.threadID) return;
+
+  const type = event.logMessageType;
+
+  if (type === "log:thread-name") {
+    await handleGroupNameChange(api, event);
+    return;
+  }
+
+  if (type === "changeNickname") {
+    await handleNicknameChange(api, event);
+    return;
+  }
+
+  if (type === "log:subscribe") {
+    const added = event.logMessageData &&
+      event.logMessageData.addedParticipants;
+
+    if (Array.isArray(added) && added.length > 0) {
+      return;
+    }
+  }
+};
+
+const restoreSavedSettings = async (api, threadID) => {
+  if (!threadID) return;
+
+  const data = getThreadData(threadID);
+  if (!data) return;
+
+  if (data.autoGname && data.savedGname) {
+    await handleGroupNameChange(api, {
+      threadID,
+      logMessageType: "log:thread-name"
+    });
+  }
+
+  if (data.autoNick && data.savedNick) {
+    await handleNicknameChange(api, {
+      threadID,
+      logMessageType: "changeNickname"
+    });
+  }
+};
+
+const cleanupThreadLocks = () => {
+  const now = Date.now();
+
+  for (const [threadID, timestamp] of processing.entries()) {
+    if (now - timestamp > 30000) {
+      processing.delete(threadID);
+    }
+  }
+
+  for (const [threadID, timestamp] of restoreCooldown.entries()) {
+    if (now - timestamp > 10000) {
+      restoreCooldown.delete(threadID);
+    }
+  }
+};
+
+const cleanupInterval = setInterval(
+  cleanupThreadLocks,
+  15000
+);
+
+if (cleanupInterval.unref) {
+  cleanupInterval.unref();
+}
+
+module.exports.handleEvent = async function({
+  api,
+  event
+}) {
+  try {
+    if (!event || !event.threadID) return;
+
+    const threadID = event.threadID;
+
+    if (event.logMessageType === "log:thread-name") {
+      await processGroupChange(api, event);
+      return;
+    }
+
+    if (event.logMessageType === "changeNickname") {
+      await processGroupChange(api, event);
+      return;
+    }
+
+    if (
+      event.logMessageType === "log:subscribe" &&
+      event.logMessageData
+    ) {
+      const added =
+        event.logMessageData.addedParticipants;
+
+      if (Array.isArray(added) && added.length) {
+        return;
+      }
+    }
+  } catch (error) {
+    logError("HANDLE_EVENT", error);
+  }
+};
+
+module.exports.run = async function({
+  api,
+  event,
+  args
+}) {
+  try {
+    if (!event || !event.threadID) return;
+
+    const threadID = event.threadID;
+    const senderID = event.senderID;
+
+    const data = getThreadData(threadID);
+
+    if (!data) {
+      return send(
+        api,
+        threadID,
+        "RYUK settings are not available."
+      );
+    }
+
+    const command =
+      Array.isArray(args) && args[0]
+        ? String(args[0]).toLowerCase()
+        : "help";
+
+    if (command === "help") {
+      return send(
+        api,
+        threadID,
+        [
+          "RYUK COMMANDS",
+          "",
+          "/ryuk on",
+          "/ryuk off",
+          "/ryuk status",
+          "/ryuk reacton",
+          "/ryuk reactoff",
+          "/ryuk lock",
+          "/ryuk help"
+        ].join("\n")
+      );
+    }
+
+    if (!isAdmin(senderID)) {
+      return send(
+        api,
+        threadID,
+        "Admin only."
+      );
+    }
+
+    if (command === "on") {
+      data.active = true;
+      saveData();
+
+      return send(
+        api,
+        threadID,
+        "RYUK is now ON."
+      );
+    }
+
+    if (command === "off") {
+      data.active = false;
+      saveData();
+
+      return send(
+        api,
+        threadID,
+        "RYUK is now OFF."
+      );
+    }
+
+    if (command === "reacton") {
+      data.autoReact = true;
+      saveData();
+
+      return send(
+        api,
+        threadID,
+        "Auto reaction is ON."
+      );
+    }
+
+    if (command === "reactoff") {
+      data.autoReact = false;
+      saveData();
+
+      return send(
+        api,
+        threadID,
+        "Auto reaction is OFF."
+      );
+    }
+
+    if (command === "status") {
+      return send(
+        api,
+        threadID,
+        [
+          "RYUK STATUS",
+          "",
+          "Active: " + (data.active ? "ON" : "OFF"),
+          "Auto React: " +
+            (data.autoReact ? "ON" : "OFF"),
+          "Auto Nick: " +
+            (data.autoNick ? "ON" : "OFF"),
+          "Auto GC Name: " +
+            (data.autoGname ? "ON" : "OFF"),
+          "Saved Nick: " +
+            (data.savedNick || "None"),
+          "Saved GC Name: " +
+            (data.savedGname || "None"),
+          "Replies: " +
+            Number(data.totalReplies || 0)
+        ].join("\n")
+      );
+    }
+
+    if (command === "lock") {
+      data.locked = !data.locked;
+      saveData();
+
+      return send(
+        api,
+        threadID,
+        "RYUK lock: " +
+          (data.locked ? "ON" : "OFF")
+      );
+    }
+  } catch (error) {
+    logError("RUN_COMMAND", error);
+  }
+};const getThreadDataSafe = (threadID) => {
+  if (!threadID) return null;
+
+  try {
+    if (!global.ryukData) {
+      global.ryukData = {};
+    }
+
+    if (!global.ryukData[threadID]) {
+      global.ryukData[threadID] = {
+        active: true,
+        autoReact: true,
+        autoNick: false,
+        autoGname: false,
+        savedNick: "",
+        savedGname: "",
+        locked: false,
+        totalReplies: 0,
+        commandCount: 0,
+        nickRestoreCount: 0,
+        gnameRestoreCount: 0,
+        lastNickRestore: 0,
+        lastGnameRestore: 0,
+        createdAt: Date.now()
+      };
+    }
+
+    return global.ryukData[threadID];
+  } catch (error) {
+    logError("GET_THREAD_DATA_SAFE", error);
+    return null;
+  }
+};
+
+const normalizeText = (value) => {
+  if (value === undefined || value === null) {
+    return "";
+  }
+
+  return String(value)
+    .replace(/\s+/g, " ")
+    .trim();
+};
+
+const isSameText = (a, b) => {
+  return normalizeText(a) === normalizeText(b);
+};
+
+const safeNumber = (value, fallback = 0) => {
+  const number = Number(value);
+
+  if (!Number.isFinite(number)) {
+    return fallback;
+  }
+
+  return number;
+};
+
+const updateThreadCounter = (
+  threadID,
+  field,
+  amount = 1
+) => {
+  try {
+    const data = getThreadDataSafe(threadID);
+
+    if (!data) return;
+
+    data[field] =
+      safeNumber(data[field], 0) + amount;
+
+    data.updatedAt = Date.now();
+
+    saveData();
+  } catch (error) {
+    logError(
+      "UPDATE_COUNTER_" + field,
+      error
+    );
+  }
+};
+
+const canProcessThread = (threadID) => {
+  if (!threadID) return false;
+
+  const data = getThreadDataSafe(threadID);
+
+  if (!data) return false;
+
+  if (data.locked) return false;
+
+  return true;
+};
+
+const markThreadProcessing = (threadID) => {
+  if (!threadID) return;
+
+  processing.set(
+    threadID,
+    Date.now()
+  );
+};
+
+const unmarkThreadProcessing = (threadID) => {
+  if (!threadID) return;
+
+  processing.delete(threadID);
+};
+
+const isThreadProcessing = (threadID) => {
+  if (!threadID) return false;
+
+  const started = processing.get(threadID);
+
+  if (!started) return false;
+
+  if (Date.now() - started > 30000) {
+    processing.delete(threadID);
+    return false;
+  }
+
+  return true;
+};
+
+const canRestoreNow = (
+  threadID,
+  type
+) => {
+  if (!threadID) return false;
+
+  const key =
+    String(type || "default") +
+    ":" +
+    threadID;
+
+  const last =
+    restoreCooldown.get(key) || 0;
+
+  const cooldown = 5000;
+
+  if (Date.now() - last < cooldown) {
+    return false;
+  }
+
+  restoreCooldown.set(
+    key,
+    Date.now()
+  );
+
+  return true;
+};
+
+const clearRestoreCooldown = (
+  threadID,
+  type
+) => {
+  if (!threadID) return;
+
+  const key =
+    String(type || "default") +
+    ":" +
+    threadID;
+
+  restoreCooldown.delete(key);
+};
+
+const safeGetThreadInfo = async (
+  api,
+  threadID
+) => {
+  if (!api || !threadID) {
+    return null;
+  }
+
+  try {
+    if (
+      typeof api.getThreadInfo !==
+      "function"
+    ) {
+      return null;
+    }
+
+    return await api.getThreadInfo(
+      threadID
+    );
+  } catch (error) {
+    logError(
+      "GET_THREAD_INFO",
+      error
+    );
+
+    return null;
+  }
+};
+
+const safeSetTitle = async (
+  api,
+  threadID,
+  title
+) => {
+  if (!api || !threadID) {
+    return false;
+  }
+
+  const cleanTitle =
+    normalizeText(title);
+
+  if (!cleanTitle) {
+    return false;
+  }
+
+  try {
+    if (
+      typeof api.setTitle !==
+      "function"
+    ) {
+      return false;
+    }
+
+    await api.setTitle(
+      cleanTitle,
+      threadID
+    );
+
+    return true;
+  } catch (error) {
+    logError(
+      "SET_TITLE",
+      error
+    );
+
+    return false;
+  }
+};
+
+const safeChangeNickname = async (
+  api,
+  nickname,
+  threadID,
+  userID
+) => {
+  if (
+    !api ||
+    !threadID ||
+    !userID
+  ) {
+    return false;
+  }
+
+  const cleanNick =
+    normalizeText(nickname);
+
+  if (!cleanNick) {
+    return false;
+  }
+
+  try {
+    if (
+      typeof api.changeNickname !==
+      "function"
+    ) {
+      return false;
+    }
+
+    await api.changeNickname(
+      cleanNick,
+      threadID,
+      userID
+    );
+
+    return true;
+  } catch (error) {
+    logError(
+      "CHANGE_NICKNAME_" + userID,
+      error
+    );
+
+    return false;
+  }
+};
+
+const getNicknameList = (
+  threadInfo
+) => {
+  if (!threadInfo) {
     return [];
   }
 
-  return parsed.args.slice(
-    1
-  );
-}
-
-function getRyukArgumentText(
-  event
-) {
-  const args =
-    getRyukArguments(
-      event
-    );
-
-  return cleanText(
-    args.join(" ")
-  );
-}
-
-function isKnownRyukAction(
-  action
-) {
-  return [
-    "on",
-    "off",
-    "status",
-    "lock",
-    "unlock",
-    "setnick",
-    "setgname",
-    "target",
-    "untarget",
-    "replyon",
-    "replyoff",
-    "reacton",
-    "reactoff",
-    "help"
-  ].includes(
-    normalizeCommand(
-      action
-    )
-  );
-}
-
-function shouldRunRyukCommand(
-  event
-) {
   if (
-    !isRyukCommand(event)
-  ) {
-    return false;
-  }
-
-  const action =
-    getRyukAction(
-      event
-    );
-
-  if (
-    !action
-  ) {
-    return false;
-  }
-
-  return isKnownRyukAction(
-    action
-  );
-}
-
-function adminCommandAllowed(
-  event
-) {
-  const senderID =
-    getSenderID(event);
-
-  return isAdmin(
-    senderID
-  );
-}
-
-function rejectNonAdminCommand(
-  event
-) {
-  if (
-    !isRyukCommand(event)
-  ) {
-    return false;
-  }
-
-  if (
-    adminCommandAllowed(
-      event
+    Array.isArray(
+      threadInfo.nicknames
     )
   ) {
-    return false;
+    return threadInfo.nicknames;
   }
 
-  return true;
-  }async function executeRyukCommand(
+  if (
+    threadInfo.nicknames &&
+    typeof threadInfo.nicknames ===
+      "object"
+  ) {
+    return Object.keys(
+      threadInfo.nicknames
+    ).map((id) => ({
+      id,
+      nickname:
+        threadInfo.nicknames[id]
+    }));
+  }
+
+  return [];
+};
+
+const restoreGroupNameOnce = async (
   api,
-  event
-) {
-  try {
-    if (
-      !api ||
-      !event
-    ) {
-      return;
-    }
+  threadID
+) => {
+  const data =
+    getThreadDataSafe(threadID);
 
-    if (
-      !shouldRunRyukCommand(
-        event
-      )
-    ) {
-      return;
-    }
-
-    if (
-      !adminCommandAllowed(
-        event
-      )
-    ) {
-      return;
-    }
-
-    const action =
-      getRyukAction(
-        event
-      );
-
-    const data =
-      ensureRuntimeData(
-        loadData()
-      );
-
-    switch (action) {
-      case "on":
-        commandOn(
-          api,
-          event,
-          data
-        );
-        break;
-
-      case "off":
-        commandOff(
-          api,
-          event,
-          data
-        );
-        break;
-
-      case "status":
-        await commandStatus(
-          api,
-          event,
-          data
-        );
-        break;
-
-      case "lock":
-        commandLock(
-          api,
-          event,
-          data
-        );
-        break;
-
-      case "unlock":
-        commandUnlock(
-          api,
-          event,
-          data
-        );
-        break;
-
-      case "setnick":
-        await commandSetNick(
-          api,
-          event,
-          data
-        );
-        break;
-
-      case "setgname":
-        await commandSetGCName(
-          api,
-          event,
-          data
-        );
-        break;
-
-      case "target":
-        await commandTarget(
-          api,
-          event,
-          data
-        );
-        break;
-
-      case "untarget":
-        await commandUntarget(
-          api,
-          event,
-          data
-        );
-        break;
-
-      case "replyon":
-        commandReplyOn(
-          api,
-          event,
-          data
-        );
-        break;
-
-      case "replyoff":
-        commandReplyOff(
-          api,
-          event,
-          data
-        );
-        break;
-
-      case "reacton":
-        commandReactOn(
-          api,
-          event,
-          data
-        );
-        break;
-
-      case "reactoff":
-        commandReactOff(
-          api,
-          event,
-          data
-        );
-        break;
-
-      case "help":
-        await commandHelp(
-          api,
-          event
-        );
-        break;
-
-      default:
-        return;
-    }
-
-  } catch (error) {
-    console.error(
-      "[RYUK] Execute command:",
-      error.message ||
-        error
-    );
-
-    try {
-      const data =
-        ensureRuntimeData(
-          loadData()
-        );
-
-      data.errorCount =
-        Number(
-          data.errorCount
-        ) + 1;
-
-      saveData(
-        data
-      );
-    } catch (_) {}
-  }
-}
-
-module.exports.run =
-  async function({
-    api,
-    event
-  }) {
-    try {
-      if (
-        !api ||
-        !event
-      ) {
-        return;
-      }
-
-      if (
-        !isRyukCommand(
-          event
-        )
-      ) {
-        return;
-      }
-
-      if (
-        !adminCommandAllowed(
-          event
-        )
-      ) {
-        return;
-      }
-
-      await executeRyukCommand(
-        api,
-        event
-      );
-
-    } catch (error) {
-      console.error(
-        "[RYUK] run:",
-        error.message ||
-          error
-      );
-    }
-  };function getStoredNickname(
-  data
-) {
   if (
     !data ||
-    typeof data.nickname !==
-      "string"
-  ) {
-    return DEFAULT_NICKNAME;
-  }
-
-  const value =
-    normalizeName(
-      data.nickname
-    );
-
-  return (
-    value ||
-    DEFAULT_NICKNAME
-  );
-}
-
-function getStoredGCName(
-  data
-) {
-  if (
-    !data ||
-    typeof data.gcName !==
-      "string"
-  ) {
-    return DEFAULT_GC_NAME;
-  }
-
-  const value =
-    normalizeName(
-      data.gcName
-    );
-
-  return (
-    value ||
-    DEFAULT_GC_NAME
-  );
-}
-
-function prepareNickname(
-  data,
-  value
-) {
-  const nickname =
-    normalizeName(
-      value
-    );
-
-  if (
-    !nickname
+    !data.autoGname ||
+    !data.savedGname
   ) {
     return false;
   }
 
-  data.nickname =
-    nickname;
-
-  return true;
-}
-
-function prepareGCName(
-  data,
-  value
-) {
-  const gcName =
-    normalizeName(
-      value
-    );
-
   if (
-    !gcName
-  ) {
-    return false;
-  }
-
-  data.gcName =
-    gcName;
-
-  return true;
-}
-
-async function setNicknameOnce(
-  api,
-  threadID,
-  data,
-  value
-) {
-  const nickname =
-    normalizeName(
-      value
-    );
-
-  if (
-    !nickname ||
-    !threadID
-  ) {
-    return false;
-  }
-
-  const botID =
-    getBotID(api);
-
-  if (
-    !botID
-  ) {
-    return false;
-  }
-
-  data.nickname =
-    nickname;
-
-  saveData(
-    data
-  );
-
-  const success =
-    await safeNickname(
-      api,
-      nickname,
+    !canRestoreNow(
       threadID,
-      botID
-    );
-
-  if (
-    success
-  ) {
-    data.nicknameCount =
-      Number(
-        data.nicknameCount
-      ) + 1;
-
-    saveData(
-      data
-    );
-  }
-
-  return success;
-}
-
-async function setGCNameOnce(
-  api,
-  threadID,
-  data,
-  value
-) {
-  const gcName =
-    normalizeName(
-      value
-    );
-
-  if (
-    !gcName ||
-    !threadID
-  ) {
-    return false;
-  }
-
-  data.gcName =
-    gcName;
-
-  saveData(
-    data
-  );
-
-  const success =
-    await safeTitle(
-      api,
-      gcName,
-      threadID
-    );
-
-  if (
-    success
-  ) {
-    data.gcNameRestores =
-      Number(
-        data.gcNameRestores
-      ) + 1;
-
-    saveData(
-      data
-    );
-  }
-
-  return success;
-}
-
-function cancelPendingRestore(
-  threadID,
-  type
-) {
-  const key =
-    getThreadKey(
-      threadID
-    );
-
-  const restoreKey =
-    type === "nickname"
-      ? "nick:" + key
-      : "gname:" + key;
-
-  if (
-    pendingRestore[
-      restoreKey
-    ]
-  ) {
-    clearTimeout(
-      pendingRestore[
-        restoreKey
-      ]
-    );
-
-    delete pendingRestore[
-      restoreKey
-    ];
-  }
-    }async function commandSetNickStable(
-  api,
-  event,
-  data
-) {
-  const threadID =
-    getThreadID(event);
-
-  if (
-    !threadID
-  ) {
-    return;
-  }
-
-  const value =
-    getCommandValue(
-      event
-    );
-
-  if (
-    !value
-  ) {
-    return;
-  }
-
-  cancelPendingRestore(
-    threadID,
-    "nickname"
-  );
-
-  const nickname =
-    normalizeName(
-      value
-    );
-
-  if (
-    !nickname
-  ) {
-    return;
-  }
-
-  const changed =
-    prepareNickname(
-      data,
-      nickname
-    );
-
-  if (
-    !changed
-  ) {
-    return;
-  }
-
-  saveData(
-    data
-  );
-
-  const success =
-    await setNicknameOnce(
-      api,
-      threadID,
-      data,
-      nickname
-    );
-
-  if (
-    success
-  ) {
-    data.nicknameLock =
-      true;
-
-    saveData(
-      data
-    );
-
-    await safeSend(
-      api,
-      "✅ Nickname saved.",
-      threadID
-    );
-  }
-}
-
-async function commandSetGCNameStable(
-  api,
-  event,
-  data
-) {
-  const threadID =
-    getThreadID(event);
-
-  if (
-    !threadID
-  ) {
-    return;
-  }
-
-  const value =
-    getCommandValue(
-      event
-    );
-
-  if (
-    !value
-  ) {
-    return;
-  }
-
-  cancelPendingRestore(
-    threadID,
-    "gcname"
-  );
-
-  const gcName =
-    normalizeName(
-      value
-    );
-
-  if (
-    !gcName
-  ) {
-    return;
-  }
-
-  const changed =
-    prepareGCName(
-      data,
-      gcName
-    );
-
-  if (
-    !changed
-  ) {
-    return;
-  }
-
-  saveData(
-    data
-  );
-
-  const success =
-    await setGCNameOnce(
-      api,
-      threadID,
-      data,
-      gcName
-    );
-
-  if (
-    success
-  ) {
-    data.gcNameLock =
-      true;
-
-    saveData(
-      data
-    );
-
-    await safeSend(
-      api,
-      "✅ GC name saved.",
-      threadID
-    );
-  }
-}
-
-async function commandSetNickFinal(
-  api,
-  event,
-  data
-) {
-  try {
-    await commandSetNickStable(
-      api,
-      event,
-      data
-    );
-  } catch (error) {
-    console.error(
-      "[RYUK] setnick:",
-      error.message ||
-        error
-    );
-  }
-}
-
-async function commandSetGCNameFinal(
-  api,
-  event,
-  data
-) {
-  try {
-    await commandSetGCNameStable(
-      api,
-      event,
-      data
-    );
-  } catch (error) {
-    console.error(
-      "[RYUK] setgname:",
-      error.message ||
-        error
-    );
-  }
-      }function getRestoreState(
-  data,
-  threadID
-) {
-  const key =
-    getThreadKey(
-      threadID
-    );
-
-  return {
-    nicknameLocked:
-      Boolean(
-        data.nicknameLock
-      ),
-    gcNameLocked:
-      Boolean(
-        data.gcNameLock
-      ),
-    nickname:
-      getStoredNickname(
-        data
-      ),
-    gcName:
-      getStoredGCName(
-        data
-      ),
-    lastNickname:
-      lastNicknameRestore[
-        key
-      ] || 0,
-    lastGCName:
-      lastGCNameRestore[
-        key
-      ] || 0
-  };
-}
-
-function markNicknameRestore(
-  threadID
-) {
-  const key =
-    getThreadKey(
-      threadID
-    );
-
-  lastNicknameRestore[
-    key
-  ] = Date.now();
-}
-
-function markGCNameRestore(
-  threadID
-) {
-  const key =
-    getThreadKey(
-      threadID
-    );
-
-  lastGCNameRestore[
-    key
-  ] = Date.now();
-}
-
-function clearRestoreTimers(
-  threadID
-) {
-  const key =
-    getThreadKey(
-      threadID
-    );
-
-  const nicknameKey =
-    "nick:" + key;
-
-  const gcNameKey =
-    "gname:" + key;
-
-  if (
-    pendingRestore[
-      nicknameKey
-    ]
-  ) {
-    clearTimeout(
-      pendingRestore[
-        nicknameKey
-      ]
-    );
-
-    delete pendingRestore[
-      nicknameKey
-    ];
-  }
-
-  if (
-    pendingRestore[
-      gcNameKey
-    ]
-  ) {
-    clearTimeout(
-      pendingRestore[
-        gcNameKey
-      ]
-    );
-
-    delete pendingRestore[
-      gcNameKey
-    ];
-  }
-}
-
-function scheduleStableNicknameRestore(
-  api,
-  event,
-  data
-) {
-  const threadID =
-    getThreadID(event);
-
-  if (
-    !threadID ||
-    !data.nicknameLock
-  ) {
-    return;
-  }
-
-  const key =
-    getThreadKey(
-      threadID
-    );
-
-  const restoreKey =
-    "nick:" + key;
-
-  if (
-    pendingRestore[
-      restoreKey
-    ]
-  ) {
-    return;
-  }
-
-  const timer =
-    setTimeout(
-      async () => {
-        delete pendingRestore[
-          restoreKey
-        ];
-
-        try {
-          const latest =
-            ensureRuntimeData(
-              loadData()
-            );
-
-          if (
-            !latest.nicknameLock
-          ) {
-            return;
-          }
-
-          markNicknameRestore(
-            threadID
-          );
-
-          await applyNickname(
-            api,
-            threadID,
-            latest,
-            true
-          );
-        } catch (error) {
-          console.error(
-            "[RYUK] stable nickname restore:",
-            error.message ||
-              error
-          );
-        }
-      },
-      RESTORE_DELAY
-    );
-
-  pendingRestore[
-    restoreKey
-  ] = timer;
-}
-
-function scheduleStableGCNameRestore(
-  api,
-  event,
-  data
-) {
-  const threadID =
-    getThreadID(event);
-
-  if (
-    !threadID ||
-    !data.gcNameLock
-  ) {
-    return;
-  }
-
-  const key =
-    getThreadKey(
-      threadID
-    );
-
-  const restoreKey =
-    "gname:" + key;
-
-  if (
-    pendingRestore[
-      restoreKey
-    ]
-  ) {
-    return;
-  }
-
-  const timer =
-    setTimeout(
-      async () => {
-        delete pendingRestore[
-          restoreKey
-        ];
-
-        try {
-          const latest =
-            ensureRuntimeData(
-              loadData()
-            );
-
-          if (
-            !latest.gcNameLock
-          ) {
-            return;
-          }
-
-          markGCNameRestore(
-            threadID
-          );
-
-          await applyGCName(
-            api,
-            threadID,
-            latest,
-            true
-          );
-        } catch (error) {
-          console.error(
-            "[RYUK] stable GC name restore:",
-            error.message ||
-              error
-          );
-        }
-      },
-      RESTORE_DELAY
-    );
-
-  pendingRestore[
-    restoreKey
-  ] = timer;
-      }function isNicknameRestoreEventFinal(
-  event
-) {
-  if (
-    !event
-  ) {
-    return false;
-  }
-
-  const type =
-    String(
-      event.logMessageType ||
-        event.type ||
-        ""
-    ).toLowerCase();
-
-  return (
-    type.includes(
-      "nickname"
-    ) ||
-    type.includes(
-      "nick"
-    )
-  );
-}
-
-function isGroupNameRestoreEventFinal(
-  event
-) {
-  if (
-    !event
-  ) {
-    return false;
-  }
-
-  const type =
-    String(
-      event.logMessageType ||
-        event.type ||
-        ""
-    ).toLowerCase();
-
-  return (
-    type.includes(
-      "title"
-    ) ||
-    type.includes(
-      "group_name"
-    ) ||
-    type.includes(
       "gname"
     )
-  );
-}
+  ) {
+    return false;
+  }
 
-function isRestoreChangeEventFinal(
-  event
-) {
-  return (
-    isNicknameRestoreEventFinal(
-      event
-    ) ||
-    isGroupNameRestoreEventFinal(
-      event
-    )
-  );
-}
-
-async function processStableRestoreFinal(
-  api,
-  event
-) {
   try {
-    if (
-      !api ||
-      !event
-    ) {
-      return;
+    const info =
+      await safeGetThreadInfo(
+        api,
+        threadID
+      );
+
+    if (!info) {
+      clearRestoreCooldown(
+        threadID,
+        "gname"
+      );
+      return false;
     }
 
+    const currentName =
+      normalizeText(
+        info.threadName
+      );
+
+    const savedName =
+      normalizeText(
+        data.savedGname
+      );
+
     if (
-      !isRestoreChangeEventFinal(
-        event
+      !savedName ||
+      isSameText(
+        currentName,
+        savedName
       )
     ) {
-      return;
-    }
-
-    const threadID =
-      getThreadID(event);
-
-    if (
-      !threadID
-    ) {
-      return;
-    }
-
-    const data =
-      ensureRuntimeData(
-        loadData()
+      clearRestoreCooldown(
+        threadID,
+        "gname"
       );
+      return false;
+    }
 
-    if (
-      isGroupNameRestoreEventFinal(
-        event
-      ) &&
-      data.gcNameLock
-    ) {
-      scheduleStableGCNameRestore(
+    const success =
+      await safeSetTitle(
         api,
-        event,
-        data
+        threadID,
+        savedName
       );
+
+    if (success) {
+      data.lastGnameRestore =
+        Date.now();
+
+      data.gnameRestoreCount =
+        safeNumber(
+          data.gnameRestoreCount,
+          0
+        ) + 1;
+
+      data.updatedAt =
+        Date.now();
+
+      saveData();
+
+      return true;
     }
 
+    clearRestoreCooldown(
+      threadID,
+      "gname"
+    );
+
+    return false;
+  } catch (error) {
+    clearRestoreCooldown(
+      threadID,
+      "gname"
+    );
+
+    logError(
+      "RESTORE_GROUP_NAME_ONCE",
+      error
+    );
+
+    return false;
+  }
+};
+
+const restoreNicknameOnce = async (
+  api,
+  threadID
+) => {
+  const data =
+    getThreadDataSafe(threadID);
+
+  if (
+    !data ||
+    !data.autoNick ||
+    !data.savedNick
+  ) {
+    return false;
+  }
+
+  if (
+    !canRestoreNow(
+      threadID,
+      "nickname"
+    )
+  ) {
+    return false;
+  }
+
+  try {
+    const info =
+      await safeGetThreadInfo(
+        api,
+        threadID
+      );
+
+    if (!info) {
+      clearRestoreCooldown(
+        threadID,
+        "nickname"
+      );
+      return false;
+    }
+
+    const members =
+      getNicknameList(info);
+
+    const savedNick =
+      normalizeText(
+        data.savedNick
+      );
+
     if (
-      isNicknameRestoreEventFinal(
-        event
-      ) &&
-      data.nicknameLock
+      !savedNick ||
+      !members.length
     ) {
-      const changedUserID =
-        getChangedNicknameUserID(
-          event
+      clearRestoreCooldown(
+        threadID,
+        "nickname"
+      );
+      return false;
+    }
+
+    let changed = false;
+
+    for (
+      const member of members
+    ) {
+      if (
+        !member ||
+        !member.id
+      ) {
+        continue;
+      }
+
+      const currentNick =
+        normalizeText(
+          member.nickname
         );
 
-      const botID =
-        getBotID(api);
-
       if (
-        !changedUserID ||
-        !botID ||
-        String(
-          changedUserID
-        ) === String(
-          botID
+        isSameText(
+          currentNick,
+          savedNick
         )
       ) {
-        return;
+        continue;
       }
 
-      scheduleStableNicknameRestore(
-        api,
-        event,
-        data
-      );
+      const success =
+        await safeChangeNickname(
+          api,
+          savedNick,
+          threadID,
+          member.id
+        );
+
+      if (success) {
+        changed = true;
+        await sleep(600);
+      }
     }
 
+    if (changed) {
+      data.lastNickRestore =
+        Date.now();
+
+      data.nickRestoreCount =
+        safeNumber(
+          data.nickRestoreCount,
+          0
+        ) + 1;
+
+      data.updatedAt =
+        Date.now();
+
+      saveData();
+
+      return true;
+    }
+
+    clearRestoreCooldown(
+      threadID,
+      "nickname"
+    );
+
+    return false;
   } catch (error) {
-    console.error(
-      "[RYUK] restore event:",
-      error.message ||
-        error
+    clearRestoreCooldown(
+      threadID,
+      "nickname"
+    );
+
+    logError(
+      "RESTORE_NICKNAME_ONCE",
+      error
+    );
+
+    return false;
+  }
+};const handleMessageEvent = async (
+  api,
+  event
+) => {
+  if (!api || !event) return;
+
+  const threadID = event.threadID;
+  if (!threadID) return;
+
+  const data =
+    getThreadDataSafe(threadID);
+
+  if (!data) return;
+
+  if (!data.active) return;
+
+  if (!canProcessThread(threadID)) {
+    return;
+  }
+
+  const body =
+    typeof event.body === "string"
+      ? event.body.trim()
+      : "";
+
+  if (!body) return;
+
+  if (
+    body.length > 5000
+  ) {
+    return;
+  }
+
+  const senderID =
+    event.senderID || null;
+
+  if (!senderID) return;
+
+  if (
+    isThreadProcessing(threadID)
+  ) {
+    return;
+  }
+
+  markThreadProcessing(threadID);
+
+  try {
+    updateThreadCounter(
+      threadID,
+      "commandCount",
+      1
+    );
+
+    const prefix =
+      module.exports.config
+        .usePrefix
+        ? module.exports.config
+            .prefix || "/"
+        : "";
+
+    const cleanBody =
+      body.startsWith(prefix)
+        ? body.slice(prefix.length).trim()
+        : body;
+
+    if (!cleanBody) {
+      return;
+    }
+
+    const parts =
+      cleanBody.split(/\s+/);
+
+    const command =
+      String(
+        parts.shift() || ""
+      ).toLowerCase();
+
+    const args = parts;
+
+    if (
+      command !==
+      module.exports.config.name
+    ) {
+      return;
+    }
+
+    await processRyukCommand(
+      api,
+      event,
+      args
+    );
+  } catch (error) {
+    logError(
+      "HANDLE_MESSAGE_EVENT",
+      error
+    );
+  } finally {
+    unmarkThreadProcessing(
+      threadID
     );
   }
-}
+};
 
-function normalizeEventTypeFinal(
-  event
-) {
+const processRyukCommand = async (
+  api,
+  event,
+  args
+) => {
+  const threadID =
+    event.threadID;
+
+  const senderID =
+    event.senderID;
+
+  const data =
+    getThreadDataSafe(
+      threadID
+    );
+
+  if (!data) return;
+
+  const command =
+    String(
+      args[0] || "help"
+    ).toLowerCase();
+
+  const value =
+    args
+      .slice(1)
+      .join(" ")
+      .trim();
+
   if (
-    !event
+    command === "help" ||
+    command === "h"
   ) {
-    return "";
+    await send(
+      api,
+      threadID,
+      [
+        "💀 RYUK COMMANDS",
+        "",
+        "/ryuk on",
+        "/ryuk off",
+        "/ryuk status",
+        "/ryuk reacton",
+        "/ryuk reactoff",
+        "/ryuk nick on",
+        "/ryuk nick off",
+        "/ryuk nick <name>",
+        "/ryuk gname on",
+        "/ryuk gname off",
+        "/ryuk gname <name>",
+        "/ryuk lock",
+        "/ryuk unlock"
+      ].join("\n")
+    );
+
+    return;
   }
 
-  return String(
-    event.logMessageType ||
-      event.type ||
-      ""
-  )
-    .toLowerCase()
-    .trim();
-}
-
-function isMessageEventFinal(
-  event
-) {
   if (
-    !event
+    !isAdmin(senderID)
+  ) {
+    await send(
+      api,
+      threadID,
+      "❌ Admin only ang command na ito."
+    );
+
+    return;
+  }
+
+  if (command === "on") {
+    data.active = true;
+    data.updatedAt = Date.now();
+
+    saveData();
+
+    await send(
+      api,
+      threadID,
+      "💀 RYUK is now ON."
+    );
+
+    return;
+  }
+
+  if (command === "off") {
+    data.active = false;
+    data.updatedAt = Date.now();
+
+    saveData();
+
+    await send(
+      api,
+      threadID,
+      "💀 RYUK is now OFF."
+    );
+
+    return;
+  }
+
+  if (command === "status") {
+    await send(
+      api,
+      threadID,
+      [
+        "💀 RYUK STATUS",
+        "",
+        "Active: " +
+          (data.active
+            ? "ON"
+            : "OFF"),
+        "Auto React: " +
+          (data.autoReact
+            ? "ON"
+            : "OFF"),
+        "Auto Nick: " +
+          (data.autoNick
+            ? "ON"
+            : "OFF"),
+        "Auto GC Name: " +
+          (data.autoGname
+            ? "ON"
+            : "OFF"),
+        "Saved Nick: " +
+          (data.savedNick ||
+            "None"),
+        "Saved GC Name: " +
+          (data.savedGname ||
+            "None"),
+        "Replies: " +
+          safeNumber(
+            data.totalReplies,
+            0
+          ),
+        "Commands: " +
+          safeNumber(
+            data.commandCount,
+            0
+          )
+      ].join("\n")
+    );
+
+    return;
+  }
+
+  if (
+    command === "reacton" ||
+    command === "react"
+  ) {
+    data.autoReact = true;
+    data.updatedAt = Date.now();
+
+    saveData();
+
+    await send(
+      api,
+      threadID,
+      "🔥 Auto reaction ON."
+    );
+
+    return;
+  }
+
+  if (
+    command === "reactoff"
+  ) {
+    data.autoReact = false;
+    data.updatedAt = Date.now();
+
+    saveData();
+
+    await send(
+      api,
+      threadID,
+      "Auto reaction OFF."
+    );
+
+    return;
+  }
+
+  if (
+    command === "nick"
+  ) {
+    const sub =
+      String(
+        args[1] || ""
+      ).toLowerCase();
+
+    if (sub === "on") {
+      data.autoNick = true;
+
+      if (value) {
+        data.savedNick =
+          value;
+      }
+
+      data.updatedAt =
+        Date.now();
+
+      saveData();
+
+      await send(
+        api,
+        threadID,
+        data.savedNick
+          ? "Nickname protection ON: " +
+              data.savedNick
+          : "Nickname protection ON."
+      );
+
+      return;
+    }
+
+    if (sub === "off") {
+      data.autoNick = false;
+      data.updatedAt = Date.now();
+
+      saveData();
+
+      await send(
+        api,
+        threadID,
+        "Nickname protection OFF."
+      );
+
+      return;
+    }
+
+    if (
+      args.length >= 2 &&
+      sub !== "on" &&
+      sub !== "off"
+    ) {
+      data.savedNick =
+        args
+          .slice(1)
+          .join(" ")
+          .trim();
+
+      data.autoNick = true;
+      data.updatedAt = Date.now();
+
+      saveData();
+
+      await send(
+        api,
+        threadID,
+        "Nickname saved: " +
+          data.savedNick
+      );
+
+      return;
+    }
+
+    await send(
+      api,
+      threadID,
+      [
+        "Usage:",
+        "/ryuk nick on",
+        "/ryuk nick off",
+        "/ryuk nick <name>"
+      ].join("\n")
+    );
+
+    return;
+  }
+
+  if (
+    command === "gname"
+  ) {
+    const sub =
+      String(
+        args[1] || ""
+      ).toLowerCase();
+
+    if (sub === "on") {
+      data.autoGname = true;
+
+      if (args.length >= 3) {
+        data.savedGname =
+          args
+            .slice(2)
+            .join(" ")
+            .trim();
+      }
+
+      data.updatedAt =
+        Date.now();
+
+      saveData();
+
+      await send(
+        api,
+        threadID,
+        data.savedGname
+          ? "GC name protection ON: " +
+              data.savedGname
+          : "GC name protection ON."
+      );
+
+      return;
+    }
+
+    if (sub === "off") {
+      data.autoGname = false;
+      data.updatedAt = Date.now();
+
+      saveData();
+
+      await send(
+        api,
+        threadID,
+        "GC name protection OFF."
+      );
+
+      return;
+    }
+
+    if (
+      args.length >= 2 &&
+      sub !== "on" &&
+      sub !== "off"
+    ) {
+      data.savedGname =
+        args
+          .slice(1)
+          .join(" ")
+          .trim();
+
+      data.autoGname = true;
+      data.updatedAt = Date.now();
+
+      saveData();
+
+      await send(
+        api,
+        threadID,
+        "GC name saved: " +
+          data.savedGname
+      );
+
+      return;
+    }
+
+    await send(
+      api,
+      threadID,
+      [
+        "Usage:",
+        "/ryuk gname on <name>",
+        "/ryuk gname off",
+        "/ryuk gname <name>"
+      ].join("\n")
+    );
+
+    return;
+  }
+
+  if (
+    command === "lock"
+  ) {
+    data.locked = true;
+    data.updatedAt = Date.now();
+
+    saveData();
+
+    await send(
+      api,
+      threadID,
+      "🔒 RYUK lock ON."
+    );
+
+    return;
+  }
+
+  if (
+    command === "unlock"
+  ) {
+    data.locked = false;
+    data.updatedAt = Date.now();
+
+    saveData();
+
+    await send(
+      api,
+      threadID,
+      "🔓 RYUK lock OFF."
+    );
+
+    return;
+  }
+
+  await send(
+    api,
+    threadID,
+    "❌ Unknown command. Use /ryuk help"
+  );
+};
+
+module.exports.handleMessageEvent =
+  handleMessageEvent;const safeSendMessage = async (
+  api,
+  threadID,
+  message
+) => {
+  if (!api || !threadID) {
+    return false;
+  }
+
+  const textMessage =
+    typeof message === "string"
+      ? message.trim()
+      : "";
+
+  if (!textMessage) {
+    return false;
+  }
+
+  try {
+    if (
+      typeof api.sendMessage !==
+      "function"
+    ) {
+      return false;
+    }
+
+    await api.sendMessage(
+      textMessage,
+      threadID
+    );
+
+    return true;
+  } catch (error) {
+    logError(
+      "SAFE_SEND_MESSAGE",
+      error
+    );
+
+    return false;
+  }
+};
+
+const safeReact = async (
+  api,
+  messageID,
+  reaction
+) => {
+  if (
+    !api ||
+    !messageID ||
+    !reaction
+  ) {
+    return false;
+  }
+
+  try {
+    if (
+      typeof api.setMessageReaction !==
+      "function"
+    ) {
+      return false;
+    }
+
+    await api.setMessageReaction(
+      reaction,
+      messageID,
+      true
+    );
+
+    return true;
+  } catch (error) {
+    logError(
+      "SAFE_REACTION",
+      error
+    );
+
+    return false;
+  }
+};
+
+const shouldReact = (
+  data,
+  event
+) => {
+  if (!data) return false;
+
+  if (!data.active) {
+    return false;
+  }
+
+  if (!data.autoReact) {
+    return false;
+  }
+
+  if (
+    !event ||
+    !event.messageID
   ) {
     return false;
   }
 
   if (
-    isRestoreChangeEventFinal(
+    event.isGroup === false
+  ) {
+    return false;
+  }
+
+  return true;
+};
+
+const getRandomItem = (
+  array
+) => {
+  if (
+    !Array.isArray(array) ||
+    array.length === 0
+  ) {
+    return null;
+  }
+
+  const index =
+    Math.floor(
+      Math.random() *
+        array.length
+    );
+
+  return array[index];
+};
+
+const RYUK_REACTIONS = [
+  "💀",
+  "👁️",
+  "🔥",
+  "🤣",
+  "😈",
+  "🤡"
+];
+
+const getReactionForEvent = (
+  event
+) => {
+  const body =
+    typeof event.body === "string"
+      ? event.body.toLowerCase()
+      : "";
+
+  if (
+    body.includes("haha") ||
+    body.includes("lol") ||
+    body.includes("😂")
+  ) {
+    return "🤣";
+  }
+
+  if (
+    body.includes("ryuk") ||
+    body.includes("ryu")
+  ) {
+    return "💀";
+  }
+
+  if (
+    body.includes("pogi") ||
+    body.includes("astig")
+  ) {
+    return "🔥";
+  }
+
+  return getRandomItem(
+    RYUK_REACTIONS
+  );
+};
+
+const reactionCooldowns =
+  new Map();
+
+const canReactToThread = (
+  threadID
+) => {
+  if (!threadID) {
+    return false;
+  }
+
+  const now =
+    Date.now();
+
+  const last =
+    reactionCooldowns.get(
+      threadID
+    ) || 0;
+
+  const cooldown = 2500;
+
+  if (
+    now - last <
+    cooldown
+  ) {
+    return false;
+  }
+
+  reactionCooldowns.set(
+    threadID,
+    now
+  );
+
+  return true;
+};
+
+const processAutoReaction = async (
+  api,
+  event
+) => {
+  if (!api || !event) {
+    return;
+  }
+
+  const threadID =
+    event.threadID;
+
+  if (!threadID) {
+    return;
+  }
+
+  const data =
+    getThreadDataSafe(
+      threadID
+    );
+
+  if (
+    !shouldReact(
+      data,
       event
     )
   ) {
+    return;
+  }
+
+  if (
+    !canReactToThread(
+      threadID
+    )
+  ) {
+    return;
+  }
+
+  const reaction =
+    getReactionForEvent(
+      event
+    );
+
+  if (!reaction) {
+    return;
+  }
+
+  await sleep(350);
+
+  const success =
+    await safeReact(
+      api,
+      event.messageID,
+      reaction
+    );
+
+  if (!success) {
+    reactionCooldowns.delete(
+      threadID
+    );
+  }
+};
+
+const AUTO_REPLY_COOLDOWN =
+  new Map();
+
+const canAutoReply = (
+  threadID
+) => {
+  if (!threadID) {
     return false;
   }
 
-  return Boolean(
-    event.body ||
-      event.messageID
-  );
-}
-
-function isCommandMessageFinal(
-  event
-) {
-  const body =
-    getBody(event);
-
-  return (
-    body.startsWith(
-      "/ryuk"
-    ) ||
-    body.startsWith(
-      "/RYUK"
-    )
-  );
-        }async function processFinalMessage(
-  api,
-  event
-) {
-  try {
-    if (
-      !api ||
-      !event
-    ) {
-      return;
-    }
-
-    if (
-      !isMessageEventFinal(
-        event
-      )
-    ) {
-      return;
-    }
-
-    if (
-      isCommandMessageFinal(
-        event
-      )
-    ) {
-      return;
-    }
-
-    const threadID =
-      getThreadID(event);
-
-    const senderID =
-      getSenderID(event);
-
-    const messageID =
-      getMessageID(event);
-
-    if (
-      !threadID ||
-      !senderID
-    ) {
-      return;
-    }
-
-    if (
-      messageID &&
-      alreadyProcessed(
-        messageID
-      )
-    ) {
-      return;
-    }
-
-    if (
-      messageID
-    ) {
-      rememberMessage(
-        messageID
-      );
-    }
-
-    const data =
-      ensureRuntimeData(
-        loadData()
-      );
-
-    if (
-      !data.active
-    ) {
-      return;
-    }
-
-    if (
-      isAdmin(
-        senderID
-      )
-    ) {
-      return;
-    }
-
-    if (
-      isSpam(
-        senderID
-      )
-    ) {
-      return;
-    }
-
-    if (
-      !isTargetUser(
-        data,
-        threadID,
-        senderID
-      )
-    ) {
-      return;
-    }
-
-    const shouldReply =
-      shouldAutoReply(
-        data,
-        event,
-        threadID,
-        senderID
-      );
-
-    const shouldReact =
-      shouldAutoReact(
-        data,
-        event,
-        threadID,
-        senderID
-      );
-
-    if (
-      shouldReact &&
-      messageID
-    ) {
-      const reaction =
-        getAutoReaction();
-
-      const success =
-        await safeReaction(
-          api,
-          reaction,
-          messageID
-        );
-
-      if (
-        success
-      ) {
-        data.reactionCount =
-          Number(
-            data.reactionCount
-          ) + 1;
-
-        saveData(
-          data
-        );
-      }
-    }
-
-    if (
-      shouldReply
-    ) {
-      const reply =
-        getAutoReply();
-
-      const success =
-        await safeSend(
-          api,
-          reply,
-          threadID,
-          messageID
-        );
-
-      if (
-        success
-      ) {
-        data.replyCount =
-          Number(
-            data.replyCount
-          ) + 1;
-
-        saveData(
-          data
-        );
-      }
-    }
-
-  } catch (error) {
-    console.error(
-      "[RYUK] message:",
-      error.message ||
-        error
-    );
-  }
-}
-
-async function processFinalEvent(
-  api,
-  event
-) {
-  try {
-    if (
-      !api ||
-      !event
-    ) {
-      return;
-    }
-
-    if (
-      isRestoreChangeEventFinal(
-        event
-      )
-    ) {
-      await processStableRestoreFinal(
-        api,
-        event
-      );
-
-      return;
-    }
-
-    if (
-      isMessageEventFinal(
-        event
-      )
-    ) {
-      await processFinalMessage(
-        api,
-        event
-      );
-    }
-
-  } catch (error) {
-    console.error(
-      "[RYUK] event:",
-      error.message ||
-        error
-    );
-  }
-      }function cleanupFinalRuntime() {
-  const current =
+  const now =
     Date.now();
 
-  const cleanupMap = (
-    map,
-    timeout
-  ) => {
-    if (
-      !map ||
-      typeof map !==
-        "object"
+  const last =
+    AUTO_REPLY_COOLDOWN.get(
+      threadID
+    ) || 0;
+
+  const cooldown = 5000;
+
+  if (
+    now - last <
+    cooldown
+  ) {
+    return false;
+  }
+
+  AUTO_REPLY_COOLDOWN.set(
+    threadID,
+    now
+  );
+
+  return true;
+};
+
+const AUTO_REPLIES = [
+  "👁️ RYUK: Nakita ko yan.",
+  "💀 RYUK: Tahimik lang ako.",
+  "😈 RYUK: Alam ko na yan.",
+  "🔥 RYUK: Noted.",
+  "🤣 RYUK: Grabe naman yan.",
+  "👁️ RYUK: Continue.",
+  "💀 RYUK: Nandito lang ako."
+];
+
+const processAutoReply = async (
+  api,
+  event
+) => {
+  if (!api || !event) {
+    return;
+  }
+
+  const threadID =
+    event.threadID;
+
+  if (!threadID) {
+    return;
+  }
+
+  const data =
+    getThreadDataSafe(
+      threadID
+    );
+
+  if (
+    !data ||
+    !data.active
+  ) {
+    return;
+  }
+
+  if (
+    event.type &&
+    event.type !==
+      "message"
+  ) {
+    return;
+  }
+
+  if (
+    !event.body ||
+    typeof event.body !==
+      "string"
+  ) {
+    return;
+  }
+
+  if (
+    event.body.length >
+    2000
+  ) {
+    return;
+  }
+
+  const body =
+    event.body.trim();
+
+  if (!body) {
+    return;
+  }
+
+  const lower =
+    body.toLowerCase();
+
+  if (
+    lower.startsWith(
+      "/ryuk"
+    )
+  ) {
+    return;
+  }
+
+  if (
+    !lower.includes("ryuk")
+  ) {
+    return;
+  }
+
+  if (
+    !canAutoReply(
+      threadID
+    )
+  ) {
+    return;
+  }
+
+  const reply =
+    getRandomItem(
+      AUTO_REPLIES
+    );
+
+  if (!reply) {
+    return;
+  }
+
+  await sleep(
+    safeNumber(
+      data.delay,
+      2000
+    )
+  );
+
+  const sent =
+    await safeSendMessage(
+      api,
+      threadID,
+      reply
+    );
+
+  if (sent) {
+    data.totalReplies =
+      safeNumber(
+        data.totalReplies,
+        0
+      ) + 1;
+
+    data.updatedAt =
+      Date.now();
+
+    saveData();
+  }
+};
+
+const cleanupReactionCooldowns =
+  () => {
+    const now =
+      Date.now();
+
+    for (
+      const [
+        threadID,
+        timestamp
+      ] of reactionCooldowns
     ) {
-      return;
+      if (
+        now - timestamp >
+        15000
+      ) {
+        reactionCooldowns.delete(
+          threadID
+        );
+      }
     }
 
     for (
-      const key of Object.keys(
-        map
-      )
+      const [
+        threadID,
+        timestamp
+      ] of AUTO_REPLY_COOLDOWN
     ) {
-      const value =
-        Number(
-          map[key]
-        ) || 0;
-
       if (
-        current - value >
-        timeout
+        now - timestamp >
+        20000
       ) {
-        delete map[key];
+        AUTO_REPLY_COOLDOWN.delete(
+          threadID
+        );
       }
     }
   };
 
-  cleanupMap(
-    lastReply,
-    60000
+const reactionCleanup =
+  setInterval(
+    cleanupReactionCooldowns,
+    10000
   );
 
-  cleanupMap(
-    lastReaction,
-    60000
-  );
-
-  cleanupMap(
-    lastNicknameRestore,
-    60000
-  );
-
-  cleanupMap(
-    lastGCNameRestore,
-    60000
-  );
-
-  cleanupMap(
-    recentMessages,
-    60000
-  );
-
-  cleanupMap(
-    spamTracker,
-    SPAM_WINDOW + 60000
-  );
+if (
+  reactionCleanup &&
+  typeof reactionCleanup.unref ===
+    "function"
+) {
+  reactionCleanup.unref();
 }
 
-function ensureFinalData() {
+module.exports.processAutoReaction =
+  processAutoReaction;
+
+module.exports.processAutoReply =
+  processAutoReply;const initializeRyuk = () => {
   try {
-    const data =
-      ensureRuntimeData(
-        loadData()
-      );
-
-    if (
-      !data.target ||
-      typeof data.target !==
-        "object"
-    ) {
-      data.target = {};
+    if (!global.ryukData) {
+      global.ryukData = {};
     }
 
     if (
-      typeof data.active !==
-      "boolean"
+      typeof loadData ===
+      "function"
     ) {
-      data.active = false;
+      loadData();
     }
 
     if (
-      typeof data.autoReply !==
-      "boolean"
+      typeof global.ryukData !==
+      "object"
     ) {
-      data.autoReply = true;
+      global.ryukData = {};
     }
 
+    return true;
+  } catch (error) {
+    logError(
+      "INITIALIZE_RYUK",
+      error
+    );
+
+    return false;
+  }
+};
+
+const ensureThreadData = (
+  threadID
+) => {
+  if (!threadID) {
+    return null;
+  }
+
+  if (!global.ryukData) {
+    global.ryukData = {};
+  }
+
+  if (
+    !global.ryukData[threadID]
+  ) {
+    global.ryukData[threadID] = {
+      active: true,
+      autoReact: true,
+      autoNick: false,
+      autoGname: false,
+      savedNick: "",
+      savedGname: "",
+      locked: false,
+      delay: 2000,
+      totalReplies: 0,
+      commandCount: 0,
+      nickRestoreCount: 0,
+      gnameRestoreCount: 0,
+      lastNickRestore: 0,
+      lastGnameRestore: 0,
+      createdAt: Date.now(),
+      updatedAt: Date.now()
+    };
+  }
+
+  return global.ryukData[
+    threadID
+  ];
+};
+
+const runEventPipeline = async (
+  api,
+  event
+) => {
+  if (!api || !event) {
+    return;
+  }
+
+  const threadID =
+    event.threadID;
+
+  if (!threadID) {
+    return;
+  }
+
+  const data =
+    ensureThreadData(
+      threadID
+    );
+
+  if (!data) {
+    return;
+  }
+
+  try {
     if (
-      typeof data.autoReact !==
-      "boolean"
-    ) {
-      data.autoReact = true;
-    }
-
-    if (
-      typeof data.nicknameLock !==
-      "boolean"
-    ) {
-      data.nicknameLock = false;
-    }
-
-    if (
-      typeof data.gcNameLock !==
-      "boolean"
-    ) {
-      data.gcNameLock = false;
-    }
-
-    if (
-      typeof data.nickname !==
-      "string" ||
-      !data.nickname.trim()
-    ) {
-      data.nickname =
-        DEFAULT_NICKNAME;
-    }
-
-    if (
-      typeof data.gcName !==
-      "string" ||
-      !data.gcName.trim()
-    ) {
-      data.gcName =
-        DEFAULT_GC_NAME;
-    }
-
-    const counters = [
-      "replyCount",
-      "reactionCount",
-      "nicknameCount",
-      "gcNameCount",
-      "gcNameRestores",
-      "restoreCount",
-      "errorCount"
-    ];
-
-    for (
-      const key of counters
+      event.logMessageType ===
+      "log:thread-name"
     ) {
       if (
-        typeof data[key] !==
-          "number" ||
-        !Number.isFinite(
-          data[key]
-        )
+        data.autoGname &&
+        data.savedGname
       ) {
-        data[key] = 0;
+        await sleep(1000);
+
+        await restoreGroupNameOnce(
+          api,
+          threadID
+        );
       }
+
+      return;
     }
 
-    saveData(
-      data
-    );
+    if (
+      event.logMessageType ===
+      "changeNickname"
+    ) {
+      if (
+        data.autoNick &&
+        data.savedNick
+      ) {
+        await sleep(1000);
 
-    return data;
+        await restoreNicknameOnce(
+          api,
+          threadID
+        );
+      }
 
+      return;
+    }
+
+    if (
+      event.type ===
+      "message"
+    ) {
+      if (
+        data.autoReact
+      ) {
+        await processAutoReaction(
+          api,
+          event
+        );
+      }
+
+      if (
+        data.active
+      ) {
+        await processAutoReply(
+          api,
+          event
+        );
+      }
+
+      return;
+    }
   } catch (error) {
-    console.error(
-      "[RYUK] final data check:",
-      error.message ||
-        error
+    logError(
+      "RUN_EVENT_PIPELINE",
+      error
+    );
+  }
+};
+
+const startRyuk = () => {
+  try {
+    initializeRyuk();
+
+    if (
+      !global.ryukStarted
+    ) {
+      global.ryukStarted =
+        true;
+    }
+
+    return true;
+  } catch (error) {
+    logError(
+      "START_RYUK",
+      error
     );
 
-    return cloneDefaultData();
+    return false;
   }
-}
+};
 
-ensureFinalData();
+startRyuk();
 
-setInterval(
-  () => {
+module.exports.onStart =
+  async function({
+    api
+  }) {
     try {
-      cleanupFinalRuntime();
+      if (!api) {
+        return;
+      }
+
+      initializeRyuk();
     } catch (error) {
-      console.error(
-        "[RYUK] final cleanup:",
-        error.message ||
-          error
+      logError(
+        "ON_START",
+        error
       );
     }
-  },
-  60000
-);
+  };
 
 module.exports.handleEvent =
   async function({
@@ -5687,155 +3855,48 @@ module.exports.handleEvent =
     event
   }) {
     try {
-      if (
-        !api ||
-        !event
-      ) {
-        return;
-      }
-
-      if (
-        isRyukCommand(
-          event
-        )
-      ) {
-        if (
-          adminCommandAllowed(
-            event
-          )
-        ) {
-          await executeRyukCommand(
-            api,
-            event
-          );
-        }
-
-        return;
-      }
-
-      await processFinalEvent(
+      await runEventPipeline(
         api,
         event
       );
-
     } catch (error) {
-      console.error(
-        "[RYUK] final handler:",
-        error.message ||
-          error
-      );
-    }
-  };module.exports.onLoad =
-  function({
-    api
-  }) {
-    try {
-      ensureFinalData();
-
-      if (
-        api &&
-        typeof api.getCurrentUserID ===
-          "function"
-      ) {
-        const botID =
-          api.getCurrentUserID();
-
-        if (
-          botID
-        ) {
-          console.log(
-            "[RYUK] RYUK loaded successfully:",
-            String(botID)
-          );
-        }
-      }
-    } catch (error) {
-      console.error(
-        "[RYUK] onLoad:",
-        error.message ||
-          error
+      logError(
+        "HANDLE_EVENT_FINAL",
+        error
       );
     }
   };
 
-process.on(
-  "uncaughtException",
-  error => {
-    console.error(
-      "[RYUK] uncaughtException:",
-      error &&
-        (
-          error.message ||
-          error
-        )
-    );
-
+module.exports.run =
+  async function({
+    api,
+    event,
+    args
+  }) {
     try {
-      const data =
-        ensureRuntimeData(
-          loadData()
-        );
-
-      data.errorCount =
-        Number(
-          data.errorCount
-        ) + 1;
-
-      saveData(
-        data
-      );
-    } catch (_) {}
-  }
-);
-
-process.on(
-  "unhandledRejection",
-  error => {
-    console.error(
-      "[RYUK] unhandledRejection:",
-      error &&
-        (
-          error.message ||
-          error
-        )
-    );
-
-    try {
-      const data =
-        ensureRuntimeData(
-          loadData()
-        );
-
-      data.errorCount =
-        Number(
-          data.errorCount
-        ) + 1;
-
-      saveData(
-        data
-      );
-    } catch (_) {}
-  }
-);
-
-setInterval(
-  () => {
-    try {
-      const data =
-        ensureRuntimeData(
-          loadData()
-        );
-
-      saveData(
-        data
+      await processRyukCommand(
+        api,
+        event,
+        Array.isArray(args)
+          ? args
+          : []
       );
     } catch (error) {
-      console.error(
-        "[RYUK] periodic save:",
-        error.message ||
-          error
+      logError(
+        "RUN_FINAL",
+        error
       );
     }
-  },
-  300000
-);
+  };
+
+module.exports.config = {
+  name: "ryuk",
+  version: "1.0.0",
+  hasPermission: 0,
+  credits: "RYUK",
+  description:
+    "Stable GC utility manager with protected group name, nickname, reactions and controlled auto replies.",
+  usePrefix: true,
+  commandCategory: "group",
+  cooldowns: 3
+};
