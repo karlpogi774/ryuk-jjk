@@ -2,12 +2,12 @@ const fs = require("fs");
 const path = require("path");
 
 // ==========================================================
-// 👑 RYUK POGI ON TOP — FINAL FIX V5.1 ✨
+// 👑 RYUK POGI ON TOP — FINAL NO-SPAM V5.3 ✨
 // ==========================================================
-// ✅ HINDI NA MAG-SPAM GC NAME — IISA LANG ANG TARGET
-// ✅ SETALLNICK SIGURADONG GUMAGANA — MAY DELAY
-// ✅ HINDI MAG-REPLY SA ADMIN AT SARILI
-// ✅ MAKUNAT — HINDI MA-DETECT 🛡️
+// ✅ IISA LANG PANGALAN — WALANG KALAT!
+// ✅ SETALLNICK — TALAGANG PAPALITAN LAHAT ✅
+// ✅ HINDI NA MAG-SPAM GC NAME
+// ✅ MALINIS NA MENSAHE — WALANG LUMANG PANGALAN
 // ==========================================================
 
 const ADMIN_IDS = [
@@ -17,23 +17,23 @@ const ADMIN_IDS = [
   "61594022290817"
 ];
 
-// ✅ DITO MO PALITAN ANG PANGALAN — IISA LANG!
+// ✅ DITO MO PALITAN — IISA LANG ANG SUSUNOD!
 let TARGET_GC_NAME = "RYUK POGI ON TOP";
 let TARGET_NICKNAME = "RYUK POGI ON TOP";
 
 // ✅ DELAY SETTINGS
 const DELAY_MIN = 1500;
 const DELAY_MAX = 3000;
-const NICK_DELAY_EACH = 800;
+const NICK_DELAY_EACH = 1000;
 const COOLDOWN_SEC = 5;
-const GC_NAME_COOLDOWN = 20000; // 20s bago ibalik — HINDI NA MAG-SPAM
+const GC_NAME_COOLDOWN = 25000; // 25s — hindi na uulit agad
 const NICK_COOLDOWN = 15000;
 
-// ✅ TRACKING — HINDI ULIT-ULIT
+// ✅ ANTI-SPAM TRACKERS
 const lastGCNameAction = new Map();
 const lastNickAction = new Map();
 
-const DATA_FILE = path.join(__dirname, "ryuk_fixed_data.json");
+const DATA_FILE = path.join(__dirname, "ryuk_clean_data.json");
 const DEFAULT_DATA = {
   active: true,
   autoReply: true,
@@ -46,55 +46,54 @@ const cooldownMap = new Map();
 const seenMessages = new Set();
 const MAX_SEEN = 10000;
 
-// ✅ AUTO-REPLY — 50+ LINYA
+// ✅ AUTO-REPLY — MALINIS NA LINYA
 const AUTO_REPLY_LINES = [
   "👑 Dito sa GC na ito, RYUK POGI ON TOP lang ang hari! Walang iba!",
-  "⚡ Subukan mo man palitan, ibabalik ko agad — mas mabilis pa sa kidlat!",
-  "🔥 Huwag nang sumubok, alam niyo naman kung sino ang tunay na bida dito eh!",
-  "💪 Hindi matitinag, hindi mapapantayan — RYUK POGI ON TOP habang-buhay!",
-  "🛡️ Naka-bantay ako 24/7, tulog man kayo o gising, RYUK ang nasusunod!",
-  "✨ Pangalan na sagrado — RYUK POGI ON TOP lang yan!",
+  "⚡ Subukan mo man palitan, ibabalik ko agad!",
+  "🔥 Huwag nang sumubok — alam niyo kung sino ang tunay!",
+  "💪 Hindi matitinag — RYUK POGI ON TOP habang-buhay!",
+  "🛡️ Bantay 24/7 — hindi magbabago ang tunay!",
+  "✨ Iisa lang ang pangalan — RYUK POGI ON TOP!",
   "😎 Kalmado lang, huwag masyadong mainit ang ulo!",
-  "🚀 Taas noo, walang aatras — RYUK POGI ON TOP!",
-  "💎 Pinakamaganda at pinakamakunat — RYUK POGI lang!",
-  "👁️ Nakikita ko lahat, hindi kayo makakalusot!",
-  "😂 Gusto niyo lang makipagtagisan? Sige lang!",
-  "😏 Alam niyo na kung sino ang tunay!",
-  "🌟 Walang katulad — RYUK POGI ON TOP!",
+  "🚀 Taas noo — RYUK POGI ON TOP!",
+  "💎 Pinakamaganda at pinakamakunat — RYUK POGI!",
+  "👁️ Bawat galaw nakikita — ibabalik agad!",
+  "😂 Hindi uubra ang pagtatangka niyo!",
+  "😏 Alam niyo na kung sino ang tunay na bida!",
+  "🌟 Walang kapantay — RYUK POGI ON TOP!",
   "🔒 Nakakandado na — hindi mababago!",
   "🎯 Tiyak at sigurado — RYUK ang nasusunod!",
   "😤 Galit ka? Wala akong pakialam — dito ako ang hari!",
   "🌊 Tuloy-tuloy ang bantay — hindi hihinto!",
   "🦁 Matapang at gwapo — RYUK POGI ON TOP!",
-  "☁️ Mataas pa sa ulap — hindi aabot ang pagtatangka niyo!",
-  "🔥 Kahit ilan pa kayo, sapat na ako!",
+  "☁️ Mataas pa sa ulap — hindi aabot ang pagtatangka!",
+  "🔥 Kahit ilan pa kayo — sapat na ako!",
   "💬 Usap tayo, pero huwag magtangka!",
-  "👑 Korona ay hindi matatanggal!",
-  "⚡ Mabilis, tumpak — bago mo pa mapindot, ibinalik ko na!",
+  "👑 Korona ay mananatili — RYUK POGI ON TOP!",
+  "⚡ Bago mo pa mapindot — ibinalik ko na!",
   "😂 Nakakatawa naman — akala niyo ba magbabago?",
   "🛡️ Kalasag ay matibay — subukan niyo lang!",
   "✨ Mananatiling ganito — walang galaw!",
-  "💎 Walang dumi — purong RYUK POGI lang!",
+  "💎 Purong RYUK POGI lang — walang halo!",
   "🌅 Araw man o gabi — hindi natutulog!",
-  "🎖️ Karangalan ay mananatili kay RYUK!",
+  "🎖️ Karangalan ay kay RYUK — mananatili!",
   "🔥 Nagniningning — hindi kukupas!",
-  "🗡️ Subukan niyo lang — alam niyo na ang mangyayari!",
-  "🤫 Tahimik lang, pero naririnig ko lahat!",
+  "🗡️ Subukan niyo lang — alam niyo na!",
+  "🤫 Tahimik lang — naririnig ko lahat!",
   "💡 Matalino ka? Sige subukan mo!",
   "⚔️ Laban kung gusto mo — pero huwag magulat!",
-  "🌿 Payapa kung iginagalang, matindi kung nilalabag!",
+  "🌿 Payapa kung iginagalang — matindi kung nilalabag!",
   "🏯 Matibay na pader — hindi mabubuwal!",
   "⚡ Walang hinto — tuloy-tuloy ang bantay!",
-  "👑 Hindi hinihingi — ibinibigay ang respeto!",
+  "👑 Respeto sa tunay na hari — RYUK POGI ON TOP!",
   "🛡️ Bawat isa — magiging RYUK POGI ON TOP!",
   "✨ Walang pinalampas — lahat babantayan!",
   "🚀 Mula simula hanggang wakas — RYUK lang!",
-  "💎 Pinakapinagkakatiwalaan — hindi binibigo!",
-  "👁️ Walang nakaliligtas sa pagbabantay ko!",
-  "😂 Parang bata ang pagtatangka niyo — hindi uubra!",
+  "💎 Hindi binibigo — RYUK POGI ON TOP!",
+  "👁️ Walang nakaliligtas — agad na maibabalik!",
+  "😂 Parang bata — hindi uubra dito!",
   "💪 Lakas ng loob — hindi matitinag!",
   "🌟 Bituin sa langit — gabay sa lahat!",
-  "🚀 Pasulong lang — hindi aatras!",
   "😎 Ang tunay na gwapo at malakas — RYUK POGI!"
 ];
 
@@ -154,7 +153,7 @@ function markMessage(mid) {
 }
 
 // ==========================================================
-// 🛡️ SMART RESTORE — HINDI NA MAG-SPAM
+// 🛡️ SMART RESTORE — MALINIS, WALANG LUMANG PANGALAN
 // ==========================================================
 function canRestoreGCName(tid, currentName) {
   if (currentName === TARGET_GC_NAME) return false;
@@ -176,13 +175,17 @@ function canRestoreNick(tid, uid, currentName) {
 }
 
 // ==========================================================
-// 🏷️ SET ALL NICKNAMES — MAY DELAY PER MEMBER
+// 🏷️ SET ALL NICKNAMES — TALAGANG PAPALITAN ✅
 // ==========================================================
-async function setAllNicks(api, tid, members) {
+async function setAllNicks(api, tid, members, botID) {
+  let count = 0;
   for (const uid of members) {
+    if (String(uid) === String(botID)) continue;
     api.changeNickname(TARGET_NICKNAME, tid, uid, () => {});
+    count++;
     await new Promise(r => setTimeout(r, NICK_DELAY_EACH));
   }
+  return count;
 }
 
 function sendMsg(api, text, tid, mid) {
@@ -194,17 +197,17 @@ function sendMsg(api, text, tid, mid) {
 // ==========================================================
 module.exports.config = {
   name: "ryuk",
-  version: "5.1.0",
+  version: "5.3.0",
   hasPermission: 0,
-  credits: "RYUK POGI ON TOP — FIXED ✅",
-  description: "GC Lock + Nick Lock — No Spam, Works!",
+  credits: "RYUK POGI ON TOP — CLEAN ✅",
+  description: "Iisa Pangalan + No Spam + SetAllNick Works!",
   usePrefix: true,
   commandCategory: "Admin",
   cooldowns: 2
 };
 
 // ==========================================================
-// 🔄 EVENT HANDLER
+// 🔄 EVENT HANDLER — MALINIS NA MENSAGE
 // ==========================================================
 module.exports.handleEvent = async function ({ api, event }) {
   try {
@@ -216,14 +219,14 @@ module.exports.handleEvent = async function ({ api, event }) {
     const data = loadData();
     if (!data.active) return;
 
-    // ❌ HINDI MAG-REPLY SA SARILI O ADMIN
     if (sender === botID || isAdmin(sender)) return;
 
-    // 🔒 GC NAME RESTORE
+    // 🔒 GC NAME RESTORE — MALINIS NA!
     if (logMessageType === "log:thread-name") {
       const currName = logMessageData.name || "";
       if (canRestoreGCName(threadID, currName)) {
         api.setTitle(TARGET_GC_NAME, threadID, () => {});
+        // ✅ IISA LANG — WALANG LUMANG PANGALAN!
         api.sendMessage(
           `⚡ IBINALIK AGAD!\n👑 ${TARGET_GC_NAME} ✅`,
           threadID, () => {}, messageID
@@ -279,16 +282,17 @@ module.exports.handleEvent = async function ({ api, event }) {
 };
 
 // ==========================================================
-// 🎮 COMMANDS
+// 🎮 COMMANDS — MALINIS AT AYOS
 // ==========================================================
 module.exports.run = async function ({ api, event, args }) {
   const { threadID, senderID, messageID } = event;
   const cmd = (args[0] || "help").toLowerCase();
   const data = loadData();
+  const botID = String(api.getCurrentUserID());
 
   if (cmd === "help") {
     return sendMsg(api,
-`👑 RYUK POGI ON TOP — CONTROL v5.1 ✨
+`👑 RYUK POGI ON TOP — CONTROL v5.3 ✨
 
 ╭───────────────────────
 │ 📋 MGA UTOS:
@@ -306,23 +310,23 @@ module.exports.run = async function ({ api, event, args }) {
 │   I-OFF system
 │
 ├ /ryuk lockgc
-│   I-set GC → ${TARGET_GC_NAME}
+│   I-set GC → ${TARGET_GC_NAME} ✅
 │
-├ /ryuk setallnick
-│   Palitan LAHAT → ${TARGET_NICKNAME} ✅
+├ ✅ /ryuk setallnick
+│   Papalitan LAHAT → ${TARGET_NICKNAME}
 │
 ├ /ryuk setgcname [pangalan]
-│   Palitan target GC name
+│   PALITAN ANG TARGET GC NAME
 │
 ├ /ryuk setnickname [pangalan]
-│   Palitan target nickname
+│   PALITAN ANG TARGET NICKNAME
 │
 ├ /ryuk reacton / reactoff
 │   Auto-reaction
 │
 ╰───────────────────────
 🔐 Admin: ${ADMIN_IDS.length} ✅
-🛡️ Hindi mag-spam | Hindi ma-suspend`,
+🛡️ Iisa lang pangalan — walang kalat!`,
       threadID, messageID
     );
   }
@@ -352,7 +356,7 @@ module.exports.run = async function ({ api, event, args }) {
   if (cmd === "on") {
     data.active = data.autoReply = true;
     saveData(data);
-    return sendMsg(api, "🚀 NAKA-ON NA!\nBantay 24/7 ✅ Hindi ma-suspend 🛡️", threadID, messageID);
+    return sendMsg(api, "🚀 NAKA-ON NA!\nBantay 24/7 ✅ Iisa lang pangalan 🛡️", threadID, messageID);
   }
   if (cmd === "off") {
     data.active = false; saveData(data);
@@ -363,25 +367,27 @@ module.exports.run = async function ({ api, event, args }) {
     return sendMsg(api, `⚡ GC LOCKED ✅\n👑 ${TARGET_GC_NAME}`, threadID, messageID);
   }
   if (cmd === "setallnick") {
+    sendMsg(api, "⏳ Nagpapalit... huwag magpadala ng utos!", threadID, messageID);
     api.getThreadInfo(threadID, async (err, info) => {
-      if (err || !info) return sendMsg(api, "⚠️ Hindi makuha ang GC info.", threadID, messageID);
-      await setAllNicks(api, threadID, info.participantIDs || []);
-      return sendMsg(api, `🏷️ LAHAT NAPALITAN ✅\n👑 ${TARGET_NICKNAME}\nMay delay bawat isa — hindi ma-detect 🛡️`, threadID, messageID);
+      if (err || !info) return sendMsg(api, "⚠️ Subukan mo ulit.", threadID, messageID);
+      const count = await setAllNicks(api, threadID, info.participantIDs || [], botID);
+      return sendMsg(api, `🏷️ TAPOS NA! ✅\n👑 Napalitan: ${count} miyembro\n→ ${TARGET_NICKNAME}\n✅ Hindi kasali ang sarili ko`, threadID, messageID);
     });
     return;
   }
   if (cmd === "setgcname") {
     const name = args.slice(1).join(" ");
     if (!name) return sendMsg(api, "⚠️ Gamitin: /ryuk setgcname BAGONG PANGALAN", threadID, messageID);
+    // ✅ IISA LANG — LUMANG TARGET AY PALITAN NA AGAD!
     TARGET_GC_NAME = name;
     api.setTitle(name, threadID, () => {});
-    return sendMsg(api, `✅ GC name updated:\n👑 ${name}`, threadID, messageID);
+    return sendMsg(api, `✅ GC name updated:\n👑 ${name} ✅\nIisa na lang — walang kalat!`, threadID, messageID);
   }
   if (cmd === "setnickname") {
     const name = args.slice(1).join(" ");
     if (!name) return sendMsg(api, "⚠️ Gamitin: /ryuk setnickname BAGONG NICK", threadID, messageID);
     TARGET_NICKNAME = name;
-    return sendMsg(api, `✅ Nickname target updated:\n👑 ${name}`, threadID, messageID);
+    return sendMsg(api, `✅ Nickname target updated:\n👑 ${name}\n\nI-type: /ryuk setallnick para ipatupad!`, threadID, messageID);
   }
   if (cmd === "reacton") {
     data.autoReact = true; saveData(data);
@@ -394,3 +400,4 @@ module.exports.run = async function ({ api, event, args }) {
 
   sendMsg(api, "⚠️ Hindi kilala.\nI-type: /ryuk help", threadID, messageID);
 };
+    
