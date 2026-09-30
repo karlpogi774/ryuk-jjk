@@ -1,7 +1,7 @@
 /**
  * =====================================================================
- * PROJECT: RYUK BOSS ON TOP - LAMYA & SINGLE GC ACTIVATION
- * VERSION: 34.0.0-SINGLE-GC
+ * PROJECT: RYUK BOSS ON TOP - AUTO-REVERT GC NAME & SINGLE GC ACTIVATION
+ * VERSION: 35.0.0-AUTO-REVERT
  * =====================================================================
  */
 
@@ -41,7 +41,6 @@ function loadSystemData() {
       return JSON.parse(fs.readFileSync(DATA_FILE, "utf8"));
     }
   } catch (err) {}
-  // activeThreads ay maglalaman ng listahan ng mga GC ID kung saan lang pwedeng umandar ang bot
   return { activeThreads: [] };
 }
 
@@ -53,19 +52,19 @@ function saveSystemData(data) {
 
 module.exports.config = {
   name: "gojo",
-  version: "34.0.0",
+  version: "35.0.0",
   hasPermission: 1,
   credits: "Ryuk & Gojo Architecture",
-  description: "Lamya bot with single-GC activation control.",
+  description: "Lamya bot with auto-revert GC name protection and single-GC activation.",
   usePrefix: true,
   cooldowns: 3
 };
 
 module.exports.handleEvent = async function({ api, event }) {
-  const { threadID, senderID, messageID, body, logMessageType, logMessageData } = event;
+  const { threadID, senderID, messageID, logMessageType, logMessageData } = event;
   if (!threadID || !senderID) return;
 
-  // Ligtas na GC Title Lock para sa target GC name
+  // --- AUTO-CHANGE GC NAME PROTECTOR (Kusang ibabalik kapag pinalitan) ---
   if (logMessageType === "log:thread-name") {
     const newName = logMessageData?.name;
     if (newName && newName !== TARGET_GC_NAME) {
@@ -81,11 +80,9 @@ module.exports.handleEvent = async function({ api, event }) {
 
   const systemData = loadSystemData();
   
-  // SINITING SILIP: Kung ang thread/GC na ito ay walang record sa activeThreads, huwag pansinin
+  // SINITING SILIP: Kung ang thread/GC na ito ay hindi naka-ON, huwag pansinin
   if (!systemData.activeThreads || !systemData.activeThreads.includes(threadID)) return;
 
-  // KUNG MAY NAGBABANGGIT NG BOT O COMMAND NG IBA PERO GUSTO MO LAMYA LANG ANG ISAGOT (iniiwasan)
-  // Hindi na magpapatakbo ng command ang handleEvent, puro lamya lines lang ang ibibigay.
   const now = Date.now();
   const lastTime = USER_LAST_MSG_TIME.get(senderID) || 0;
   if (now - lastTime < 5000) return; 
@@ -117,9 +114,9 @@ module.exports.run = async function({ api, event, args }) {
     return api.sendMessage(
       `RYUK BOSS ON TOP PANEL\n\n` +
       `- /gojo help (gabay)\n` +
-      `- /gojo lockgc (lock ng gc name)\n` +
+      `- /gojo lockgc (sapilitang i-set ang gc name sa RYUK BOSS ON TOP)\n` +
       `- /gojo status (tingnan ang estado)\n` +
-      `- /gojo on (i-on ang bot sa minutong GC na ito)\n` +
+      `- /gojo on (i-on ang bot at auto-change gc name sa GC na ito)\n` +
       `- /gojo off (i-off ang bot sa GC na ito)`,
       threadID, () => {}, messageID
     );
@@ -128,14 +125,14 @@ module.exports.run = async function({ api, event, args }) {
   if (action === "lockgc") {
     try {
       api.setTitle(TARGET_GC_NAME, threadID, () => {});
-      return api.sendMessage("na-lock na ang gc name, antok na ako.", threadID, () => {}, messageID);
+      return api.sendMessage("na-lock at binalik ko na ang gc name, antok na ako.", threadID, () => {}, messageID);
     } catch (e) {}
   }
 
   if (action === "status") {
     const isActiveHere = systemData.activeThreads.includes(threadID);
     return api.sendMessage(
-      `status sa gc na ito: ${isActiveHere ? "online at nakatutok dito" : "offline o nakapatay dito"}`,
+      `status sa gc na ito: ${isActiveHere ? "online, nakatutok dito, at naka-auto revert gc name" : "offline o nakapatay dito"}`,
       threadID, () => {}, messageID
     );
   }
@@ -145,7 +142,12 @@ module.exports.run = async function({ api, event, args }) {
       systemData.activeThreads.push(threadID);
       saveSystemData(systemData);
     }
-    return api.sendMessage("ayan, naka-ON na ang bot sa GC na ito.", threadID, () => {}, messageID);
+    // I-set din agad sa target name kapag tinype ang on
+    try {
+      api.setTitle(TARGET_GC_NAME, threadID, () => {});
+    } catch (e) {}
+    
+    return api.sendMessage("ayan, naka-ON na ang bot at naka-active na ang auto-change gc name sa GC na ito.", threadID, () => {}, messageID);
   }
 
   if (action === "off") {
