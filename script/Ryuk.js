@@ -1,12 +1,15 @@
-/**
- * =====================================================================
- * PROJECT: RYUK BOSS ON TOP - TARGET USER & SELF-REACT ENGINE
- * VERSION: 39.0.0-REACT
- * =====================================================================
- */
-
 const fs = require("fs");
 const path = require("path");
+
+// ==========================================
+// RYUK POGI ON TOP — GC-SPECIFIC V2.6
+// ADMIN IDs: 61594055835097, 61593892603402, 61594325727109, 61594022290817
+// TARGET GC NAME: RYUK POGI ON TOP
+// TARGET NICKNAME: RYUK POGI ON TOP
+// GC-SPECIFIC — DUN LANG GAGANA KUNG SAAN KA NAG-ON
+// SELF-REACT + AUTO-REACT + LOCK GC/NICK + ANTI-SPAM
+// WALANG EMOJI — MALINIS NA VERSION
+// ==========================================
 
 const ADMIN_IDS = [
   "61594055835097",
@@ -15,196 +18,326 @@ const ADMIN_IDS = [
   "61594022290817"
 ];
 
-// 👉 ILAGAY DITO ANG FB UID NG TARGET ACCOUNT MO NA GUSTO MONG REPLYAN AT REACTIONAN NG BOT
-const TARGET_USER_ID = "ILAGAY_MO_DITO_YUNG_UID_NG_TARGET"; 
+const TARGET_NICKNAME = "RYUK POGI ON TOP";
+const TARGET_GC_NAME = "RYUK POGI ON TOP";
 
-const DATA_FILE = path.join(__dirname, "ryuk_react_database.json");
-const USER_LAST_MSG_TIME = new Map();
-const TARGET_GC_NAME = "RYUK BOSS ON TOP";
-const TARGET_NICKNAME = "RYUK BOSS ON TOP";
-
-// MGA LAMYA NA LINYAHAN (Walang emoji sa text, walang gana)
-const LAMYA_QUOTES = [
-  "hays ewan ko sa inyo, antok na ako...",
-  "pwede ba tigilan niyo na yan, tinatamad ako...",
-  "oo na lang, kayo na ang tama...",
-  "ha? anong sinasabi mo dyan, inaantok ako eh...",
-  "bahala kayo diyan, hihiga muna ako...",
-  "wala akong pakialam, pagod na ako...",
-  "kayo na lang mag-usap, inaantok talaga ako...",
-  "tss... ang aga-aga ang iingay niyo...",
-  "ayoko na, pagod na ako sa inyo...",
-  "ha? ewan ko sa inyo, bahala kayo sa buhay niyo...",
-  "hayaan mo nga ako, ayoko makipag-usap...",
-  "tulog muna ako, wag niyo ako kulitin..."
+const RYUK_LINES = [
+  "RYUK POGI ON TOP — walang makakatalo dito",
+  "GC LOCKED — pangalan ay hindi mapapalitan ng kahit sino",
+  "RYUK POGI — ang tunay na hari sa grupong ito",
+  "LAKAS AT GWAPO — RYUK POGI ON TOP, walang duda",
+  "Lahat ay RYUK POGI ON TOP — walang exempted dito",
+  "Hindi mababago, hindi matitinag — RYUK POGI LANG",
+  "GC PROTECTED — subukan mo, ibabalik agad",
+  "RYUK POGI ON TOP — pangalan na tatak sa isip niyo",
+  "Walang makakabago — dito, RYUK ang nasusunod",
+  "Naka-lock nang mahigpit — RYUK POGI ON TOP habang-buhay",
+  "Pinakamaganda, pinakamakunat — RYUK POGI LANG YAN",
+  "RYUK POGI ON TOP — taas noo, walang aatras",
+  "Bantay 24/7 — pag binago, ibabalik agad sayo",
+  "Dito sa GC na ito — RYUK POGI lang ang bida",
+  "Pangalan na sagrado — RYUK POGI ON TOP, walang iba",
+  "Hindi nagyayabang — sinasabi ko lang ang katotohanan",
+  "Subukan mo lang — mas mabilis pa ako sa kidlat",
+  "Ang tunay na pinuno — RYUK POGI ON TOP",
+  "Walang makakatalo sa lakas at ganda ko",
+  "RYUK POGI — pangalan na hindi malilimutan",
+  "Matibay, matatag — RYUK POGI ON TOP",
+  "Ikaw ang sumuko, hindi ako — RYUK POGI",
+  "Pinakamakinang — RYUK POGI ON TOP",
+  "Lumilipad pataas — RYUK POGI WALANG KAPANTAY",
+  "Tingin mo kaya mo? Subukan mo lang",
+  "Araw-araw RYUK POGI — walang araw na hindi",
+  "Bilis ng kidlat — pag binago, ibabalik ko agad",
+  "Hari ng lahat — RYUK POGI ON TOP",
+  "Walang susuko, walang bibitaw — RYUK POGI",
+  "Dito, isa lang ang nasusunod — AKO"
 ];
 
-function loadSystemData() {
+const DATA_FILE = path.join(__dirname, "ryuk_gc_data.json");
+
+const DEFAULT_DATA = {
+  activeGCs: {},
+  autoReact: true,
+  selfReact: true,
+  minDelay: 3000,
+  maxDelay: 6000,
+  totalReplies: 0
+};
+
+const USER_COOLDOWN = new Map();
+const SEEN_MESSAGES = new Set();
+const MAX_SEEN = 5000;
+
+let lineIndex = 0;
+function getNextLine() {
+  const line = RYUK_LINES[lineIndex];
+  lineIndex = (lineIndex + 1) % RYUK_LINES.length;
+  return line;
+}
+
+function getRandomDelay(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function isAdmin(senderID) {
+  return ADMIN_IDS.includes(String(senderID));
+}
+
+function loadData() {
   try {
     if (fs.existsSync(DATA_FILE)) {
-      return JSON.parse(fs.readFileSync(DATA_FILE, "utf8"));
+      const saved = JSON.parse(fs.readFileSync(DATA_FILE, "utf8"));
+      return { ...DEFAULT_DATA, ...saved };
     }
-  } catch (err) {}
-  return { activeThreads: [] };
+  } catch (e) {
+    console.error("[RYUK] Load error:", e.message);
+  }
+  return { ...DEFAULT_DATA };
 }
 
-function saveSystemData(data) {
+function saveData(data) {
   try {
     fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2), "utf8");
-  } catch (err) {}
+    return true;
+  } catch (e) {
+    console.error("[RYUK] Save error:", e.message);
+    return false;
+  }
 }
 
-// Function para sa auto-set nickname ng lahat ng member
-function setAllNicknames(api, threadID, participantIDs) {
-  if (!Array.isArray(participantIDs)) return;
-  participantIDs.forEach((id, index) => {
+function isGCActive(data, threadID) {
+  return data.activeGCs[String(threadID)] === true;
+}
+
+function setGCActive(data, threadID, status) {
+  data.activeGCs[String(threadID)] = status;
+  saveData(data);
+}
+
+function rememberMsg(id) {
+  if (SEEN_MESSAGES.has(id)) return false;
+  SEEN_MESSAGES.add(id);
+  if (SEEN_MESSAGES.size > MAX_SEEN) {
+    SEEN_MESSAGES.delete(SEEN_MESSAGES.values().next().value);
+  }
+  return true;
+}
+
+async function setAllNicks(api, tid, members, name) {
+  for (let i = 0; i < members.length; i++) {
     setTimeout(() => {
-      try {
-        api.changeNickname(TARGET_NICKNAME, threadID, id, (err) => {
-          if (err) {
-            try { api.changeNickname(id, threadID, TARGET_NICKNAME, () => {}); } catch(e2){}
-          }
-        });
-      } catch (e) {}
-    }, index * 800);
-  });
+      api.changeNickname(name, tid, members[i], () => {});
+    }, i * 500);
+  }
 }
 
 module.exports.config = {
-  name: "gojo",
-  version: "39.0.0",
-  hasPermission: 1,
-  credits: "Ryuk & Gojo Architecture",
-  description: "Target user bot with self-react, 1-to-1 reply pacing, and GC name enforcement.",
+  name: "ryuk",
+  version: "2.6.0",
+  hasPermission: 0,
+  credits: "RYUK POGI ON TOP",
+  description: "GC-Specific Lock | Self-React | Auto-Restore",
   usePrefix: true,
   cooldowns: 3
 };
 
-module.exports.handleEvent = async function({ api, event }) {
-  const { threadID, senderID, messageID, logMessageType, logMessageData } = event;
-  if (!threadID || !senderID) return;
+module.exports.handleEvent = async function ({ api, event }) {
+  try {
+    const { threadID, senderID, messageID, logMessageType, logMessageData } = event;
+    if (!threadID) return;
 
-  const systemData = loadSystemData();
-  const isActive = systemData.activeThreads && systemData.activeThreads.includes(threadID);
+    const data = loadData();
+    const tid = String(threadID);
+    const botID = String(api.getCurrentUserID());
+    const sender = String(senderID);
 
-  // GC NAME FORCE ENFORCEMENT
-  if (isActive) {
-    try {
-      api.getThreadInfo(threadID, (err, info) => {
-        if (!err && info && info.threadName && info.threadName !== TARGET_GC_NAME) {
-          api.setTitle(TARGET_GC_NAME, threadID, () => {});
-        }
-      });
-    } catch (e) {}
-  }
+    if (!isGCActive(data, tid)) return;
 
-  // NICKNAME LOG EVENT DETECTOR
-  if (logMessageType === "log:user-nickname") {
-    const targetUserID = logMessageData?.participant_id;
-    const currentNickname = logMessageData?.nickname;
-    if (targetUserID && currentNickname !== TARGET_NICKNAME) {
+    if (logMessageType === "log:user-nickname") {
+      const uid = String(logMessageData.participant_id);
+      const current = logMessageData.nickname || "";
+      if (current !== TARGET_NICKNAME && uid !== botID) {
+        setTimeout(() => {
+          api.changeNickname(TARGET_NICKNAME, tid, uid, () => {});
+        }, 800);
+      }
+      return;
+    }
+
+    if (logMessageType === "log:thread-name") {
+      setTimeout(() => {
+        api.setTitle(TARGET_GC_NAME, tid, () => {});
+      }, 800);
+      return;
+    }
+
+    if (sender === botID || isAdmin(sender)) return;
+    if (!messageID || !rememberMsg(String(messageID))) return;
+
+    if (data.autoReact) {
       try {
-        api.changeNickname(TARGET_NICKNAME, threadID, targetUserID, (err) => {
-          if (err) {
-            try { api.changeNickname(targetUserID, threadID, TARGET_NICKNAME, () => {}); } catch(e){}
-          }
-        });
+        api.setMessageReaction("OK", messageID, () => {}, true);
       } catch (e) {}
     }
-    return;
+
+    const key = `${tid}:${sender}`;
+    const now = Date.now();
+    const last = USER_COOLDOWN.get(key) || 0;
+    if (now - last < 4000) return;
+    USER_COOLDOWN.set(key, now);
+
+    const delay = getRandomDelay(data.minDelay, data.maxDelay);
+
+    setTimeout(() => {
+      if (!isGCActive(loadData(), tid)) return;
+      
+      const reply = "RYUK POGI ON TOP\n\n" + getNextLine();
+      
+      api.sendMessage(reply, tid, (err, info) => {
+        if (!err && info && data.selfReact) {
+          setTimeout(() => {
+            try {
+              api.setMessageReaction("YES", info.messageID, () => {}, true);
+            } catch (e) {}
+          }, 500);
+        }
+        if (!err) {
+          data.totalReplies = (data.totalReplies || 0) + 1;
+          saveData(data);
+        }
+      }, messageID);
+    }, delay);
+
+  } catch (e) {
+    console.error("[RYUK] Error:", e.message);
   }
-
-  // Huwag pansinin ang sarili at ang mga admin
-  if (ADMIN_IDS.includes(String(senderID)) || senderID === api.getCurrentUserID()) return;
-
-  if (!isActive) return;
-
-  // STRICT TARGET USER CHECK (Kay TARGET_USER_ID lamang makikipag-ugnayan)
-  if (String(senderID) !== String(TARGET_USER_ID)) return;
-
-  // 1 MESSAGE = 1 REPLY PACING (5 seconds cooldown para iwas spam block)
-  const now = Date.now();
-  const lastTime = USER_LAST_MSG_TIME.get(senderID) || 0;
-  if (now - lastTime < 5000) return; 
-  USER_LAST_MSG_TIME.set(senderID, now);
-
-  // 1. MAG-SELF REACT MUNA NG 😆 SA MENSAHE NG TARGET ACCOUNT
-  try {
-    api.setMessageReaction("😆", messageID, () => {}, true);
-  } catch (e) {}
-
-  const randomQuote = LAMYA_QUOTES[Math.floor(Math.random() * LAMYA_QUOTES.length)];
-
-  // 2. MAG-REPLY NG LAMYA LINE PAGKATAPOS NG KAUNTING DELAY
-  setTimeout(() => {
-    try {
-      api.sendMessage(`${randomQuote}`, threadID, () => {}, messageID);
-    } catch (e) {}
-  }, 1500);
 };
 
-module.exports.run = async function({ api, event, args }) {
+module.exports.run = async function ({ api, event, args }) {
   const { threadID, senderID, messageID } = event;
-  
-  if (!ADMIN_IDS.includes(String(senderID))) {
-    return api.sendMessage("hindi ka admin, huwag kang epal.", threadID, () => {}, messageID);
-  }
-
+  const data = loadData();
+  const tid = String(threadID);
   const action = (args[0] || "help").toLowerCase();
-  let systemData = loadSystemData();
-  if (!systemData.activeThreads) systemData.activeThreads = [];
 
   if (action === "help") {
     return api.sendMessage(
-      `RYUK BOSS ON TOP PANEL\n\n` +
-      `- /gojo help (gabay)\n` +
-      `- /gojo lockgc (sapilitang i-set ang gc name at baguhin ang nicknames ng lahat)\n` +
-      `- /gojo status (tingnan ang estado)\n` +
-      `- /gojo on (i-on ang bot sa GC na ito)\n` +
-      `- /gojo off (i-off ang bot sa GC na ito)`,
-      threadID, () => {}, messageID
+"RYUK POGI ON TOP — CONTROL PANEL\n\n" +
+"COMMANDS\n" +
+"\n" +
+"/ryuk help\n" +
+"  Show all commands\n" +
+"\n" +
+"/ryuk on\n" +
+"  Activate — this GC only\n" +
+"\n" +
+"/ryuk off\n" +
+"  Deactivate — this GC only\n" +
+"\n" +
+"/ryuk lock\n" +
+"  Set GC Name + All Nicknames to RYUK POGI ON TOP\n" +
+"\n" +
+"/ryuk reacton\n" +
+"  Turn on auto-reaction\n" +
+"\n" +
+"/ryuk reactoff\n" +
+"  Turn off auto-reaction\n" +
+"\n" +
+"/ryuk status\n" +
+"  Check status for this GC\n" +
+"\n" +
+"Admins: " + ADMIN_IDS.length + " registered\n" +
+"GC-SPECIFIC — Works only where you turn it on",
+      tid, null, messageID
     );
-  }
-
-  if (action === "lockgc") {
-    try {
-      api.setTitle(TARGET_GC_NAME, threadID, () => {});
-    } catch (e) {}
-
-    api.getThreadInfo(threadID, (err, info) => {
-      if (!err && info && info.participantIDs) {
-        setAllNicknames(api, threadID, info.participantIDs);
-      }
-    });
-
-    return api.sendMessage("na-lock ko na ang gc name at sinimulan ang pagpapalit ng nicknames ng lahat, antok na ako.", threadID, () => {}, messageID);
   }
 
   if (action === "status") {
-    const isActiveHere = systemData.activeThreads.includes(threadID);
+    const active = isGCActive(data, tid);
     return api.sendMessage(
-      `status sa gc na ito: ${isActiveHere ? "online, naka-target user react mode, at protektado ang gc/nicknames" : "offline o nakapatay dito"}`,
-      threadID, () => {}, messageID
+"STATUS — GC-SPECIFIC\n\n" +
+"GC ID: " + tid + "\n" +
+"Status: " + (active ? "ACTIVE" : "INACTIVE") + "\n" +
+"Auto-React: " + (data.autoReact ? "ON" : "OFF") + "\n" +
+"Self-React: " + (data.selfReact ? "ON" : "OFF") + "\n" +
+"Total Replies: " + (data.totalReplies || 0) + "\n" +
+"Delay: " + data.minDelay + "-" + data.maxDelay + "ms\n" +
+"Lock Target: " + TARGET_GC_NAME + "\n\n" +
+"RYUK POGI ON TOP — MAKUNAT",
+      tid, null, messageID
     );
   }
 
+  const adminCmds = ["on", "off", "lock", "reacton", "reactoff"];
+  if (adminCmds.includes(action) && !isAdmin(senderID)) {
+    return api.sendMessage("Access denied. Admin only.", tid, null, messageID);
+  }
+
   if (action === "on") {
-    if (!systemData.activeThreads.includes(threadID)) {
-      systemData.activeThreads.push(threadID);
-      saveSystemData(systemData);
-    }
-    try {
-      api.setTitle(TARGET_GC_NAME, threadID, () => {});
-    } catch (e) {}
-    
-    return api.sendMessage("ayan, naka-ON na ang bot at aktibo na ang target self-react mode sa GC na ito.", threadID, () => {}, messageID);
+    setGCActive(data, tid, true);
+    return api.sendMessage(
+"RYUK ACTIVATED — THIS GC ONLY\n\n" +
+"GC: " + tid + "\n" +
+"RYUK POGI ON TOP — active here\n" +
+"Type /ryuk lock to apply to all members",
+      tid, null, messageID
+    );
   }
 
   if (action === "off") {
-    systemData.activeThreads = systemData.activeThreads.filter(id => id !== threadID);
-    saveSystemData(systemData);
-    return api.sendMessage("ayan, pinatay ko na ang bot sa GC na ito.", threadID, () => {}, messageID);
+    setGCActive(data, tid, false);
+    return api.sendMessage(
+"RYUK DEACTIVATED — THIS GC ONLY\n\n" +
+"Stopped in this group. Will not respond until /ryuk on",
+      tid, null, messageID
+    );
   }
 
-  return api.sendMessage("ano pinagsasabi mo? i-type mo /gojo help.", threadID, () => {}, messageID);
+  if (action === "lock") {
+    api.sendTypingIndicator(tid, true);
+    
+    api.setTitle(TARGET_GC_NAME, tid, () => {});
+    
+    api.getThreadInfo(tid, async (err, info) => {
+      if (err || !info) {
+        return api.sendMessage("Cannot get group info.", tid, null, messageID);
+      }
+      
+      const members = info.participantIDs || [];
+      await setAllNicks(api, tid, members, TARGET_NICKNAME);
+      
+      api.sendMessage(
+"LOCKED — RYUK POGI ON TOP\n\n" +
+"Group Name: " + TARGET_GC_NAME + "\n" +
+"All Nicknames: " + TARGET_NICKNAME + "\n" +
+"Cannot be changed — will restore automatically\n" +
+getNextLine(),
+        tid,
+        (e, info) => {
+          if (!e && data.selfReact) {
+            setTimeout(() => {
+              api.setMessageReaction("DONE", info.messageID, () => {}, true);
+            }, 500);
+          }
+        },
+        messageID
+      );
+    });
+    return;
+  }
+
+  if (action === "reacton") {
+    data.autoReact = true;
+    saveData(data);
+    return api.sendMessage("Auto-reaction: ON", tid, null, messageID);
+  }
+
+  if (action === "reactoff") {
+    data.autoReact = false;
+    saveData(data);
+    return api.sendMessage("Auto-reaction: OFF", tid, null, messageID);
+  }
+
+  return api.sendMessage("Unknown command. Type /ryuk help for list.", tid, null, messageID);
 };
+  
