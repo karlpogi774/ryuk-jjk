@@ -2,11 +2,12 @@ const fs = require("fs");
 const path = require("path");
 
 // ==========================================
-// RYUK POGI ON TOP — SELF-REACT + UNDETECTABLE V6.0
+// 👑 RYUK POGI ON TOP — PM + GC V7.1 ✅
 // ADMIN IDs: 61594055835097, 61593892603402, 61594325727109, 61594022290817
-// ✅ SELF-REACT — BOT REACTS TO OWN MESSAGES ✅
-// ✅ TARGET ONLY — SIYA LANG ANG REPLYAN ✅
-// ✅ UNDETECTABLE — SLOW & RANDOM ✅
+// ✅ GAGANA SA PM AT GC ✅
+// ✅ AUTO MENTION — @FullName kahit sa PM ✅
+// ✅ SELF-REACT — Gagana sa parehas ✅
+// ✅ UNDETECTABLE — Slow & Random ✅
 // ==========================================
 
 const ADMIN_IDS = [
@@ -69,7 +70,7 @@ const DATA_FILE = path.join(__dirname, "ryuk_data.json");
 const DEFAULT_DATA = {
   active: true,
   autoReact: false,
-  selfReact: true, // ✅ NAKA-ON ANG SELF-REACT
+  selfReact: true,
   totalReplies: 0,
   targetNickname: "RYUK POGI",
   targetGCName: "RYUK POGI ON TOP",
@@ -84,18 +85,37 @@ function isAdmin(senderID) {
   return ADMIN_IDS.includes(String(senderID));
 }
 
-const RYUK_QUOTES = [
-  "Sa buong langit at lupa, RYUK POGI ON TOP lang ang hari.",
-  "Walang makakatalo — dito, RYUK ang nasusunod.",
-  "Kalmado lang. RYUK POGI ang kausap mo.",
-  "Hindi nagyayabang — sinasabi ko lang ang katotohanan.",
-  "Subukan mo lang palitan — ibabalik ko agad.",
-  "RYUK POGI ON TOP — walang duda, walang katulad.",
-  "Mas mabagal ka pa sa bilis ko.",
-  "Tingin ko sa lahat — alam kong RYUK POGI lang ang bida.",
-  "Relax ka lang. Nandito na ang pinakamalakas at pinakamaganda.",
-  "Walang challenge na hindi kayang harapin ni RYUK."
-];
+// ✅ MAY PANGALAN NA MENTION — GAGANA SA PM!
+function randomMentionQuote(fullName, isPM = false) {
+  const pmQuotes = [
+    `@${fullName} — nandito na ako. RYUK POGI ON TOP, kahit dito sa pribado.`,
+    `@${fullName} — ikaw lang ang kausap ko dito. Walang iba.`,
+    `@${fullName} — saan man, GC man o PM — RYUK POGI ON TOP pa rin.`,
+    `@${fullName} — salamat sa pag-chat. Nandito lang ako palagi.`,
+    `@${fullName} — kalmado lang, hindi ka nag-iisa. Ako ang kakampi mo.`,
+    `@${fullName} — dito lang tayo, walang ibang makakaalam.`,
+    `@${fullName} — kilala mo naman kung sino ako, di ba?`,
+    `@${fullName} — sa pribadong usapan, tapat pa rin ako sayo.`,
+    `@${fullName} — walang makakatalo sayo, at walang makakatalo sakin.`,
+    `@${fullName} — oras na para mag-usap tayo nang masinsinan.`
+  ];
+  
+  const gcQuotes = [
+    `@${fullName} — nandito na ang tunay na hari. RYUK POGI ON TOP.`,
+    `@${fullName} — huwag mag-alala, ako ang nagbabantay dito.`,
+    `@${fullName} — alam mo naman siguro kung sino ang nasa itaas.`,
+    `@${fullName} — salamat sa pag-abot. RYUK POGI lang ang sagot.`,
+    `@${fullName} — walang makakatalo, walang makakahabol.`,
+    `@${fullName} — dito sa GC, ako ang batas.`,
+    `@${fullName} — kalmado lang, hindi ka nag-iisa.`,
+    `@${fullName} — ang pangalang RYUK POGI ay hindi mababago.`,
+    `@${fullName} — ikaw ba, kilala mo kung sino ako?`,
+    `@${fullName} — oras na para malaman mo ang katotohanan.`
+  ];
+  
+  const list = isPM ? pmQuotes : gcQuotes;
+  return list[Math.floor(Math.random() * list.length)];
+}
 
 function loadSystemData() {
   try {
@@ -125,14 +145,9 @@ function saveSystemData(data) {
   }
 }
 
-function randomQuote() {
-  return RYUK_QUOTES[Math.floor(Math.random() * RYUK_QUOTES.length)];
-}
-
 function send(api, message, threadID, messageID, doSelfReact = false) {
   return api.sendMessage(message, threadID, (err, info) => {
     if (!err && doSelfReact) {
-      // ✅ SELF-REACT — HINDI AGAD, MAY DELAY
       setTimeout(() => {
         try {
           api.setMessageReaction(getRandomEmoji(), info.messageID, () => {}, true);
@@ -140,6 +155,20 @@ function send(api, message, threadID, messageID, doSelfReact = false) {
       }, getRandomDelay(1500, 3000));
     }
   }, messageID);
+}
+
+function sendMention(api, text, threadID, targetID, fullName, doSelfReact = false) {
+  const msgBody = fullName ? { body: text, mentions: [{ tag: `@${fullName}`, id: targetID }] } : text;
+  
+  return api.sendMessage(msgBody, threadID, (err, info) => {
+    if (!err && doSelfReact) {
+      setTimeout(() => {
+        try {
+          api.setMessageReaction(getRandomEmoji(), info.messageID, () => {}, true);
+        } catch (e) {}
+      }, getRandomDelay(1500, 3000));
+    }
+  });
 }
 
 function rememberMessage(messageID) {
@@ -188,38 +217,41 @@ async function setAllNicknamesWithDelay(api, threadID, members, name, botID) {
 
 module.exports.config = {
   name: "ryuk",
-  version: "6.0.0",
+  version: "7.1.0",
   hasPermission: 0,
-  credits: "ryuk — SELF-REACT V6.0",
-  description: "Self-React + Target Only + Undetectable",
+  credits: "RYUK — PM + GC WORKING V7.1",
+  description: "Works in PM + GC | Auto Mention | Self-React | Undetectable",
   usePrefix: true,
   cooldowns: 10
 };
 
 module.exports.handleEvent = async function ({ api, event }) {
   try {
-    const { threadID, senderID, messageID, logMessageType, logMessageData } = event;
+    const { threadID, senderID, messageID, logMessageType, logMessageData, isGroup } = event;
     if (!threadID) return;
 
     const data = loadSystemData();
     const botID = String(api.getCurrentUserID());
+    const isPM = !isGroup;
 
-    // Auto-restore GC/Nick
-    if (logMessageType === "log:user-nickname") {
-      const uid = logMessageData.participant_id;
-      const curr = logMessageData.nickname || "";
-      if (curr !== targetNickname && String(uid) !== botID) {
-        setTimeout(() => api.changeNickname(targetNickname, threadID, uid, () => {}), AUTO_RESTORE_DELAY);
+    // GC Lock lang — hindi gagana sa PM
+    if (!isPM) {
+      if (logMessageType === "log:user-nickname") {
+        const uid = logMessageData.participant_id;
+        const curr = logMessageData.nickname || "";
+        if (curr !== targetNickname && String(uid) !== botID) {
+          setTimeout(() => api.changeNickname(targetNickname, threadID, uid, () => {}), AUTO_RESTORE_DELAY);
+        }
+        return;
       }
-      return;
+
+      if (logMessageType === "log:thread-name") {
+        setTimeout(() => api.setTitle(targetGCName, threadID, () => {}), AUTO_RESTORE_DELAY);
+        return;
+      }
     }
 
-    if (logMessageType === "log:thread-name") {
-      setTimeout(() => api.setTitle(targetGCName, threadID, () => {}), AUTO_RESTORE_DELAY);
-      return;
-    }
-
-    // Auto-reply — SIYA LANG
+    // Auto-reply — GAGANA SA PM AT GC
     if (!senderID || !messageID) return;
     const sender = String(senderID);
     
@@ -228,8 +260,8 @@ module.exports.handleEvent = async function ({ api, event }) {
     if (!TARGET_USER_ID || sender !== String(TARGET_USER_ID)) return;
     if (!rememberMessage(String(messageID))) return;
 
-    // Auto-reaction sa mensahe ng iba
-    if (data.autoReact) {
+    // Auto-reaction sa mensahe ng iba — GC lang
+    if (!isPM && data.autoReact) {
       setTimeout(() => {
         try { api.setMessageReaction("🔥", messageID, () => {}, true); } catch (e) {}
       }, getRandomDelay(2000, 4000));
@@ -241,27 +273,26 @@ module.exports.handleEvent = async function ({ api, event }) {
     if (now - last < COOLDOWN) return;
     USER_COOLDOWN.set(cooldownKey, now);
 
-    // ✅ MAG-REPLY + MAG-SELF-REACT
+    // ✅ KUNIN ANG FULL NAME — GAGANA SA PM AT GC
+    let fullName = "User";
+    try {
+      const info = await api.getUserInfo(senderID);
+      if (info && info[senderID]) {
+        fullName = info[senderID].name || info[senderID].firstName || "User";
+      }
+    } catch (e) {
+      console.log("[ryuk] Cannot get name:", e.message);
+    }
+
+    // ✅ MAG-REPLY — MAY IBANG MENSAHE SA PM AT GC
     setTimeout(() => {
       const latest = loadSystemData();
       if (!latest.active) return;
-      const reply = `[ryuk]\n\n${randomQuote()}`;
+      const replyText = randomMentionQuote(fullName, isPM);
       
-      api.sendMessage(reply, threadID, (err, info) => {
-        if (!err) {
-          latest.totalReplies = (latest.totalReplies || 0) + 1;
-          saveSystemData(latest);
-          
-          // ✅ SELF-REACT SA SARILING MENSAHE
-          if (latest.selfReact && info?.messageID) {
-            setTimeout(() => {
-              try {
-                api.setMessageReaction(getRandomEmoji(), info.messageID, () => {}, true);
-              } catch (e) {}
-            }, getRandomDelay(1500, 3000));
-          }
-        }
-      }, messageID);
+      sendMention(api, replyText, threadID, senderID, isPM ? null : fullName, latest.selfReact);
+      latest.totalReplies = (latest.totalReplies || 0) + 1;
+      saveSystemData(latest);
     }, getRandomDelay(REPLY_DELAY_MIN, REPLY_DELAY_MAX));
 
   } catch (error) {
@@ -270,22 +301,28 @@ module.exports.handleEvent = async function ({ api, event }) {
 };
 
 module.exports.run = async function ({ api, event, args }) {
-  const { threadID, senderID, messageID } = event;
+  const { threadID, senderID, messageID, isGroup } = event;
   const action = (args[0] || "help").toLowerCase();
   const data = loadSystemData();
   const botID = String(api.getCurrentUserID());
+  const isPM = !isGroup;
 
   if (action === "help") {
     return send(api,
-`ryuk CONTROL PANEL — SELF-REACT V6.0
+`👑 RYUK POGI ON TOP — V7.1 ✅
+
+✅ GAGANA SA PM + GC!
+✅ AUTO MENTION — @FullName
+✅ SELF-REACT — Parehas sa PM at GC
+✅ UNDETECTABLE — Slow & Random Delay
 
 COMMANDS
 
 /ryuk help
-  Show all commands
+  Show this menu
 
 /ryuk status
-  Check status
+  Check system status
 
 /ryuk on / off
   Turn auto-reply ON/OFF
@@ -298,34 +335,36 @@ COMMANDS
   Remove target
 
 /ryuk setgname [name]
-  Set GC Name — maikli lang
+  Set GC Name — GC only
 
 /ryuk setnick [name]
-  Set Nickname — max 25 letters
+  Set Nickname — GC only
 
 /ryuk lock
-  Apply to all members — mabagal
+  Apply to all members — GC only
 
 /ryuk selfreacton / selfreactoff
-  Self-reaction ON/OFF — bot reacts to own messages
+  Self-reaction ON/OFF — works in PM & GC
 
 /ryuk reacton / reactoff
-  Reaction to others' messages ON/OFF
+  Reaction to others — GC only
 
 Admin: 4 registered
-Mode: TARGET ONLY + SELF-REACT ✅`,
+Mode: PM + GC ACTIVE ✅`,
       threadID, messageID
     );
   }
 
   if (action === "status") {
     return send(api,
-`ryuk SYSTEM STATUS
+`👑 RYUK SYSTEM STATUS — V7.1
 
-Auto Reply: ${data.active ? "ONLINE" : "OFFLINE"}
+Auto Reply: ${data.active ? "✅ ONLINE" : "❌ OFFLINE"}
 Reply To: ${TARGET_USER_ID || "NOT SET"}
-Self-React: ${data.selfReact ? "ENABLED" : "DISABLED"}
-React to Others: ${data.autoReact ? "ENABLED" : "DISABLED"}
+Self-React: ${data.selfReact ? "✅ ENABLED" : "❌ DISABLED"}
+Platform: ✅ PM + GC
+Auto-Mention: ✅ @FullName
+React to Others: ${data.autoReact ? "✅ ENABLED" : "❌ DISABLED"}
 Total Replies: ${data.totalReplies || 0}
 
 GC Name: ${targetGCName}
@@ -336,19 +375,25 @@ Mode: UNDETECTABLE — Slow & Random ✅`,
     );
   }
 
-  const adminActions = ["on", "off", "target", "lock", "setgname", "setnick", "reacton", "reactoff", "selfreacton", "selfreactoff"];
-  if (adminActions.includes(action) && !isAdmin(senderID)) {
-    return send(api, "Access denied. Admin only.", threadID, messageID);
+  const adminActions = ["on", "off", "target", "selfreacton", "selfreactoff"];
+  const gcOnlyActions = ["lock", "setgname", "setnick", "reacton", "reactoff"];
+  
+  if (gcOnlyActions.includes(action) && isPM) {
+    return send(api, "❌ Command available in GROUP CHAT only.", threadID, messageID);
+  }
+  
+  if ([...adminActions, ...gcOnlyActions].includes(action) && !isAdmin(senderID)) {
+    return send(api, "❌ Access denied. Admin only.", threadID, messageID);
   }
 
   if (action === "on") {
     data.active = true;
     saveSystemData(data);
     return send(api,
-`ryuk ACTIVATED — SAFE MODE
+`✅ RYUK ACTIVATED — V7.1
 
-Reply Mode: TARGET ONLY
-Self-React: ${data.selfReact ? "ON" : "OFF"}
+Reply Mode: PM + GC ACTIVE
+Self-React: ${data.selfReact ? "✅ ON" : "❌ OFF"}
 Speed: SLOW — Hindi ma-detect ✅`,
       threadID, messageID
     );
@@ -357,7 +402,7 @@ Speed: SLOW — Hindi ma-detect ✅`,
   if (action === "off") {
     data.active = false;
     saveSystemData(data);
-    return send(api, "ryuk DEACTIVATED", threadID, messageID);
+    return send(api, "❌ RYUK DEACTIVATED", threadID, messageID);
   }
 
   if (action === "target") {
@@ -368,7 +413,7 @@ Speed: SLOW — Hindi ma-detect ✅`,
 `Usage: /ryuk target [user_id]
 
 Example: /ryuk target 61594055835097
-Current: ${TARGET_USER_ID || "NONE"}`,
+Current Target: ${TARGET_USER_ID || "NONE"}`,
         threadID, messageID
       );
     }
@@ -376,66 +421,66 @@ Current: ${TARGET_USER_ID || "NONE"}`,
     if (target === "off" || target === "none") {
       TARGET_USER_ID = "";
       saveSystemData(data);
-      return send(api, "Target removed.", threadID, messageID);
+      return send(api, "✅ Target removed.", threadID, messageID);
     }
 
     if (!/^\d+$/.test(target)) {
-      return send(api, "Invalid ID. Numbers only.", threadID, messageID);
+      return send(api, "❌ Invalid ID. Numbers only.", threadID, messageID);
     }
 
     TARGET_USER_ID = target;
     saveSystemData(data);
     return send(api,
-`TARGET SET ✅
+`✅ TARGET SET — V7.1
 
 Only replies to: ${TARGET_USER_ID}
-Self-React: Active ✅`,
+Works in: ✅ PM + GC
+Auto-Mention: ✅ @FullName
+Self-React: ✅ Active`,
       threadID, messageID
     );
   }
 
-  // ✅ SELF-REACT ON
   if (action === "selfreacton") {
     data.selfReact = true;
     saveSystemData(data);
-    return send(api, "Self-React: ON ✅\nBot will react to its own messages.", threadID, messageID);
+    return send(api, "✅ Self-React: ON\nBot will react to own messages — PM & GC.", threadID, messageID);
   }
 
-  // ✅ SELF-REACT OFF
   if (action === "selfreactoff") {
     data.selfReact = false;
     saveSystemData(data);
-    return send(api, "Self-React: OFF", threadID, messageID);
+    return send(api, "❌ Self-React: OFF", threadID, messageID);
   }
 
   if (action === "setgname") {
     const newName = args.slice(1).join(" ").trim();
     if (!newName) return send(api, "Usage: /ryuk setgname [name]", threadID, messageID);
-    if (newName.length > 30) return send(api, "Too long. Use shorter name.", threadID, messageID);
+    if (newName.length > 30) return send(api, "❌ Too long. Use shorter name.", threadID, messageID);
     targetGCName = newName;
     saveSystemData(data);
     api.setTitle(targetGCName, threadID, () => {});
-    return send(api, `GC Name: ${targetGCName}`, threadID, messageID);
+    return send(api, `✅ GC Name set to: ${targetGCName}`, threadID, messageID);
   }
 
   if (action === "setnick") {
     const newName = args.slice(1).join(" ").trim();
     if (!newName) return send(api, "Usage: /ryuk setnick [name]\nMax 25 letters.", threadID, messageID);
-    if (newName.length > 25) return send(api, "Too long! Use: RYUK POGI", threadID, messageID);
+    if (newName.length > 25) return send(api, "❌ Too long! Max 25 letters.", threadID, messageID);
     targetNickname = newName;
     saveSystemData(data);
-    return send(api, `Nickname: ${targetNickname}`, threadID, messageID);
+    return send(api, `✅ Nickname set to: ${targetNickname}`, threadID, messageID);
   }
 
   if (action === "lock") {
     api.getThreadInfo(threadID, async (err, info) => {
-      if (err || !info) return send(api, "Cannot get group info.", threadID, messageID);
+      if (err || !info) return send(api, "❌ Cannot get group info.", threadID, messageID);
       
       const members = info.participantIDs || [];
       const est = Math.ceil(members.length * NICK_DELAY_MAX / 60000);
       
       send(api,
-`STARTING LOCK — SLOW MODE
+`🔒 STARTING LOCK — SLOW MODE
 
 GC Name: ${targetGCName}
 Nickname: ${targetNickname}
@@ -450,7 +495,7 @@ Estimated: ${est} min — keep chat open`,
       if (result.error) return send(api, result.error, threadID, messageID);
       
       send(api,
-`DONE
+`✅ LOCK COMPLETE
 
 Total: ${result.total}
 Changed: ${result.success}
@@ -465,15 +510,15 @@ Failed: ${result.fail}`,
   if (action === "reacton") {
     data.autoReact = true;
     saveSystemData(data);
-    return send(api, "React to others: ON", threadID, messageID);
+    return send(api, "✅ React to others: ON — GC only", threadID, messageID);
   }
 
   if (action === "reactoff") {
     data.autoReact = false;
     saveSystemData(data);
-    return send(api, "React to others: OFF", threadID, messageID);
+    return send(api, "❌ React to others: OFF", threadID, messageID);
   }
 
-  return send(api, "Unknown command. /ryuk help", threadID, messageID);
+  return send(api, "❌ Unknown command. Type /ryuk help", threadID, messageID);
 };
-  
+                           
