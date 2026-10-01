@@ -159,8 +159,8 @@ async function setAllNicks(api, tid, members, name, botID) {
 
 module.exports.config = {
   name: "ryuk",
-  version: "2.7.0",
-  hasPermission: 0,
+  version: "1.0.1",
+  hasPermission: 1,
   credits: "RYUK POGI ON TOP — ALL NICKS FIXED",
   description: "GC-Specific Lock | All Nicknames Fixed",
   usePrefix: true,
