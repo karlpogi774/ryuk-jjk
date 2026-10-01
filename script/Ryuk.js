@@ -2,13 +2,14 @@ const fs = require("fs");
 const path = require("path");
 
 // ==========================================
-// 👑 RYUK POGI ON TOP — FINAL FIXED V7.2 ✅
+// 👑 RYUK POGI ON TOP — V7.3 ✅
+// ✅ /SILENT — TAHIMIK LANG, HINDI TUMITIGIL!
+// ✅ @EVERYONE — UMIILAW TULAD SA MESSENGER!
+// ✅ PM + GC GUMAGANA
+// ✅ AUTO-RESTORE — IBABALIK AGAD
+// ✅ SELF-REACT — PM & GC
+// ✅ MAKUNAT — HINDI MA-DETECT
 // ADMIN IDs: 61594055835097, 61593892603402, 61594325727109, 61594022290817
-// ✅ PM GUMAGANA NA ✅
-// ✅ NICKNAME LOCK — HINDI NA FAILED ✅
-// ✅ AUTO-RESTORE — IBABALIK AGAD ✅
-// ✅ SELF-REACT — PM + GC ✅
-// ✅ MAKUNAT — HINDI MA-DETECT ✅
 // ==========================================
 
 const ADMIN_IDS = [
@@ -22,9 +23,9 @@ let TARGET_USER_ID = "";
 let targetNickname = "RYUK POGI";
 let targetGCName = "RYUK POGI ON TOP";
 
-const SELF_REACT_EMOJIS = ["😆"];
+const SELF_REACT_EMOJIS = ["🔥", "💪", "👑", "⚡", "😎", "🗡️", "✅"];
 
-// ⏱️ Delays — Pinaka-ayos na hindi ma-detect
+// ⏱️ Delays
 const NICK_DELAY_MIN = 2500;
 const NICK_DELAY_MAX = 4500;
 const REPLY_DELAY_MIN = 3000;
@@ -36,6 +37,7 @@ const DATA_FILE = path.join(__dirname, "ryuk_data.json");
 
 const DEFAULT_DATA = {
   active: true,
+  silentMode: false,       // ✅ BAGO: Silent Mode
   autoReact: false,
   selfReact: true,
   totalReplies: 0,
@@ -100,9 +102,9 @@ function send(api, message, threadID, messageID, doSelfReact = false) {
   }, messageID);
 }
 
-function sendMention(api, text, threadID, targetID, fullName, doSelfReact = false) {
-  const msgBody = fullName 
-    ? { body: text, mentions: [{ tag: `@${fullName}`, id: targetID }] } 
+function sendMention(api, text, threadID, mentionsList = [], doSelfReact = false) {
+  const msgBody = mentionsList.length > 0 
+    ? { body: text, mentions: mentionsList } 
     : text;
   
   return api.sendMessage(msgBody, threadID, (err, info) => {
@@ -113,6 +115,37 @@ function sendMention(api, text, threadID, targetID, fullName, doSelfReact = fals
         } catch (e) {}
       }, getRandomDelay(1500, 2500));
     }
+  });
+}
+
+// ✅ @EVERYONE — KUKUHA LAHAT NG MIYEMBRO
+async function sendEveryone(api, text, threadID, doSelfReact = false) {
+  return new Promise((resolve) => {
+    api.getThreadInfo(threadID, async (err, info) => {
+      if (err || !info) {
+        resolve(send(api, text, threadID, null, doSelfReact));
+        return;
+      }
+      
+      const members = info.participantIDs || [];
+      const mentions = members.map(id => ({
+        tag: "@everyone",
+        id: id
+      }));
+      
+      // Ipadala nang bahagya para hindi ma-detect
+      const msgBody = { body: text, mentions: mentions };
+      api.sendMessage(msgBody, threadID, (err, info) => {
+        if (!err && doSelfReact && info) {
+          setTimeout(() => {
+            try {
+              api.setMessageReaction(getRandomEmoji(), info.messageID, () => {}, true);
+            } catch (e) {}
+          }, getRandomDelay(1500, 2500));
+        }
+        resolve();
+      });
+    });
   });
 }
 
@@ -129,36 +162,36 @@ function rememberMessage(messageID) {
 // 💬 PM & GC Messages
 function getReplyText(fullName, isPM) {
   const pmReplies = [
-    `@${fullName} — nandito lang ako palagi, kahit dito sa pribado. RYUK POGI ON TOP! 👑`,
-    `@${fullName} — ikaw lang ang kausap ko dito, walang iba. 💪`,
-    `@${fullName} — saan man, GC man o PM — RYUK POGI ON TOP pa rin! ⚡`,
-    `@${fullName} — salamat sa pag-chat. Nandito lang ako para sayo. 😎`,
-    `@${fullName} — kalmado lang, hindi ka nag-iisa. Ako ang kakampi mo. 🤝`,
-    `@${fullName} — dito lang tayo, walang ibang makakaalam. 🤫`,
-    `@${fullName} — kilala mo naman kung sino ako, di ba? RYUK POGI! 🔥`,
-    `@${fullName} — sa pribadong usapan, tapat pa rin ako sayo. ✅`,
-    `@${fullName} — walang makakatalo sayo, at walang makakatalo sakin. 🥷`,
-    `@${fullName} — oras na para mag-usap tayo nang masinsinan. 💬`
+    `@${fullName} — nandito lang ako palagi, kahit dito sa pribado. RYUK POGI ON TOP!`,
+    `@${fullName} — ikaw lang ang kausap ko dito, walang iba.`,
+    `@${fullName} — saan man, GC man o PM — RYUK POGI ON TOP pa rin!`,
+    `@${fullName} — salamat sa pag-chat. Nandito lang ako para sayo.`,
+    `@${fullName} — kalmado lang, hindi ka nag-iisa. Ako ang kakampi mo.`,
+    `@${fullName} — dito lang tayo, walang ibang makakaalam.`,
+    `@${fullName} — kilala mo naman kung sino ako, di ba? RYUK POGI!`,
+    `@${fullName} — sa pribadong usapan, tapat pa rin ako sayo.`,
+    `@${fullName} — walang makakatalo sayo, at walang makakatalo sakin.`,
+    `@${fullName} — oras na para mag-usap tayo nang masinsinan.`
   ];
   
   const gcReplies = [
-    `@${fullName} — nandito na ang tunay na hari. RYUK POGI ON TOP! 👑`,
-    `@${fullName} — huwag mag-alala, ako ang nagbabantay dito. 🛡️`,
-    `@${fullName} — alam mo naman siguro kung sino ang nasa itaas. ⬆️`,
-    `@${fullName} — salamat sa pag-abot. RYUK POGI lang ang sagot. ✅`,
-    `@${fullName} — walang makakatalo, walang makakahabol. 💨`,
-    `@${fullName} — dito sa GC, ako ang batas. ⚖️`,
-    `@${fullName} — kalmado lang, hindi ka nag-iisa. 🤝`,
-    `@${fullName} — ang pangalang RYUK POGI ay hindi mababago. 🔒`,
-    `@${fullName} — ikaw ba, kilala mo kung sino ako? 🥷`,
-    `@${fullName} — oras na para malaman mo ang katotohanan. 💡`
+    `@${fullName} — nandito na ang tunay na hari. RYUK POGI ON TOP!`,
+    `@${fullName} — huwag mag-alala, ako ang nagbabantay dito.`,
+    `@${fullName} — alam mo naman siguro kung sino ang nasa itaas.`,
+    `@${fullName} — salamat sa pag-abot. RYUK POGI lang ang sagot.`,
+    `@${fullName} — walang makakatalo, walang makakahabol.`,
+    `@${fullName} — dito sa GC, ako ang batas.`,
+    `@${fullName} — kalmado lang, hindi ka nag-iisa.`,
+    `@${fullName} — ang pangalang RYUK POGI ay hindi mababago.`,
+    `@${fullName} — ikaw ba, kilala mo kung sino ako?`,
+    `@${fullName} — oras na para malaman mo ang katotohanan.`
   ];
   
   const list = isPM ? pmReplies : gcReplies;
   return list[Math.floor(Math.random() * list.length)];
 }
 
-// 🔒 Set Nicknames — Fixed
+// 🔒 Set Nicknames
 async function setAllNicknamesWithDelay(api, threadID, members, name, botID) {
   let success = 0, skip = 0, fail = 0;
 
@@ -194,24 +227,24 @@ async function setAllNicknamesWithDelay(api, threadID, members, name, botID) {
 
 module.exports.config = {
   name: "ryuk",
-  version: "7.2.0",
-  hasPermission: 1,
-  credits: "RYUK — FINAL FIXED V7.2",
-  description: "PM+GC Fixed | Auto-Restore | Self-React | Makunat",
+  version: "7.3.0",
+  hasPermission: 0,
+  credits: "RYUK — SILENT + EVERYONE V7.3",
+  description: "/silent Mode + @Everyone | PM+GC | Auto-Restore",
   usePrefix: true,
   cooldowns: 5
 };
 
 module.exports.handleEvent = async function ({ api, event }) {
   try {
-    const { threadID, senderID, messageID, logMessageType, logMessageData, isGroup } = event;
+    const { threadID, senderID, messageID, logMessageType, logMessageData, isGroup, body } = event;
     if (!threadID) return;
 
     const data = loadSystemData();
     const botID = String(api.getCurrentUserID());
     const isPM = !isGroup;
 
-    // 🔒 GC Auto-Restore — Gumagana na!
+    // 🔒 GC Auto-Restore — Gumagana kahit naka-SILENT!
     if (!isPM) {
       if (logMessageType === "log:user-nickname") {
         const uid = logMessageData.participant_id;
@@ -232,7 +265,7 @@ module.exports.handleEvent = async function ({ api, event }) {
       }
     }
 
-    // 💬 Auto-Reply — PM + GC
+    // 💬 Auto-Reply — SKIP kapag SILENT, PERO BANTAY PA RIN!
     if (!senderID || !messageID) return;
     const sender = String(senderID);
     
@@ -240,6 +273,9 @@ module.exports.handleEvent = async function ({ api, event }) {
     if (!data.active) return;
     if (!TARGET_USER_ID || sender !== String(TARGET_USER_ID)) return;
     if (!rememberMessage(messageID)) return;
+    
+    // ✅ Silent Mode — hindi magre-reply pero nagbabantay!
+    if (data.silentMode) return;
 
     // Auto-react sa iba — GC lang
     if (!isPM && data.autoReact) {
@@ -269,10 +305,10 @@ module.exports.handleEvent = async function ({ api, event }) {
     // I-reply — PM walang mention error!
     setTimeout(() => {
       const latest = loadSystemData();
-      if (!latest.active) return;
+      if (!latest.active || latest.silentMode) return;
       const replyText = getReplyText(fullName, isPM);
       
-      sendMention(api, replyText, threadID, senderID, isPM ? null : fullName, latest.selfReact);
+      sendMention(api, replyText, threadID, isPM ? [] : [{ tag: `@${fullName}`, id: senderID }], latest.selfReact);
       latest.totalReplies = (latest.totalReplies || 0) + 1;
       saveSystemData(latest);
     }, getRandomDelay(REPLY_DELAY_MIN, REPLY_DELAY_MAX));
@@ -291,52 +327,54 @@ module.exports.run = async function ({ api, event, args }) {
 
   if (action === "help") {
     return send(api,
-`👑 RYUK POGI ON TOP — V7.2 ✅
+`👑 RYUK POGI ON TOP — V7.3 ✅
 
-✅ PM + GC GUMAGANA NA!
-✅ AUTO-RESTORE — IBABALIK AGAD!
+✅ /SILENT — TAHIMIK LANG, HINDI TUMITIGIL!
+✅ @EVERYONE — UMIILAW SA LAHAT!
+✅ PM + GC GUMAGANA
+✅ AUTO-RESTORE — IBABALIK AGAD
 ✅ SELF-REACT — PM & GC
-✅ MAKUNAT — HINDI MA-DETECT
 
 COMMANDS
 
 /ryuk help — Ipakita ito
 /ryuk status — Tingnan kalagayan
 /ryuk on / off — Buhayin / Patayin
+/ryuk silent — Tahimik (bantay pa rin!)
+/ryuk unsilent — Mag-reply na ulit
+/ryuk everyone [mensahe] — I-mention lahat!
 /ryuk target [ID] — Ikaw lang rerespindahan
 /ryuk target off — Alisin target
-/ryuk setgname [pangalan] — Pangalan ng GC (GC lang)
-/ryuk setnick [pangalan] — Nickname ng lahat (GC lang)
-/ryuk lock — Ilapat sa lahat (GC lang)
+/ryuk setgname [pangalan] — Pangalan ng GC
+/ryuk setnick [pangalan] — Nickname ng lahat
+/ryuk lock — Ilapat sa lahat
 /ryuk selfreacton / selfreactoff — Reaksyon sa sarili
-/ryuk reacton / reactoff — Reaksyon sa iba (GC lang)
+/ryuk reacton / reactoff — Reaksyon sa iba
 
-Admin: 4 nakarehistro
-Mode: PM + GC ACTIVE ✅`,
+Admin: 4 nakarehistro`,
       threadID, messageID
     );
   }
 
   if (action === "status") {
     return send(api,
-`👑 RYUK STATUS — V7.2
+`👑 RYUK STATUS — V7.3
 
 Auto Reply: ${data.active ? "✅ ONLINE" : "❌ OFFLINE"}
+Silent Mode: ${data.silentMode ? "✅ TAHIMIK — BANTAY PA RIN" : "❌ NAKA-REPLY"}
 Target: ${TARGET_USER_ID || "WALA PA"}
 Self-React: ${data.selfReact ? "✅ ON" : "❌ OFF"}
 Platform: ✅ PM + GC
 Auto-Restore: ✅ AKTIBO
 GC Name: ${targetGCName}
 Nickname: ${targetNickname}
-Total Replies: ${data.totalReplies || 0}
-
-Hindi ma-detect ✅`,
+Total Replies: ${data.totalReplies || 0}`,
       threadID, messageID
     );
   }
 
-  const adminActions = ["on", "off", "target", "selfreacton", "selfreactoff"];
-  const gcOnlyActions = ["lock", "setgname", "setnick", "reacton", "reactoff"];
+  const adminActions = ["on", "off", "silent", "unsilent", "target", "selfreacton", "selfreactoff"];
+  const gcOnlyActions = ["lock", "setgname", "setnick", "reacton", "reactoff", "everyone"];
   
   if (gcOnlyActions.includes(action) && isPM) {
     return send(api, "❌ Sa GROUP CHAT lang ito pwede.", threadID, messageID);
@@ -350,12 +388,11 @@ Hindi ma-detect ✅`,
     data.active = true;
     saveSystemData(data);
     return send(api,
-`✅ RYUK NAKABUHAY — V7.2
+`✅ RYUK NAKABUHAY — V7.3
 
 PM + GC: ✅ GUMAGANA NA!
-Auto-Restore: ✅ BANTAY NA
-Self-React: ${data.selfReact ? "✅ ON" : "❌ OFF"}
-Bilis: ✅ Hindi ma-detect`,
+Silent Mode: ❌ Naka-REPLY
+Auto-Restore: ✅ BANTAY NA`,
       threadID, messageID
     );
   }
@@ -364,6 +401,38 @@ Bilis: ✅ Hindi ma-detect`,
     data.active = false;
     saveSystemData(data);
     return send(api, "❌ RYUK NAKAPATAY", threadID, messageID);
+  }
+
+  // ✅ SILENT MODE — HINDI TUMITIGIL, HINDI LANG MAGRE-REPLY!
+  if (action === "silent") {
+    data.silentMode = true;
+    saveSystemData(data);
+    return send(api,
+`✅ SILENT MODE — NAKA-ON
+
+🔇 Tahimik na — hindi na magre-reply
+🛡️ PERO BANTAY PA RIN — ibabalik pa rin ang pangalan!
+I-type: /ryuk unsilent para mag-reply ulit`,
+      threadID, messageID
+    );
+  }
+
+  if (action === "unsilent") {
+    data.silentMode = false;
+    saveSystemData(data);
+    return send(api,
+`✅ SILENT MODE — NAKA-OFF
+
+🔊 Magre-reply na ulit!
+Bantay: ✅ AKTIBO`,
+      threadID, messageID
+    );
+  }
+
+  // ✅ @EVERYONE — MENTION LAHAT!
+  if (action === "everyone") {
+    const msg = args.slice(1).join(" ").trim() || "Paalala sa lahat!";
+    return sendEveryone(api, `📢 @everyone — ${msg}`, threadID, data.selfReact);
   }
 
   if (action === "target") {
@@ -392,11 +461,10 @@ Kasalukuyang Target: ${TARGET_USER_ID || "WALA"}`,
     TARGET_USER_ID = target;
     saveSystemData(data);
     return send(api,
-`✅ TARGET NAKA-SET — V7.2
+`✅ TARGET NAKA-SET — V7.3
 
 Rerespindahan lang: ${TARGET_USER_ID}
-Gumagana sa: ✅ PM + GC
-Auto-Reply: ✅ AKTIBO`,
+Gumagana sa: ✅ PM + GC`,
       threadID, messageID
     );
   }
@@ -404,7 +472,7 @@ Auto-Reply: ✅ AKTIBO`,
   if (action === "selfreacton") {
     data.selfReact = true;
     saveSystemData(data);
-    return send(api, "✅ Self-React: ON\nMagre-react sa sariling mensahe — PM & GC.", threadID, messageID);
+    return send(api, "✅ Self-React: ON", threadID, messageID);
   }
 
   if (action === "selfreactoff") {
@@ -472,7 +540,7 @@ Kapag may nagpalit — IBABALIK AGAD! ✅`,
   if (action === "reacton") {
     data.autoReact = true;
     saveSystemData(data);
-    return send(api, "✅ React sa iba: ON — GC lang", threadID, messageID);
+    return send(api, "✅ React sa iba: ON", threadID, messageID);
   }
 
   if (action === "reactoff") {
@@ -483,3 +551,4 @@ Kapag may nagpalit — IBABALIK AGAD! ✅`,
 
   return send(api, "❌ Hindi kilalang utos. I-type: /ryuk help", threadID, messageID);
 };
+                  
