@@ -34,8 +34,8 @@ let TARGET_USER_ID = "";
 let targetNickname = "RYUK POGI";
 let targetGCName = "RYUK POGI ON TOP";
 
-const SELF_REACT_EMOJIS = ["😆"];
-const AUTO_REACT_EMOJIS = ["🐕‍🦺"];
+const SELF_REACT_EMOJIS = ["🤣", "😂", "😆", "😹"];
+const ALL_REACT_EMOJIS = ["🐕‍🦺", "🤡", "❌"];
 
 const NICK_DELAY_MIN = 2500;
 const NICK_DELAY_MAX = 4500;
@@ -191,38 +191,38 @@ function rememberMessage(messageID) {
 
 function getReplyText(fullName, isPM) {
   const pmReplies = [
-    `@${fullName} — nandito lang ako palagi para sayo. RYUK POGI ON TOP! 👑`,
-    `@${fullName} — ikaw lang ang kausap ko dito, walang iba. 💪`,
-    `@${fullName} — saan man, GC man o PM — RYUK POGI ON TOP pa rin! ⚡`,
-    `@${fullName} — salamat sa pag-chat. Nandito lang ako palagi para sayo. 😎`,
-    `@${fullName} — kalmado lang, hindi ka nag-iisa. Ako ang kakampi mo. 🤝`,
-    `@${fullName} — dito lang tayo, walang ibang makakaalam. 🤫`,
-    `@${fullName} — kilala mo naman kung sino ako, di ba? RYUK POGI! 🔥`,
-    `@${fullName} — sa pribadong usapan, tapat pa rin ako sayo. ✅`,
-    `@${fullName} — walang makakatalo sayo, at walang makakatalo sakin. 🥷`,
-    `@${fullName} — oras na para mag-usap tayo nang masinsinan. 💬`,
-    `@${fullName} — hindi ako aalis hangga't kailangan mo ako. 👑`,
-    `@${fullName} — dito sa atin, walang susuko, walang bibitaw. 💪`,
-    `@${fullName} — ikaw ang pinili ko, at ikaw lang palagi. ⚡`,
-    `@${fullName} — ang pangalang RYUK POGI ay hindi mababago. 🔒`,
-    `@${fullName} — tiwala lang, hindi ka mabibigo. ✅`
+    `@${fullName} — nandito lang ako palagi para sayo. RYUK POGI ON TOP! 🤣😂😆😹`,
+    `@${fullName} — ikaw lang ang kausap ko dito, walang iba. 🤣😂😆😹`,
+    `@${fullName} — saan man, GC man o PM — RYUK POGI ON TOP pa rin! 🤣😂😆😹`,
+    `@${fullName} — salamat sa pag-chat. Nandito lang ako palagi para sayo. 🤣😂😆😹`,
+    `@${fullName} — kalmado lang, hindi ka nag-iisa. Ako ang kakampi mo. 🤣😂😆😹`,
+    `@${fullName} — dito lang tayo, walang ibang makakaalam. 🤣😂😆😹`,
+    `@${fullName} — kilala mo naman kung sino ako, di ba? RYUK POGI! 🤣😂😆😹`,
+    `@${fullName} — sa pribadong usapan, tapat pa rin ako sayo. 🤣😂😆😹`,
+    `@${fullName} — walang makakatalo sayo, at walang makakatalo sakin. 🤣😂😆😹`,
+    `@${fullName} — oras na para mag-usap tayo nang masinsinan. 🤣😂😆😹`,
+    `@${fullName} — hindi ako aalis hangga't kailangan mo ako. 🤣😂😆😹`,
+    `@${fullName} — dito sa atin, walang susuko, walang bibitaw. 🤣😂😆😹`,
+    `@${fullName} — ikaw ang pinili ko, at ikaw lang palagi. 🤣😂😆😹`,
+    `@${fullName} — ang pangalang RYUK POGI ay hindi mababago. 🤣😂😆😹`,
+    `@${fullName} — tiwala lang, hindi ka mabibigo. 🤣😂😆😹`
   ];
   const gcReplies = [
-    `@${fullName} — nandito na ang tunay na hari. RYUK POGI ON TOP! 👑`,
-    `@${fullName} — huwag mag-alala, ako ang nagbabantay dito. 🛡️`,
-    `@${fullName} — alam mo naman siguro kung sino ang nasa itaas. ⬆️`,
-    `@${fullName} — salamat sa pag-abot. RYUK POGI lang ang sagot. ✅`,
-    `@${fullName} — walang makakatalo, walang makakahabol. 💨`,
-    `@${fullName} — dito sa GC, ako ang batas. ⚖️`,
-    `@${fullName} — kalmado lang, hindi ka nag-iisa. 🤝`,
-    `@${fullName} — ang pangalang RYUK POGI ay hindi mababago. 🔒`,
-    `@${fullName} — ikaw ba, kilala mo kung sino ako? 🥷`,
-    `@${fullName} — oras na para malaman mo ang katotohanan. 💡`,
-    `@${fullName} — dito walang pinapanigan, tapat lang ako sa lahat. ⚖️`,
-    `@${fullName} — ang nasa itaas ay mananatili sa itaas. 👑`,
-    `@${fullName} — hindi ako magpapaloko, hindi ako matitinag. 🔥`,
-    `@${fullName} — kung sino ang totoo, makikita mo sa gawa. ✅`,
-    `@${fullName} — RYUK POGI ON TOP — hindi ito sabi, ito ay alam. 👑`
+    `@${fullName} — nandito na ang tunay na hari. RYUK POGI ON TOP! 🤣😂😆😹`,
+    `@${fullName} — huwag mag-alala, ako ang nagbabantay dito. 🤣😂😆😹`,
+    `@${fullName} — alam mo naman siguro kung sino ang nasa itaas. 🤣😂😆😹`,
+    `@${fullName} — salamat sa pag-abot. RYUK POGI lang ang sagot. 🤣😂😆😹`,
+    `@${fullName} — walang makakatalo, walang makakahabol. 🤣😂😆😹`,
+    `@${fullName} — dito sa GC, ako ang batas. 🤣😂😆😹`,
+    `@${fullName} — kalmado lang, hindi ka nag-iisa. 🤣😂😆😹`,
+    `@${fullName} — ang pangalang RYUK POGI ay hindi mababago. 🤣😂😆😹`,
+    `@${fullName} — ikaw ba, kilala mo kung sino ako? 🤣😂😆😹`,
+    `@${fullName} — oras na para malaman mo ang katotohanan. 🤣😂😆😹`,
+    `@${fullName} — dito walang pinapanigan, tapat lang ako sa lahat. 🤣😂😆😹`,
+    `@${fullName} — ang nasa itaas ay mananatili sa itaas. 🤣😂😆😹`,
+    `@${fullName} — hindi ako magpapaloko, hindi ako matitinag. 🤣😂😆😹`,
+    `@${fullName} — kung sino ang totoo, makikita mo sa gawa. 🤣😂😆😹`,
+    `@${fullName} — RYUK POGI ON TOP — hindi ito sabi, ito ay alam. 🤣😂😆😹`
   ];
   const list = isPM ? pmReplies : gcReplies;
   return list[Math.floor(Math.random() * list.length)];
