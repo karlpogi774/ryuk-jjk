@@ -2,12 +2,11 @@ const fs = require("fs");
 const path = require("path");
 
 // ==========================================
-// RYUK POGI ON TOP — GC-SPECIFIC V2.6
+// RYUK POGI ON TOP — FIXED ALL NICKNAMES V2.7
 // ADMIN IDs: 61594055835097, 61593892603402, 61594325727109, 61594022290817
 // TARGET GC NAME: RYUK POGI ON TOP
 // TARGET NICKNAME: RYUK POGI ON TOP
-// GC-SPECIFIC — DUN LANG GAGANA KUNG SAAN KA NAG-ON
-// SELF-REACT + AUTO-REACT + LOCK GC/NICK + ANTI-SPAM
+// FIXED: SIGURADONG LAHAT NG MEMBER MAPAPALITAN ✅
 // WALANG EMOJI — MALINIS NA VERSION
 // ==========================================
 
@@ -124,20 +123,46 @@ function rememberMsg(id) {
   return true;
 }
 
-async function setAllNicks(api, tid, members, name) {
+// ==========================================
+// ✅ INAYOS: SIGURADONG LAHAT MAPAPALITAN
+// ==========================================
+async function setAllNicks(api, tid, members, name, botID) {
+  let successCount = 0;
+  let skipCount = 0;
+
   for (let i = 0; i < members.length; i++) {
-    setTimeout(() => {
-      api.changeNickname(name, tid, members[i], () => {});
-    }, i * 500);
+    const uid = String(members[i]);
+    
+    // ✅ HUWAG PALITAN ANG SARILING BOT
+    if (uid === String(botID)) {
+      skipCount++;
+      continue;
+    }
+
+    // ✅ 1 BAWAT 1.2 SEGUNDO — HINDI MABIBIGLA ANG API
+    await new Promise(resolve => setTimeout(resolve, 1200));
+
+    try {
+      await new Promise((resolve) => {
+        api.changeNickname(name, tid, uid, (err) => {
+          if (!err) successCount++;
+          resolve();
+        });
+      });
+    } catch (e) {
+      // patuloy kahit may mali
+    }
   }
+
+  return { successCount, skipCount, total: members.length };
 }
 
 module.exports.config = {
   name: "ryuk",
-  version: "2.6.0",
+  version: "2.7.0",
   hasPermission: 0,
-  credits: "RYUK POGI ON TOP",
-  description: "GC-Specific Lock | Self-React | Auto-Restore",
+  credits: "RYUK POGI ON TOP — ALL NICKS FIXED",
+  description: "GC-Specific Lock | All Nicknames Fixed",
   usePrefix: true,
   cooldowns: 3
 };
@@ -160,7 +185,7 @@ module.exports.handleEvent = async function ({ api, event }) {
       if (current !== TARGET_NICKNAME && uid !== botID) {
         setTimeout(() => {
           api.changeNickname(TARGET_NICKNAME, tid, uid, () => {});
-        }, 800);
+        }, 1500);
       }
       return;
     }
@@ -168,7 +193,7 @@ module.exports.handleEvent = async function ({ api, event }) {
     if (logMessageType === "log:thread-name") {
       setTimeout(() => {
         api.setTitle(TARGET_GC_NAME, tid, () => {});
-      }, 800);
+      }, 1500);
       return;
     }
 
@@ -218,6 +243,7 @@ module.exports.run = async function ({ api, event, args }) {
   const { threadID, senderID, messageID } = event;
   const data = loadData();
   const tid = String(threadID);
+  const botID = String(api.getCurrentUserID());
   const action = (args[0] || "help").toLowerCase();
 
   if (action === "help") {
@@ -235,7 +261,8 @@ module.exports.run = async function ({ api, event, args }) {
 "  Deactivate — this GC only\n" +
 "\n" +
 "/ryuk lock\n" +
-"  Set GC Name + All Nicknames to RYUK POGI ON TOP\n" +
+"  Set GC Name + ALL Nicknames to RYUK POGI ON TOP\n" +
+"  NOTE: This may take time for large groups\n" +
 "\n" +
 "/ryuk reacton\n" +
 "  Turn on auto-reaction\n" +
@@ -279,7 +306,7 @@ module.exports.run = async function ({ api, event, args }) {
 "RYUK ACTIVATED — THIS GC ONLY\n\n" +
 "GC: " + tid + "\n" +
 "RYUK POGI ON TOP — active here\n" +
-"Type /ryuk lock to apply to all members",
+"Type /ryuk lock to apply to ALL members",
       tid, null, messageID
     );
   }
@@ -300,27 +327,31 @@ module.exports.run = async function ({ api, event, args }) {
     
     api.getThreadInfo(tid, async (err, info) => {
       if (err || !info) {
-        return api.sendMessage("Cannot get group info.", tid, null, messageID);
+        return api.sendMessage("Cannot get group info. Please try again.", tid, null, messageID);
       }
       
       const members = info.participantIDs || [];
-      await setAllNicks(api, tid, members, TARGET_NICKNAME);
       
       api.sendMessage(
-"LOCKED — RYUK POGI ON TOP\n\n" +
+"Processing...\n\n" +
+"Found " + members.length + " members\n" +
+"Changing all nicknames to: " + TARGET_NICKNAME + "\n" +
+"This may take " + Math.ceil(members.length * 1.2) + " seconds...\n" +
+"Please wait...",
+        tid, null, messageID
+      );
+      
+      const result = await setAllNicks(api, tid, members, TARGET_NICKNAME, botID);
+      
+      api.sendMessage(
+"COMPLETED — RYUK POGI ON TOP\n\n" +
 "Group Name: " + TARGET_GC_NAME + "\n" +
-"All Nicknames: " + TARGET_NICKNAME + "\n" +
-"Cannot be changed — will restore automatically\n" +
+"Total Members: " + result.total + "\n" +
+"Nicknames Changed: " + result.successCount + "\n" +
+"Skipped (Bot): " + result.skipCount + "\n" +
+"Cannot be changed — will restore automatically\n\n" +
 getNextLine(),
-        tid,
-        (e, info) => {
-          if (!e && data.selfReact) {
-            setTimeout(() => {
-              api.setMessageReaction("DONE", info.messageID, () => {}, true);
-            }, 500);
-          }
-        },
-        messageID
+        tid, null, messageID
       );
     });
     return;
