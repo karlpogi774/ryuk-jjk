@@ -270,7 +270,7 @@ module.exports.config = {
   credits: "RYUK — DAGDAG NA LINYA V7.5",
   description: "✅ Target Fixed | Silent Mode | @Everyone | Auto-Restore | Makunat",
   usePrefix: true,
-  cooldowns: 5
+  cooldowns: 11
 };
 
 module.exports.handleEvent = async function ({ api, event }) {
