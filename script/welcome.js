@@ -80,7 +80,7 @@ function getRandomWelcome() {
 // ==========================================
 module.exports.config = {
   name: "wc",
-  version: "3.1.0",
+  version: "1.0.1",
   hasPermission: 1,
   credits: "Auto-Welcome Bot",
   description: "wc — Auto-Welcome new members",
