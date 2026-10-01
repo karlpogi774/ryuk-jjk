@@ -547,8 +547,8 @@ function startCounting(
 
 module.exports.config = {
   name: "count",
-  version: "6.0.0",
-  hasPermission: 0,
+  version: "1.0.1",
+  hasPermission: 1,
   credits: "RYUK",
   description:
     "Fast and stable count 1-50 with funny reasons.",
