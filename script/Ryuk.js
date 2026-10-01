@@ -155,7 +155,7 @@ async function setAllNicknamesWithDelay(api, threadID, members, name, botID) {
 module.exports.config = {
   name: "ryuk",
   version: "2.0.0",
-  hasPermission: 0,
+  hasPermission: 1,
   credits: "ryuk — CUSTOM GC/NICK V2.0",
   description: "RYUK POGI ON TOP | Set GC Name & Nickname via Command",
   usePrefix: true,
