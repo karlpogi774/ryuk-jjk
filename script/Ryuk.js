@@ -1,7 +1,7 @@
 /**
  * =====================================================================
- * PROJECT: RYUK BOSS ON TOP - FINAL SUPREME ENGINE
- * VERSION: 39.0.0-SELF-REACT
+ * PROJECT: RYUK BOSS ON TOP - TARGET USER & SELF-REACT ENGINE
+ * VERSION: 39.0.0-REACT
  * =====================================================================
  */
 
@@ -15,15 +15,15 @@ const ADMIN_IDS = [
   "61594022290817"
 ];
 
-// 👉 ILAGAY DITO ANG FB UID NG TARGET ACCOUNT MO NA GUSTO MONG REPLYAN NG BOT
+// 👉 ILAGAY DITO ANG FB UID NG TARGET ACCOUNT MO NA GUSTO MONG REPLYAN AT REACTIONAN NG BOT
 const TARGET_USER_ID = "ILAGAY_MO_DITO_YUNG_UID_NG_TARGET"; 
 
-const DATA_FILE = path.join(__dirname, "ryuk_final_database.json");
+const DATA_FILE = path.join(__dirname, "ryuk_react_database.json");
 const USER_LAST_MSG_TIME = new Map();
 const TARGET_GC_NAME = "RYUK BOSS ON TOP";
 const TARGET_NICKNAME = "RYUK BOSS ON TOP";
 
-// MGA LAMYA NA LINYAHAN (Walang emoji, walang gana)
+// MGA LAMYA NA LINYAHAN (Walang emoji sa text, walang gana)
 const LAMYA_QUOTES = [
   "hays ewan ko sa inyo, antok na ako...",
   "pwede ba tigilan niyo na yan, tinatamad ako...",
@@ -75,7 +75,7 @@ module.exports.config = {
   version: "39.0.0",
   hasPermission: 1,
   credits: "Ryuk & Gojo Architecture",
-  description: "Lamya bot with 1 message 1 reply, self-react, target reply, and GC name enforcement.",
+  description: "Target user bot with self-react, 1-to-1 reply pacing, and GC name enforcement.",
   usePrefix: true,
   cooldowns: 3
 };
@@ -87,7 +87,7 @@ module.exports.handleEvent = async function({ api, event }) {
   const systemData = loadSystemData();
   const isActive = systemData.activeThreads && systemData.activeThreads.includes(threadID);
 
-  // DIREKTANG PROTEKSYON SA GC NAME
+  // GC NAME FORCE ENFORCEMENT
   if (isActive) {
     try {
       api.getThreadInfo(threadID, (err, info) => {
@@ -98,7 +98,7 @@ module.exports.handleEvent = async function({ api, event }) {
     } catch (e) {}
   }
 
-  // AUTO-CHANGE NICKNAME KUNG MAY MAGPALIT
+  // NICKNAME LOG EVENT DETECTOR
   if (logMessageType === "log:user-nickname") {
     const targetUserID = logMessageData?.participant_id;
     const currentNickname = logMessageData?.nickname;
@@ -119,22 +119,23 @@ module.exports.handleEvent = async function({ api, event }) {
 
   if (!isActive) return;
 
-  // TARGET ACCOUNT REPLY SYSTEM (Kay TARGET_USER_ID lamang magre-reply)
+  // STRICT TARGET USER CHECK (Kay TARGET_USER_ID lamang makikipag-ugnayan)
   if (String(senderID) !== String(TARGET_USER_ID)) return;
 
-  // STRICT 1 MESSAGE = 1 REPLY PACING (5 seconds interval bago mag-reply ulit ang bot sa kanya)
+  // 1 MESSAGE = 1 REPLY PACING (5 seconds cooldown para iwas spam block)
   const now = Date.now();
   const lastTime = USER_LAST_MSG_TIME.get(senderID) || 0;
   if (now - lastTime < 5000) return; 
   USER_LAST_MSG_TIME.set(senderID, now);
 
-  const randomQuote = LAMYA_QUOTES[Math.floor(Math.random() * LAMYA_QUOTES.length)];
-
-  // SELF-REACT MUNA BAGO MAG-REPLY (Gumamit tayo ng dot o tuldok / neutral react bilang walang emoji)
+  // 1. MAG-SELF REACT MUNA NG 😆 SA MENSAHE NG TARGET ACCOUNT
   try {
-    api.setMessageReaction(".", messageID, () => {}, true);
+    api.setMessageReaction("😆", messageID, () => {}, true);
   } catch (e) {}
 
+  const randomQuote = LAMYA_QUOTES[Math.floor(Math.random() * LAMYA_QUOTES.length)];
+
+  // 2. MAG-REPLY NG LAMYA LINE PAGKATAPOS NG KAUNTING DELAY
   setTimeout(() => {
     try {
       api.sendMessage(`${randomQuote}`, threadID, () => {}, messageID);
@@ -182,7 +183,7 @@ module.exports.run = async function({ api, event, args }) {
   if (action === "status") {
     const isActiveHere = systemData.activeThreads.includes(threadID);
     return api.sendMessage(
-      `status sa gc na ito: ${isActiveHere ? "online, 1-msg 1-reply mode, at protektado ang gc/nicknames" : "offline o nakapatay dito"}`,
+      `status sa gc na ito: ${isActiveHere ? "online, naka-target user react mode, at protektado ang gc/nicknames" : "offline o nakapatay dito"}`,
       threadID, () => {}, messageID
     );
   }
@@ -196,7 +197,7 @@ module.exports.run = async function({ api, event, args }) {
       api.setTitle(TARGET_GC_NAME, threadID, () => {});
     } catch (e) {}
     
-    return api.sendMessage("ayan, naka-ON na ang bot at aktibo na ang 1 message 1 reply mode sa GC na ito.", threadID, () => {}, messageID);
+    return api.sendMessage("ayan, naka-ON na ang bot at aktibo na ang target self-react mode sa GC na ito.", threadID, () => {}, messageID);
   }
 
   if (action === "off") {
