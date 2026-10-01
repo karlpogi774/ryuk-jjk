@@ -1,2 +1,2 @@
-# SINZU BOT X WS3-FCA 
+# RYUK BOT X WS3-FCA 
 💞
