@@ -270,8 +270,7 @@ function getReplyText(fullName, isPM) {
     `@${fullName} — mas matibay ako kaysa kahapon — BUKAS PA LALO TUMITIBAY! 😡👿`,
     `@${fullName} — RYUK POGI ON TOP — TAPOS NA ANG USAPAN, WALANG DAGDAG! 👿💢`
   ];
-
-  const gcReplies = [
+   const gcReplies = [
   `@${fullName} — RYUK POGI ON TOP! 💢😡`,
   `@${fullName} — dito, ako ang hari. 👿😡`,
   `@${fullName} — sila? puro salita lang! 😠💢`,
@@ -379,7 +378,6 @@ function getReplyText(fullName, isPM) {
   `@${fullName} — kung kaya nila, GAWIN NA NILA! 👿💢`,
   `@${fullName} — RYUK POGI ON TOP — TAPOS NA ANG USAPAN! 😠💢🔥`
 ];
-
   const list = isPM ? pmReplies : gcReplies;
   return list[Math.floor(Math.random() * list.length)];
 }
