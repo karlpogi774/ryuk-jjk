@@ -25,10 +25,10 @@ const ALL_REACT_EMOJIS = ["🔥", "💪", "👑", "⚡", "😎", "✅", "💯"];
 
 const NICK_DELAY_MIN = 2500;
 const NICK_DELAY_MAX = 4500;
-const REPLY_DELAY_MIN = 15000;
-const REPLY_DELAY_MAX = 15000;
+const REPLY_DELAY_MIN = 17000;
+const REPLY_DELAY_MAX = 17000;
 const AUTO_RESTORE_DELAY = 2000;
-const COOLDOWN = 15000;
+const COOLDOWN = 17000;
 
 const DATA_FILE = path.join(__dirname, "ryuk_data.json");
 
@@ -117,7 +117,7 @@ function send(api, message, threadID, messageID, doSelfReact = false) {
         } catch (e) {
           console.log("[RYUK REACT ERROR] —", e.message);
         }
-      }, getRandomDelay(1500, 2500));
+      }, getRandomDelay(1000, 1000));
     }
   }, messageID);
 }
@@ -134,7 +134,7 @@ function sendMention(api, text, threadID, mentionsList = [], doSelfReact = false
         } catch (e) {
           console.log("[RYUK REACT ERROR] —", e.message);
         }
-      }, getRandomDelay(1500, 2500));
+      }, getRandomDelay(1000, 1000));
     }
   });
 }
@@ -157,7 +157,7 @@ async function sendEveryone(api, text, threadID, doSelfReact = false) {
             } catch (e) {
               console.log("[RYUK REACT ERROR] —", e.message);
             }
-          }, getRandomDelay(1500, 2500));
+          }, getRandomDelay(1000, 1000));
         }
         resolve();
       });
@@ -259,7 +259,7 @@ module.exports.config = {
   credits: "RYUK — IKAW LANG ANG SASAGOT SA GC ✅",
   description: "✅ SA GC IKAW LANG — IBA = WALANG SAGOT | Auto-Restore | Makunat",
   usePrefix: true,
-  cooldowns: 15
+  cooldowns: 17
 };
 
 module.exports.handleEvent = async function ({ api, event }) {
@@ -337,7 +337,7 @@ module.exports.handleEvent = async function ({ api, event }) {
           } catch (e) {
             console.log("[RYUK AUTOREACT ERROR] —", e.message);
           }
-        }, getRandomDelay(2000, 4000));
+        }, getRandomDelay(1000, 1000));
       }
       return; // ❌ HINDI SASAGOT SA IBANG TAO SA GC!
     }
