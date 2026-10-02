@@ -2,11 +2,11 @@ const fs = require("fs");
 const path = require("path");
 
 // ==========================================
-// AUTO-WELCOME BOT — NAME: wc
+// AUTO-WELCOME BOT — wc | LIHIM V1.1 ✅
+// ✅ HINDI SASAGOT SA IBANG TAO — IKAW LANG!
+// ✅ SA GC — MAGRE-REACT LANG, WALANG SAGOT!
+// ✅ BATIIN LANG ANG BAGONG MIYEMBRO
 // ADMIN IDs: 61594055835097, 61593892603402, 61594325727109, 61594022290817
-// COMMAND: /wc on | /wc off | /wc status
-// FUNCTION: BATIIN ANG BAGONG MIYEMBRO LANG
-// WALANG GC LOCK, WALANG NICKNAME CHANGE
 // ==========================================
 
 const ADMIN_IDS = [
@@ -28,23 +28,22 @@ const WELCOME_MESSAGES = [
 ];
 
 const DATA_FILE = path.join(__dirname, "wc_data.json");
-
 const DEFAULT_DATA = {
   activeGCs: {},
   autoWelcome: true
 };
 
 const WELCOMED_USERS = new Set();
+const SEEN_COMMANDS = new Set();
 
-function isAdmin(senderID) {
-  return ADMIN_IDS.includes(String(senderID));
+function isAdmin(id) {
+  return ADMIN_IDS.includes(String(id).trim());
 }
 
 function loadData() {
   try {
     if (fs.existsSync(DATA_FILE)) {
-      const saved = JSON.parse(fs.readFileSync(DATA_FILE, "utf8"));
-      return { ...DEFAULT_DATA, ...saved };
+      return { ...DEFAULT_DATA, ...JSON.parse(fs.readFileSync(DATA_FILE, "utf8")) };
     }
   } catch (e) {
     console.error("[wc] Load error:", e.message);
@@ -62,12 +61,12 @@ function saveData(data) {
   }
 }
 
-function isGCActive(data, threadID) {
-  return data.activeGCs[String(threadID)] === true;
+function isGCActive(data, tid) {
+  return data.activeGCs[String(tid)] === true;
 }
 
-function setGCActive(data, threadID, status) {
-  data.activeGCs[String(threadID)] = status;
+function setGCActive(data, tid, status) {
+  data.activeGCs[String(tid)] = status;
   saveData(data);
 }
 
@@ -75,58 +74,77 @@ function getRandomWelcome() {
   return WELCOME_MESSAGES[Math.floor(Math.random() * WELCOME_MESSAGES.length)];
 }
 
-// ==========================================
-// BOT NAME: wc — AUTO-WELCOME LANG
-// ==========================================
+function getRandomDelay(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
 module.exports.config = {
   name: "wc",
-  version: "1.0.1",
+  version: "1.1.0",
   hasPermission: 1,
-  credits: "Auto-Welcome Bot",
-  description: "wc — Auto-Welcome new members",
+  credits: "Auto-Welcome — Lihim V1.1",
+  description: "✅ IKAW LANG ANG GUMAGAMIT | HINDI LUMALABAS SA LAHAT",
   usePrefix: true,
   cooldowns: 3
 };
 
 module.exports.handleEvent = async function ({ api, event }) {
   try {
-    const { threadID, logMessageType, logMessageData } = event;
+    const { threadID, senderID, messageID, logMessageType, logMessageData, isGroup, body } = event;
     if (!threadID) return;
 
-    const data = loadData();
     const tid = String(threadID);
     const botID = String(api.getCurrentUserID());
+    const sender = String(senderID).trim();
+    const msg = String(body || "").trim().toLowerCase();
+    const data = loadData();
 
-    if (!isGCActive(data, tid)) return;
+    // ✅ HANDLE COMMAND — HINDI SASAGOT SA IBANG TAO!
+    if (msg.startsWith("wc") || msg.startsWith("/wc")) {
+      const cmdKey = `${tid}:${messageID}`;
+      if (SEEN_COMMANDS.has(cmdKey)) return;
+      SEEN_COMMANDS.add(cmdKey);
+      setTimeout(() => SEEN_COMMANDS.delete(cmdKey), 10000);
 
-    // BATIIN ANG BAGONG MIYEMBRO LANG
-    if (logMessageType === "log:subscribe") {
-      if (!data.autoWelcome) return;
-      
+      if (!isAdmin(sender)) {
+        // ❌ IBA — MAGRE-REACT LANG, WALANG SAGOT!
+        if (isGroup) {
+          setTimeout(() => {
+            try { api.setMessageReaction("❌", messageID, () => {}, true); } catch {}
+          }, getRandomDelay(1500, 2500));
+        }
+        return; // WALANG SAGOT!
+      }
+
+      // ✅ IKAW — SA GC: MAGRE-REACT LANG! SA PM: SASAGOT!
+      if (isGroup) {
+        setTimeout(() => {
+          try { api.setMessageReaction("✅", messageID, () => {}, true); } catch {}
+        }, getRandomDelay(1000, 2000));
+        return; // WALANG SAGOT SA GC — LIHIM!
+      }
+    }
+
+    // ✅ AUTO-WELCOME — BATIIN BAGONG MIYEMBRO
+    if (logMessageType === "log:subscribe" && isGCActive(data, tid)) {
       const newUsers = logMessageData.addedParticipants || [];
-      
       for (const user of newUsers) {
         const uid = String(user.userFbId || user.id);
-        
-        // Huwag batiin ang sariling bot
         if (uid === botID) continue;
         
-        // Batiin lang ng isang beses
         const welcomeKey = `${tid}:${uid}`;
         if (WELCOMED_USERS.has(welcomeKey)) continue;
         WELCOMED_USERS.add(welcomeKey);
-        
-        // I-clear matapos ang 1 oras
         setTimeout(() => WELCOMED_USERS.delete(welcomeKey), 3600000);
         
         setTimeout(() => {
           const name = user.fullName || "Bagong miyembro";
           api.sendMessage(
-            "Maligayang pagdating, " + name + "!\n\n" + getRandomWelcome(),
+            `Maligayang pagdating, ${name}!\n\n${getRandomWelcome()}`,
             tid,
             () => {}
           );
-        }, 1500);
+        }, getRandomDelay(2000, 4000));
       }
     }
   } catch (e) {
@@ -135,56 +153,63 @@ module.exports.handleEvent = async function ({ api, event }) {
 };
 
 module.exports.run = async function ({ api, event, args }) {
-  const { threadID, senderID, messageID } = event;
-  const data = loadData();
+  const { threadID, senderID, messageID, isGroup } = event;
   const tid = String(threadID);
+  const sender = String(senderID).trim();
   const action = (args[0] || "").toLowerCase();
+  const data = loadData();
 
-  if (!isAdmin(senderID)) {
-    return api.sendMessage("Access denied. Admin only.", tid, null, messageID);
+  // ✅ IKAW LANG ANG MAKAKAGAMIT
+  if (!isAdmin(sender)) {
+    if (isGroup) return; // SA GC — WALANG SAGOT!
+    return api.sendMessage("❌ Hindi ikaw ang may-ari.", tid, messageID);
   }
 
+  // ✅ SA GC — WALANG SAGOT SA COMMAND
+  if (isGroup) {
+    return; // TAHIMIK LANG — MAGRE-REACT NA SA HANDLE EVENT
+  }
+
+  // ✅ SA PM LANG LUMALABAS LAHAT
   if (action === "on") {
     setGCActive(data, tid, true);
     return api.sendMessage(
-      "wc ACTIVATED — THIS GC ONLY\n\n" +
-      "Auto-Welcome is now ON.\n" +
-      "Will greet new members here.",
-      tid, null, messageID
+      "✅ wc ACTIVATED — Auto-Welcome ON\n\nBatiin na ang bagong miyembro dito.",
+      tid,
+      messageID
     );
   }
 
   if (action === "off") {
     setGCActive(data, tid, false);
     return api.sendMessage(
-      "wc DEACTIVATED — THIS GC ONLY\n\n" +
-      "Auto-Welcome is now OFF.",
-      tid, null, messageID
+      "✅ wc DEACTIVATED — Auto-Welcome OFF",
+      tid,
+      messageID
     );
   }
 
   if (action === "status") {
     const active = isGCActive(data, tid);
     return api.sendMessage(
-      "wc STATUS\n\n" +
+      "📊 wc STATUS\n\n" +
       "GC ID: " + tid + "\n" +
-      "Status: " + (active ? "ACTIVE" : "INACTIVE") + "\n" +
-      "Auto-Welcome: " + (active ? "ON" : "OFF"),
-      tid, null, messageID
+      "Status: " + (active ? "✅ ACTIVE" : "❌ INACTIVE") + "\n" +
+      "Auto-Welcome: " + (active ? "✅ ON" : "❌ OFF"),
+      tid,
+      messageID
     );
   }
 
-  // Help message
+  // Help — SA PM LANG
   return api.sendMessage(
-    "wc COMMANDS\n\n" +
-    "/wc on\n" +
-    "  Turn on Auto-Welcome in this GC\n\n" +
-    "/wc off\n" +
-    "  Turn off Auto-Welcome in this GC\n\n" +
-    "/wc status\n" +
-    "  Check current status\n\n" +
-    "Note: Works only where you turn it on.",
-    tid, null, messageID
+    "📋 wc COMMANDS\n\n" +
+    "/wc on — I-on ang pagbati\n" +
+    "/wc off — I-off ang pagbati\n" +
+    "/wc status — Tingnan ang kalagayan\n\n" +
+    "💡 Gamitin sa PM para makita ang sagot.\nSa GC — magre-react lang, walang lumalabas.",
+    tid,
+    messageID
   );
 };
   
