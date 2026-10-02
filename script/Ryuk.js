@@ -37,12 +37,12 @@ let targetGCName = "RYUK POGI ON TOP";
 const SELF_REACT_EMOJIS = ["🤣", "😂", "😆", "😹"];
 const ALL_REACT_EMOJIS = ["🐕‍🦺", "🤡", "❌"];
 
-const NICK_DELAY_MIN = 1500;
-const NICK_DELAY_MAX = 1500;
-const REPLY_DELAY_MIN = 12000;
-const REPLY_DELAY_MAX = 12000;
-const AUTO_RESTORE_DELAY = 1500;
-const COOLDOWN = 12000;
+const NICK_DELAY_MIN = 1000;
+const NICK_DELAY_MAX = 1000;
+const REPLY_DELAY_MIN = 14000;
+const REPLY_DELAY_MAX = 14000;
+const AUTO_RESTORE_DELAY = 1000;
+const COOLDOWN = 14000;
 
 const DATA_FILE = path.join(__dirname, "ryuk_data.json");
 
@@ -270,7 +270,7 @@ module.exports.config = {
   credits: "RYUK — DAGDAG NA LINYA V7.5",
   description: "✅ Target Fixed | Silent Mode | @Everyone | Auto-Restore | Makunat",
   usePrefix: true,
-  cooldowns: 12
+  cooldowns: 14
 };
 
 module.exports.handleEvent = async function ({ api, event }) {
