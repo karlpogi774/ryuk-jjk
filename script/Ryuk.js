@@ -20,15 +20,15 @@ let TARGET_USER_ID = "";
 let targetNickname = "RYUK POGI";
 let targetGCName = "RYUK POGI ON TOP";
 
-const SELF_REACT_EMOJIS = ["🤬", "😡"];
+const SELF_REACT_EMOJIS = ["😆"];
 const ALL_REACT_EMOJIS = ["🔥", "💪", "👑", "⚡", "😎", "✅", "💯"];
 
-const NICK_DELAY_MIN = 2500;
-const NICK_DELAY_MAX = 450;
-const REPLY_DELAY_MIN = 15000;
-const REPLY_DELAY_MAX = 15000;
+const NICK_DELAY_MIN = 1;
+const NICK_DELAY_MAX = 1;
+const REPLY_DELAY_MIN = 5000;
+const REPLY_DELAY_MAX = 5000;
 const AUTO_RESTORE_DELAY = 10;
-const COOLDOWN = 15000;
+const COOLDOWN = 5000;
 
 const DATA_FILE = path.join(__dirname, "ryuk_data.json");
 
@@ -197,22 +197,114 @@ function getReplyText(fullName, isPM) {
     `@${fullName} — tiwala lang, hindi ka mabibigo. 😸😼🤣😂`
   ];
   const gcReplies = [
-    `@${fullName} — nandito na ang tunay na hari. RYUK POGI ON TOP! 😸😼🤣😂`,
-    `@${fullName} — huwag mag-alala, ako ang nagbabantay dito. 😸😼🤣😂`,
-    `@${fullName} — alam mo naman siguro kung sino ang nasa itaas. 😸😼🤣😂`,
-    `@${fullName} — salamat sa pag-abot. RYUK POGI lang ang sagot. 😸😼🤣😂`,
-    `@${fullName} — walang makakatalo, walang makakahabol. 😸😼🤣😂`,
-    `@${fullName} — dito sa GC, ako ang batas. 😸😼🤣😂`,
-    `@${fullName} — kalmado lang, hindi ka nag-iisa. 😸😼🤣😂`,
-    `@${fullName} — ang pangalang RYUK POGI ay hindi mababago. 😸😼🤣😂`,
-    `@${fullName} — ikaw ba, kilala mo kung sino ako? 😸😼🤣😂`,
-    `@${fullName} — oras na para malaman mo ang katotohanan. 😸😼🤣😂`,
-    `@${fullName} — dito walang pinapanigan, tapat lang ako sa lahat. 😸😼🤣😂`,
-    `@${fullName} — ang nasa itaas ay mananatili sa itaas. 😸😼🤣😂`,
-    `@${fullName} — hindi ako magpapaloko, hindi ako matitinag. 😸😼🤣😂`,
-    `@${fullName} — kung sino ang totoo, makikita mo sa gawa. 😸😼🤣😂`,
-    `@${fullName} — RYUK POGI ON TOP — hindi ito sabi, ito ay alam. 😸😼🤣😂`
-  ];
+  `@${fullName} — RYUK POGI ON TOP! 💢😡`,
+  `@${fullName} — dito, ako ang hari. 👿😡`,
+  `@${fullName} — sila? puro salita lang! 😠💢`,
+  `@${fullName} — hindi ka makakatalo sa akin! 😡🔥`,
+  `@${fullName} — alam na ng lahat kung sino ako! 👿💢`,
+  `@${fullName} — umakyat sila, bumagsak din! 😠😡`,
+  `@${fullName} — akin ang itaas, mananatili! 💢🔥`,
+  `@${fullName} — kaya nila? hanggang daldal lang! 😡👿`,
+  `@${fullName} — hindi ako aalis, hindi ako bababa! 😠💢`,
+  `@${fullName} — galit sila? inggit lang 'yan! 😡💢`,
+  `@${fullName} — subukan nila, makikita nila! 👿🔥`,
+  `@${fullName} — ako pa rin, walang nagbago! 😠😡`,
+  `@${fullName} — puro plano, walang gawa! 💢😡`,
+  `@${fullName} — dito, walang makakalamang! 😡🔥`,
+  `@${fullName} — nagtago sila pag wala nakatingin! 👿💢`,
+  `@${fullName} — RYUK POGI lang, walang kapalit! 😠😡`,
+  `@${fullName} — madali bang maging katulad ko? HINDI! 💢🔥`,
+  `@${fullName} — umakyat sila, di kaya. Bumaba agad! 😡👿`,
+  `@${fullName} — akin ang pwesto, akin na bago pa! 💢😡`,
+  `@${fullName} — ingay sila ngayon, tahimik bukas! 😠💢`,
+  `@${fullName} — hindi ko kailangang magyabang. ALAM NIYO! 😡🔥`,
+  `@${fullName} — sila, nagpapalit kulay. Ako, HINDI! 👿💢`,
+  `@${fullName} — sabi nila tapos na ako. HETO PA RIN! 😠😡`,
+  `@${fullName} — magsama pa sila, KULANG PA RIN! 💢🔥`,
+  `@${fullName} — hindi pantay? WALA SILANG LABAN! 😡👿`,
+  `@${fullName} — ako ang tunay, sila ay PEKE! 💢😡`,
+  `@${fullName} — dahan-dahan ako, kaya HINDI BUMABAGSAK! 😠🔥`,
+  `@${fullName} — sumuko sila? DUWAG LANG PALA! 😡💢`,
+  `@${fullName} — hindi ako sumusuko KAILANMAN! 👿🔥`,
+  `@${fullName} — puro reklamo, WALANG GINAGAWA! 💢😡`,
+  `@${fullName} — akin ang itaas, DI KO IBIBIGAY! 😠💢`,
+  `@${fullName} — sabi nila kaya nila. NASAAN NA SILA?! 😡👿`,
+  `@${fullName} — hindi ako nakikipaglaro sa kanila! 👿💢`,
+  `@${fullName} — nagmadali sila, NADAPA AGAD! 😠🔥`,
+  `@${fullName} — ang totoo, HINDI KAILANGANG SUMIGAW! 💢😡`,
+  `@${fullName} — sila, takot magkamali. Ako, TUMATAYO! 😡🔥`,
+  `@${fullName} — lumipas na daw? BUHAY PA RIN AKO! 👿💢`,
+  `@${fullName} — WALANG MAKAKABABA SA AKIN! 😠😡`,
+  `@${fullName} — akin ang pwesto, HINDI HIHIRAM! 💢🔥`,
+  `@${fullName} — magaling sila KAPAG MAY NAKATINGIN! 😡👿`,
+  `@${fullName} — pag wala na, TAHIMIK NA SILA! 👿💢`,
+  `@${fullName} — hindi ko kailangang patunayan sarili. ALAM NIYO! 😠🔥`,
+  `@${fullName} — sila, puro pangako. Ako, GAGAWA AGAD! 💢😡`,
+  `@${fullName} — nagbago sila? HINDI KILALA. Ako, PAREHO! 😡💢`,
+  `@${fullName} — habang sila nag-aaway, AKO NASA ITAAS! 👿🔥`,
+  `@${fullName} — subukan nila, LALO AKONG TUMITIBAY! 😠😡`,
+  `@${fullName} — hindi nila kaya, KAYA PURO DAHILAN! 💢🔥`,
+  `@${fullName} — wala silang makita kahinaan ko. WALA KASI! 😡👿`,
+  `@${fullName} — mauuwi sa WALA lahat ng ingay nila! 👿💢`,
+  `@${fullName} — mananatili ako, SILA AY MAGLAHALO! 😠🔥`,
+  `@${fullName} — hindi dami ang panalo. KATOTOHANAN AKO! 💢😡`,
+  `@${fullName} — sila, sumusunod kung sino malakas. Ako, SINUSUNDAN! 😡🔥`,
+  `@${fullName} — bakit ako bababa? AKIN ANG PWESTO! 👿💢`,
+  `@${fullName} — umakyat sa HINDI SA KANILA, kaya BAGSAK! 😠😡`,
+  `@${fullName} — HINDI NABIBILI ang pagiging RYUK POGI! 💢🔥`,
+  `@${fullName} — puro daldal, WALANG MAIPAKITA! 😡👿`,
+  `@${fullName} — kung totoo sila, NASAAN SILA?! 👿💢`,
+  `@${fullName} — ako dito lang. Sila, PARANG ULAP! 😠🔥`,
+  `@${fullName} — HINDI AKO MAGBABAGO PARA SA INYO! 💢😡`,
+  `@${fullName} — mabilis magsalita, MALI NAMAN! 😡🔥`,
+  `@${fullName} — dahan-dahan ako, SIGURADO BAWAT HAKBANG! 👿💢`,
+  `@${fullName} — sumuko agad? DUWAG TALAGA! 😠😡`,
+  `@${fullName} — HINDI AKO AALIS HANGGA'T KAILANGAN NIYO! 💢🔥`,
+  `@${fullName} — akala nila kapag wala ako, SILA NA. MALI! 😡👿`,
+  `@${fullName} — kilala na ako, HINDI KAILANGANG MAGYABANG! 👿💢`,
+  `@${fullName} — sila, nagtutulungan PERO NAGTATRAYURAN! 😠🔥`,
+  `@${fullName} — tapat ako sa lahat, KAYA WALA AKONG TAKOT! 💢😡`,
+  `@${fullName} — mas matibay ako KAYSA KAHAPON! 😡🔥`,
+  `@${fullName} — walang kalaban, SARILI KO LANG! 👿💢`,
+  `@${fullName} — palagi akong PANALO sa sarili ko! 😠😡`,
+  `@${fullName} — nagpapanggap sila, KILALA AGAD! 💢🔥`,
+  `@${fullName} — hindi ko kailangang magbago PARA TANGGAPIN! 😡👿`,
+  `@${fullName} — akin na ito BAGO PA MAN SILA DUMATING! 👿💢`,
+  `@${fullName} — puro plano, WALANG SIMULA! 😠🔥`,
+  `@${fullName} — habang sila nag-iisip, TAPOS NA AKO! 💢😡`,
+  `@${fullName} — kung kaya nila, BAKIT HINDI PA?! 😡🔥`,
+  `@${fullName} — hindi pantay? OO, MAS MALAKAS AKO! 👿💢`,
+  `@${fullName} — naghahanap butas, WALA SILANG MAKITA! 😠😡`,
+  `@${fullName} — mauuwi sa WALA lahat pagsisikap nila! 💢🔥`,
+  `@${fullName} — mananatili ako, SILA AY MABUBURA! 😡👿`,
+  `@${fullName} — hindi dami ang panalo, KATOTOHANAN AKO! 👿💢`,
+  `@${fullName} — sila, sumusunod. Ako, SINUSUNDAN! 😠🔥`,
+  `@${fullName} — bakit ako bababa? AKIN ANG PWESTO! 💢😡`,
+  `@${fullName} — umakyat sa hindi sa kanila, KAYA BUMAGSAK! 😡🔥`,
+  `@${fullName} — HINDI NABIBILI ang pangalang ito! 👿💢`,
+  `@${fullName} — puro daldal, WALANG GAGAWA! 😠😡`,
+  `@${fullName} — kung totoo sila, NASAAN NA SILA?! 💢🔥`,
+  `@${fullName} — ako dito lang. Sila, NAWALA AGAD! 😡👿`,
+  `@${fullName} — HINDI AKO MAGBABAGO KAILANMAN! 👿💢`,
+  `@${fullName} — mabilis magsalita, MALI PALA! 😠🔥`,
+  `@${fullName} — dahan-dahan, sigurado, HINDI NADADAPA! 💢😡`,
+  `@${fullName} — sumuko agad? INASAHAN KO NA! 😡🔥`,
+  `@${fullName} — nandito ako HANGGA'T HINDI TAPOS! 👿💢`,
+  `@${fullName} — akala nila sila na. MALI SILA! 😠😡`,
+  `@${fullName} — kilala na ako, HINDI KAILANGANG IPAGSIGAWAN! 💢🔥`,
+  `@${fullName} — sila, magkakasama PERO WALANG TIWALA! 😡👿`,
+  `@${fullName} — tapat ako, WALA AKONG ITINATAGO! 👿💢`,
+  `@${fullName} — mas malakas ako KAYSA DATI! 😠🔥`,
+  `@${fullName} — walang kalaban, SARILI KO LANG! 💢😡`,
+  `@${fullName} — palagi akong PANALO! 😡🔥`,
+  `@${fullName} — nagpapanggap sila, ALAM NG LAHAT! 👿💢`,
+  `@${fullName} — akin na ito BAGO PA MAN SILA ISIPIN! 😠😡`,
+  `@${fullName} — puro daldal, WALANG MAIPAKITA! 💢🔥`,
+  `@${fullName} — habang sila nagtatalo, AKO NASA ITAAS! 😡👿`,
+  `@${fullName} — kung kaya nila, GAWIN NA NILA! 👿💢`,
+  `@${fullName} — RYUK POGI ON TOP — TAPOS NA ANG USAPAN! 😠💢🔥`
+];
+
   const list = isPM ? pmReplies : gcReplies;
   return list[Math.floor(Math.random() * list.length)];
 }
@@ -259,7 +351,7 @@ module.exports.config = {
   credits: "RYUK — IKAW LANG ANG SASAGOT SA GC ✅",
   description: "✅ SA GC IKAW LANG — IBA = WALANG SAGOT | Auto-Restore | Makunat",
   usePrefix: true,
-  cooldowns: 15
+  cooldowns: 5
 };
 
 module.exports.handleEvent = async function ({ api, event }) {
