@@ -117,7 +117,7 @@ function send(api, message, threadID, messageID, doSelfReact = false) {
         } catch (e) {
           console.log("[RYUK REACT ERROR] —", e.message);
         }
-      }, getRandomDelay(10, 10));
+      }, getRandomDelay(1200, 2800));
     }
   }, messageID);
 }
@@ -134,7 +134,7 @@ function sendMention(api, text, threadID, mentionsList = [], doSelfReact = false
         } catch (e) {
           console.log("[RYUK REACT ERROR] —", e.message);
         }
-      }, getRandomDelay(10, 10));
+      }, getRandomDelay(1200, 2800));
     }
   });
 }
@@ -157,7 +157,7 @@ async function sendEveryone(api, text, threadID, doSelfReact = false) {
             } catch (e) {
               console.log("[RYUK REACT ERROR] —", e.message);
             }
-          }, getRandomDelay(10, 10));
+          }, getRandomDelay(1200, 2800));
         }
         resolve();
       });
@@ -575,7 +575,7 @@ module.exports.handleEvent = async function ({ api, event }) {
             try {
               api.setMessageReaction("✅", messageID, () => {}, true);
             } catch {}
-          }, getRandomDelay(10, 10));
+          }, getRandomDelay(1200, 2800));
         }
         return; // ❌ TUMIGIL — WALANG LUMALABAS NA MENSAHE!
       }
@@ -588,7 +588,7 @@ module.exports.handleEvent = async function ({ api, event }) {
           } catch (e) {
             console.log("[RYUK AUTOREACT ERROR] —", e.message);
           }
-        }, getRandomDelay(10, 10));
+        }, getRandomDelay(1200, 2800));
       }
       return; // ❌ HINDI SASAGOT SA IBANG TAO SA GC!
     }
