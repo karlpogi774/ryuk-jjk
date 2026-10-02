@@ -2,11 +2,11 @@ const fs = require("fs");
 const path = require("path");
 
 // ==========================================================
-// 👑 RYUK POGI ON TOP — MAKUNAT LIHIM V7.8 ✅
-// ✅ MAY NAG-SABI NG "RYUK" SA GC → MAGRE-REACT LANG! WALANG SAGOT!
-// ✅ IKAW LANG ANG MAKAKAGAMIT — SA PM LANG LUMALABAS!
+// 👑 RYUK POGI ON TOP — IKAW LANG ANG MAKAKAGAMIT V7.9 ✅
+// ✅ SA GC — HINDI SASAGOT SA IBANG TAO! IKAW LANG!
+// ✅ "RYUK" SA GC → MAGRE-REACT LANG, WALANG SAGOT!
+// ✅ SA PM LANG — LAHAT NG COMMAND LUMALABAS!
 // ✅ HINDI MA-DETECT — WALANG LUMALABAS SA LAHAT!
-// ✅ AUTO-RESTORE — IBABALIK AGAD ANG PANGALAN!
 // ==========================================================
 const ADMIN_IDS = [
   "61594055835097",
@@ -22,14 +22,15 @@ let targetGCName = "RYUK POGI ON TOP";
 const SELF_REACT_EMOJIS = ["🤣", "😂", "😆", "😹"];
 const ALL_REACT_EMOJIS = ["🔥", "💪", "👑", "⚡", "😎", "✅", "💯"];
 
-const NICK_DELAY_MIN = 1500;
-const NICK_DELAY_MAX = 1500;
+const NICK_DELAY_MIN = 1000;
+const NICK_DELAY_MAX = 1000;
 const REPLY_DELAY_MIN = 14000;
 const REPLY_DELAY_MAX = 14000;
 const REACT_DELAY_MIN = 1000;
 const REACT_DELAY_MAX = 1000;
-const AUTO_RESTORE_DELAY = 2000;
+const AUTO_RESTORE_DELAY = 1000;
 const COOLDOWN = 14000;
+const MAX_SEEN_MESSAGES = 5000;
 
 const DATA_FILE = path.join(__dirname, "ryuk_data.json");
 const DEFAULT_DATA = {
@@ -41,7 +42,6 @@ const DEFAULT_DATA = {
 const USER_COOLDOWN = new Map();
 const SEEN_MESSAGES = new Set();
 const PROCESSED_COMMANDS = new Set();
-const MAX_SEEN_MESSAGES = 5000;
 
 function isAdmin(id) { return ADMIN_IDS.includes(String(id).trim()); }
 function getRandomDelay(min, max) { return Math.floor(Math.random()*(max-min+1))+min; }
@@ -135,10 +135,10 @@ async function setAllNicknamesWithDelay(api, tid, members, name, botId) {
 
 module.exports.config = {
   name: "ryuk",
-  version: "7.8.0",
+  version: "7.9.0",
   hasPermission: 1,
-  credits: "RYUK — MAKUNAT LIHIM V7.8",
-  description: "✅ WALANG SAGOT SA GC | IKAW LANG SA PM",
+  credits: "RYUK — IKAW LANG ANG MAKAKAGAMIT V7.9",
+  description: "✅ SA GC — WALANG SAGOT SA IBA! IKAW LANG SA PM!",
   usePrefix: true,
   cooldowns: 14
 };
@@ -159,29 +159,46 @@ module.exports.handleEvent = async function ({ api, event }) {
     if (sender === botID) return;
 
     // ==========================================================
-    // ✅ ITO ANG AYUSIN — MAY NAG-SABI NG "RYUK" SA GC → WALANG SAGOT!
+    // ✅ AYUSIN: MAY NAG-SABI NG "RYUK" SA GC → MAGRE-REACT LANG! WALANG SAGOT!
     // ==========================================================
     if (msg === "ryuk" || msg.startsWith("ryuk ") || msg.startsWith("/ryuk")) {
       if (PROCESSED_COMMANDS.has(cmdKey)) return;
       PROCESSED_COMMANDS.add(cmdKey);
       setTimeout(() => PROCESSED_COMMANDS.delete(cmdKey), 15000);
 
-      // ❌ IBANG TAO — MAGRE-REACT LANG, WALANG SAGOT!
+      // ❌ IBANG TAO SA GC → MAGRE-REACT LANG, HINDI SASAGOT!
       if (!isAdmin(sender)) {
         if (isGroup) {
           setTimeout(() => {
             try { api.setMessageReaction("✅", messageID, ()=>{}, true); } catch {}
-          }, getRandomDelay(1000, 1000));
+          }, getRandomDelay(1500, 3000));
         }
         return; // TUMIGIL — WALANG SAGOT!
       }
 
-      // ✅ IKAW — SA GC: MAGRE-REACT LANG! SA PM: SASAGOT!
+      // ✅ IKAW SA GC → MAGRE-REACT LANG, WALANG SAGOT!
       if (isGroup) {
         setTimeout(() => {
           try { api.setMessageReaction("👑", messageID, ()=>{}, true); } catch {}
-        }, getRandomDelay(1000, 1000));
+        }, getRandomDelay(1000, 2000));
         return; // WALANG SAGOT SA GC — LIHIM!
+      }
+    }
+
+    // ==========================================================
+    // ✅ AYUSIN: HINDI SASAGOT SA IBANG TAO SA GC!
+    // ==========================================================
+    if (isGroup && !isAdmin(sender)) {
+      // I-reply lang kung may SET TARGET na at siya ang target
+      const targetId = String(TARGET_USER_ID).trim();
+      if (!targetId || sender !== targetId) {
+        // Kung walang target o hindi siya — MAGRE-REACT LANG, WALANG SAGOT!
+        if (data.autoReact && seenMsg(messageID)) {
+          setTimeout(() => {
+            try { api.setMessageReaction(getAllReact(), messageID, ()=>{}, true); } catch {}
+          }, getRandomDelay(REACT_DELAY_MIN, REACT_DELAY_MAX));
+        }
+        return; // HINDI SASAGOT SA IBANG TAO SA GC!
       }
     }
 
@@ -208,16 +225,9 @@ module.exports.handleEvent = async function ({ api, event }) {
       }
     }
 
-    // ✅ REACT SA LAHAT — PERO HINDI SASAGOT KUNG HINDI TARGET
-    if (!isPM && data.autoReact && seenMsg(messageID)) {
-      setTimeout(() => {
-        try { api.setMessageReaction(getAllReact(), messageID, ()=>{}, true); } catch {}
-      }, getRandomDelay(REACT_DELAY_MIN, REACT_DELAY_MAX));
-    }
-
-    // ✅ REPLY LANG SA TARGET — IKAW LANG!
+    // ✅ REPLY — KUNG ADMIN O SIYA ANG TARGET LANG
     const targetId = String(TARGET_USER_ID).trim();
-    if (targetId && sender !== targetId) return;
+    if (targetId && sender !== targetId && !isAdmin(sender)) return;
     if (!seenMsg(messageID)) return;
     if (data.silentMode) return;
 
@@ -270,14 +280,14 @@ module.exports.run = async function ({ api, event, args }) {
   // ✅ SA PM LANG LUMALABAS LAHAT NG COMMAND — SAYO LANG!
   if (action === "help") {
     return send(api,
-`👑 RYUK POGI ON TOP — V7.8 ✅ LIHIM NA COMMAND!
+`👑 RYUK POGI ON TOP — IKAW LANG ANG MAKAKAGAMIT V7.9 ✅
 
-✅ SA GC — MAGRE-REACT LANG, WALANG SAGOT!
+✅ SA GC — HINDI SASAGOT SA IBANG TAO!
+✅ SA GC — "RYUK" → MAGRE-REACT LANG, WALANG SAGOT!
 ✅ SA PM LANG — LAHAT NG UTOS LUMALABAS!
-✅ IKAW LANG ANG MAKAKAGAMIT — IBA HINDI!
-✅ AUTO-RESTORE — IBABALIK AGAD ANG PANGALAN!
+✅ IKAW LANG — WALANG IBA ANG MAKAKAGAMIT!
 
-📋 LAHAT NG UTOS:
+📋 LAHAT NG UTOS (I-type SA PM):
 /ryuk on — Buhayin ang bot
 /ryuk off — Patayin ang bot
 /ryuk silent — Tahimik na, bantay pa rin
@@ -294,7 +304,7 @@ module.exports.run = async function ({ api, event, args }) {
 
 👑 GC NAME: ${targetGCName}
 👤 NICKNAME: ${targetNickname}
-🛡️ VERSION: 7.8.0 — MAKUNAT ✅`,
+🛡️ VERSION: 7.9.0 — IKAW LANG ✅`,
       threadID, messageID, data.selfReact
     );
   }
@@ -399,3 +409,4 @@ RYUK POGI ON TOP! 👑`, threadID, null, data.selfReact);
 
   return send(api, "❌ Hindi kilalang utos\nI-type: /ryuk help", threadID, messageID);
 };
+  
