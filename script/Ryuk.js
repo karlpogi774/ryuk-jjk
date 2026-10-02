@@ -25,10 +25,10 @@ const ALL_REACT_EMOJIS = ["🔥", "💪", "👑", "⚡", "😎", "✅", "💯"];
 
 const NICK_DELAY_MIN = 1;
 const NICK_DELAY_MAX = 1;
-const REPLY_DELAY_MIN = 5000;
-const REPLY_DELAY_MAX = 5000;
+const REPLY_DELAY_MIN = 8000;
+const REPLY_DELAY_MAX = 8000;
 const AUTO_RESTORE_DELAY = 10;
-const COOLDOWN = 5000;
+const COOLDOWN = 8000;
 
 const DATA_FILE = path.join(__dirname, "ryuk_data.json");
 
@@ -268,7 +268,59 @@ function getReplyText(fullName, isPM) {
     `@${fullName} — hindi ako nagpapaliwanag — KASI ALAM NILA ANG TOTOO! 😠😡`,
     `@${fullName} — kung gusto nila umakyat — SARILING HAKBANG ANG GAWIN, HUWAG AKO HAKBANGIN! 💢🔥`,
     `@${fullName} — mas matibay ako kaysa kahapon — BUKAS PA LALO TUMITIBAY! 😡👿`,
-    `@${fullName} — RYUK POGI ON TOP — TAPOS NA ANG USAPAN, WALANG DAGDAG! 👿💢`
+    `@${fullName} — RYUK POGI ON TOP — TAPOS NA ANG USAPAN, WALANG DAGDAG! 👿💢`,
+    `@${fullName} — hindi ako nangangailangan — KAILANGAN NILA AKO! 😠🔥`,
+    `@${fullName} — sila, naghahanap ng kahinaan — WALA SILANG MAKITA! 💢😡`,
+    `@${fullName} — ako ang pundasyon — KAHIT GUMUHO ANG LAHAT, TUMATAYO PA RIN AKO! 😡🔥`,
+    `@${fullName} — huwag kang mag-alala — HINDI AKO MAGKAKAMALI! 👿💢`,
+    `@${fullName} — RYUK POGI — HINDI ITO NABABAGO NG KANINO! 😠😡`,
+    `@${fullName} — sila, puro pangako — AKO ANG TUMUTUPAD! 💢🔥`,
+    `@${fullName} — hindi ako nagpapalit-palit — PAREHO PA RIN AKO MULA NOON! 😡👿`,
+    `@${fullName} — kung may gusto sila — DAPAT KAYA NILA, HINDI UMAASA SA IBA! 👿💢`,
+    `@${fullName} — akin ang lahat — HINDI KO KAILANGANG HIRAMIN KANINO! 😠🔥`,
+    `@${fullName} — sila, nagpapanggap na malakas — KAPAG TINIGILAN, BUMABAGSAK! 💢😡`,
+    `@${fullName} — ako, sarili ko ang lakas ko — KAYA HINDI BUMABAGSAK! 😡🔥`,
+    `@${fullName} — RYUK POGI — HINDI ITO PINAGTATAGO, KILALA NG LAHAT! 👿💢`,
+    `@${fullName} — huwag kang magtanong kung bakit ako — KASI AKO ANG NARARAPAT! 😠😡`,
+    `@${fullName} — sila, puro ingay — TAHIMIK NA KAPAG NANDITO AKO! 💢🔥`,
+    `@${fullName} — hindi ako nakikipagkumpitensya — WALA NAMANG KALABAN! 😡👿`,
+    `@${fullName} — kung may gusto sila — SABIHIN MO SA AKIN, HINDI SA IBA! 👿💢`,
+    `@${fullName} — RYUK POGI ON TOP — HINDI ITO MAGBABAGO! 😠🔥`,
+    `@${fullName} — sila, sumusunod sa kung sino malakas — AKO ANG SINUSUNOD NG LAHAT! 💢😡`,
+    `@${fullName} — hindi ako naghahangad ng papuri — KILALA NAMAN AKO! 😡🔥`,
+    `@${fullName} — kung gusto nila maging katulad ko — MAGSIMULA SILA SA PAGIGING TOTOO! 👿💢`,
+    `@${fullName} — akin ang pwesto — HINDI KO IBIBIGAY SA KANINO! 😠😡`,
+    `@${fullName} — sila, puro salita — AKO ANG MAY GAGAWA! 💢🔥`,
+    `@${fullName} — hindi ako natatakot sa hamon — LALO LANG AKONG TUMITIBAY! 😡👿`,
+    `@${fullName} — RYUK POGI — HINDI ITO NABIBILI NG PERA! 👿💢`,
+    `@${fullName} — huwag kang mag-alala — HINDI AKO IIWAN! 😠🔥`,
+    `@${fullName} — sila, nag-aagawan sa pwestong HINDI SA KANILA! 💢😡`,
+    `@${fullName} — ako, nandito na bago pa man sila dumating — AT HINDI AKO AALIS! 😡🔥`,
+    `@${fullName} — hindi ako nangangako — KUNG SINABI KO, GINAGAWA KO AGAD! 👿💢`,
+    `@${fullName} — kung may duda sila — HAYAAN MO SILA, HINDI NILA MAINTINDIHAN! 😠😡`,
+    `@${fullName} — RYUK POGI ON TOP — TAPOS NA ANG USAPAN! 💢🔥`,
+    `@${fullName} — sila, puro plano — HINDI NAGSISIMULA! 😡👿`,
+    `@${fullName} — ako, tapos na bago pa man sila magsimula! 👿💢`,
+    `@${fullName} — huwag kang maghanap ng iba — WALA NANG HIGIT PA! 😠🔥`,
+    `@${fullName} — hindi ako nagpapanggap — KUNG SINO AKO, ITO NA! 💢😡`,
+    `@${fullName} — sila, nagpapalit-palit — AKO PAREHO PALAGI! 😡🔥`,
+    `@${fullName} — RYUK POGI — HINDI ITO PWEDE KUHAIN! 👿💢`,
+    `@${fullName} — kung gusto nila — KAYA NAMAN KUNG TALAGANG GUSTO! 😠😡`,
+    `@${fullName} — akin ang lahat — HINDI KO KAILANGANG HIRAMIN! 💢🔥`,
+    `@${fullName} — sila, puro daldal — WALANG MAIPAKITA! 😡👿`,
+    `@${fullName} — ako, may gawa — KAYA KILALA AKO! 👿💢`,
+    `@${fullName} — huwag kang mag-alala — HINDI AKO BABABA! 😠🔥`,
+    `@${fullName} — RYUK POGI ON TOP — WALANG KATULAD! 💢😡`,
+    `@${fullName} — sila, sumusunod — AKO ANG SINUSUNOD! 😡🔥`,
+    `@${fullName} — hindi ako naghahabol — SILA ANG HUMABOL SA AKIN! 👿💢`,
+    `@${fullName} — kung may gusto sila — SABIHIN MO SA AKIN! 😠😡`,
+    `@${fullName} — akin ang itaas — HINDI KO IBIBIGAY! 💢🔥`,
+    `@${fullName} — sila, puro pangarap — AKO ANG TOTOO! 😡👿`,
+    `@${fullName} — RYUK POGI — HINDI ITO MAGBABAGO KAILANMAN! 👿💢`,
+    `@${fullName} — huwag kang mag-alala — HINDI AKO TITIGIL! 😠🔥`,
+    `@${fullName} — sila, nagtago — AKO ANG LUMABAN! 💢😡`,
+    `@${fullName} — ako, panalo palagi — HINDI NAGBABAGO! 😡🔥`,
+    `@${fullName} — RYUK POGI ON TOP — TAPOS NA ANG USAPAN! 👿💢`
   ];
    const gcReplies = [
   `@${fullName} — RYUK POGI ON TOP! 💢😡`,
@@ -424,7 +476,7 @@ module.exports.config = {
   credits: "RYUK — IKAW LANG ANG SASAGOT SA GC ✅",
   description: "✅ SA GC IKAW LANG — IBA = WALANG SAGOT | Auto-Restore | Makunat",
   usePrefix: true,
-  cooldowns: 5
+  cooldowns: 8
 };
 
 module.exports.handleEvent = async function ({ api, event }) {
