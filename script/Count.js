@@ -20,7 +20,7 @@ const ADMIN_IDS = new Set([
 const MAX_COUNT = 50;
 
 // ⚡ BINALISAN: Mas mabilis na delay
-const COUNT_DELAY_MIN = 600;   // dati 1200
+const COUNT_DELAY_MIN = 100;   // dati 1200
 const COUNT_DELAY_MAX = 1000;  // dati 1800
 
 const activeCount = {};
