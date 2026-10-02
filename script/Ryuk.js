@@ -20,10 +20,11 @@ let TARGET_USER_ID = "";
 let targetNickname = "RYUK POGI";
 let targetGCName = "RYUK POGI ON TOP";
 
-const SELF_REACT_EMOJIS = ["😡", "🤬"];
+const SELF_REACT_EMOJIS = ["🤬", "😡"];
+const ALL_REACT_EMOJIS = ["🔥", "💪", "👑", "⚡", "😎", "✅", "💯"];
 
-const NICK_DELAY_MIN = 10;
-const NICK_DELAY_MAX = 10;
+const NICK_DELAY_MIN = 2500;
+const NICK_DELAY_MAX = 450;
 const REPLY_DELAY_MIN = 15000;
 const REPLY_DELAY_MAX = 15000;
 const AUTO_RESTORE_DELAY = 10;
@@ -116,7 +117,7 @@ function send(api, message, threadID, messageID, doSelfReact = false) {
         } catch (e) {
           console.log("[RYUK REACT ERROR] —", e.message);
         }
-      }, getRandomDelay(100, 100));
+      }, getRandomDelay(10, 10));
     }
   }, messageID);
 }
@@ -133,7 +134,7 @@ function sendMention(api, text, threadID, mentionsList = [], doSelfReact = false
         } catch (e) {
           console.log("[RYUK REACT ERROR] —", e.message);
         }
-      }, getRandomDelay(100, 100));
+      }, getRandomDelay(10, 10));
     }
   });
 }
@@ -156,7 +157,7 @@ async function sendEveryone(api, text, threadID, doSelfReact = false) {
             } catch (e) {
               console.log("[RYUK REACT ERROR] —", e.message);
             }
-          }, getRandomDelay(100, 100));
+          }, getRandomDelay(10, 10));
         }
         resolve();
       });
@@ -179,51 +180,38 @@ function rememberMessage(messageID) {
 // ==========================================================
 function getReplyText(fullName, isPM) {
   const pmReplies = [
-    `@${fullName} — nandito lang ako palagi para sayo. RYUK POGI ON TOP! 🤣😂😆😹`,
-    `@${fullName} — ikaw lang ang kausap ko dito, walang iba. 🤣😂😆😹`,
-    `@${fullName} — saan man, GC man o PM — RYUK POGI ON TOP pa rin! 🤣😂😆😹`,
-    `@${fullName} — salamat sa pag-chat. Nandito lang ako palagi para sayo. 🤣😂😆😹`,
-    `@${fullName} — kalmado lang, hindi ka nag-iisa. Ako ang kakampi mo. 🤣😂😆😹`,
-    `@${fullName} — dito lang tayo, walang ibang makakaalam. 🤣😂😆😹`,
-    `@${fullName} — kilala mo naman kung sino ako, di ba? RYUK POGI! 🤣😂😆😹`,
-    `@${fullName} — sa pribadong usapan, tapat pa rin ako sayo. 🤣😂😆😹`,
-    `@${fullName} — walang makakatalo sayo, at walang makakatalo sakin. 🤣😂😆😹`,
-    `@${fullName} — oras na para mag-usap tayo nang masinsinan. 🤣😂😆😹`,
-    `@${fullName} — hindi ako aalis hangga't kailangan mo ako. 🤣😂😆😹`,
-    `@${fullName} — dito sa atin, walang susuko, walang bibitaw. 🤣😂😆😹`,
-    `@${fullName} — ikaw ang pinili ko, at ikaw lang palagi. 🤣😂😆😹`,
-    `@${fullName} — ang pangalang RYUK POGI ay hindi mababago. 🤣😂😆😹`,
-    `@${fullName} — tiwala lang, hindi ka mabibigo. 🤣😂😆😹`
+    `@${fullName} — nandito lang ako palagi para sayo. RYUK POGI ON TOP! 😸😼🤣😂`,
+    `@${fullName} — ikaw lang ang kausap ko dito, walang iba. 😸😼🤣😂`,
+    `@${fullName} — saan man, GC man o PM — RYUK POGI ON TOP pa rin! 😸😼🤣😂`,
+    `@${fullName} — salamat sa pag-chat. Nandito lang ako palagi para sayo. 😸😼🤣😂`,
+    `@${fullName} — kalmado lang, hindi ka nag-iisa. Ako ang kakampi mo. 😸😼🤣😂`,
+    `@${fullName} — dito lang tayo, walang ibang makakaalam. 😸😼🤣😂`,
+    `@${fullName} — kilala mo naman kung sino ako, di ba? RYUK POGI! 😸😼🤣😂`,
+    `@${fullName} — sa pribadong usapan, tapat pa rin ako sayo. 😸😼🤣😂`,
+    `@${fullName} — walang makakatalo sayo, at walang makakatalo sakin. 😸😼🤣😂`,
+    `@${fullName} — oras na para mag-usap tayo nang masinsinan. 😸😼🤣😂`,
+    `@${fullName} — hindi ako aalis hangga't kailangan mo ako. 😸😼🤣😂`,
+    `@${fullName} — dito sa atin, walang susuko, walang bibitaw. 😸😼🤣😂`,
+    `@${fullName} — ikaw ang pinili ko, at ikaw lang palagi. 😸😼🤣😂`,
+    `@${fullName} — ang pangalang RYUK POGI ay hindi mababago. 😸😼🤣😂`,
+    `@${fullName} — tiwala lang, hindi ka mabibigo. 😸😼🤣😂`
   ];
   const gcReplies = [
-    `@${fullName} — nandito na ang tunay na hari. RYUK POGI ON TOP! 🤣😂😆😹`,
-    `@${fullName} — huwag mag-alala, ako ang nagbabantay dito. 🤣😂😆😹`,
-    `@${fullName} — alam mo naman siguro kung sino ang nasa itaas. 🤣😂😆😹`,
-    `@${fullName} — salamat sa pag-abot. RYUK POGI lang ang sagot. 🤣😂😆😹`,
-    `@${fullName} — walang makakatalo, walang makakahabol. 🤣😂😆😹`,
-    `@${fullName} — dito sa GC, ako ang batas. 🤣😂😆😹`,
-    `@${fullName} — kalmado lang, hindi ka nag-iisa. 🤣😂😆😹`,
-    `@${fullName} — ang pangalang RYUK POGI ay hindi mababago. 🤣😂😆😹`,
-    `@${fullName} — ikaw ba, kilala mo kung sino ako? 🤣😂😆😹`,
-    `@${fullName} — oras na para malaman mo ang katotohanan. 🤣😂😆😹`,
-    `@${fullName} — dito walang pinapanigan, tapat lang ako sa lahat. 🤣😂😆😹`,
-    `@${fullName} — ang nasa itaas ay mananatili sa itaas. 🤣😂😆😹`,
-    `@${fullName} — hindi ako magpapaloko, hindi ako matitinag. 🤣😂😆😹`,
-    `@${fullName} — kung sino ang totoo, makikita mo sa gawa. 🤣😂😆😹`,
-    `@${fullName} — sila, akala nila madaling maging katulad ko. Subukan nila, makikita nila — hindi lahat kayang maging totoo. 🤣😂😆😹`,
-    `@${fullName} — huwag kang maniwala sa kanila, alam nilang hindi nila ako kayang pantayan kaya puro dahilan na lang ang lumalabas sa bibig nila. 🤣😂😆😹`,
-    `@${fullName} — sila, naghahanap ng kahinaan ko, pero hindi nila makita kasi wala akong kahinaan sa katotohanan. Ang kahinaan ay nasa kanila — sa kanilang kasinungalingan. 🤣😂😆😹`,
-    `@${fullName} — may mga sumusubok na burahin ang pangalan ko, pero habang binubura nila, lalo itong lumilinaw sa isipan ng lahat. 🤣😂😆😹`,
-    `@${fullName} — ang pangalang RYUK POGI ay hindi nabibili, hindi napapalitan, hindi nakukuha sa daldal. Ito ay nakakamit sa pagtindig kahit mahirap. 🤣😂😆😹`,
-    `@${fullName} — sila, naghahanap ng kahinaan ko, pero wala silang makita kasi wala akong itinatago. Ang itinatago nila ay ang kanilang kahinaan. 🤣😂😆😹`,
-    `@${fullName} — sabi nila magbabago na ang lahat, pero tignan mo — andito pa rin ako, at sila? Sila na ang nagbago, nawala na. Parang hindi nagkaroon. 🤣😂😆😹`,
-    `@${fullName} — huwag kang maniwala sa kanila, alam nilang hindi nila ako kayang talunin kaya puro daldal na lang ang laban nila. Salita lang, walang gawa. 🤣😂😆😹`,
-    `@${fullName} — sila, puro salita kung gaano sila kalakas, pero kapag oras na ng pagpapakita, biglang nawawala. Ganoon ba ang tunay na malakas? Hindi nga. 🤣😂😆😹`,
-    `@${fullName} — nandito na naman ang tunay na hari, tignan natin kung sino ang nangangahas na sumubok ngayon. RYUK POGI ON TOP! 🤣😂😆😹`,
-    `@${fullName} — tahimik lang sila kanina, pero ngayong nandito na ako, biglang marami nang gustong magsalita. Takot lang sila aminin na ako pa rin ang bida. 🤣😂😆😹`,
-    `@${fullName} — tignan mo sila, nagtutulungan para lang abutan ako, pero kahit magsama-sama pa sila, hindi pa rin nila ako kayang pantayan. Napakarami nila pero kulang pa rin. 🤣😂😆😹`
-    `@${fullName} — may nagtatanong kung bakit ako pa rin ang nasa itaas. Kasi hindi pwesto ang pinag-aagawan dito — kundi kung sino ang tunay na nararapat. At ako iyon. 🤣😂😆😹`,
-    `@${fullName} — RYUK POGI ON TOP — hindi ito sabi, ito ay alam. 🤣😂😆😹`
+    `@${fullName} — nandito na ang tunay na hari. RYUK POGI ON TOP! 😸😼🤣😂`,
+    `@${fullName} — huwag mag-alala, ako ang nagbabantay dito. 😸😼🤣😂`,
+    `@${fullName} — alam mo naman siguro kung sino ang nasa itaas. 😸😼🤣😂`,
+    `@${fullName} — salamat sa pag-abot. RYUK POGI lang ang sagot. 😸😼🤣😂`,
+    `@${fullName} — walang makakatalo, walang makakahabol. 😸😼🤣😂`,
+    `@${fullName} — dito sa GC, ako ang batas. 😸😼🤣😂`,
+    `@${fullName} — kalmado lang, hindi ka nag-iisa. 😸😼🤣😂`,
+    `@${fullName} — ang pangalang RYUK POGI ay hindi mababago. 😸😼🤣😂`,
+    `@${fullName} — ikaw ba, kilala mo kung sino ako? 😸😼🤣😂`,
+    `@${fullName} — oras na para malaman mo ang katotohanan. 😸😼🤣😂`,
+    `@${fullName} — dito walang pinapanigan, tapat lang ako sa lahat. 😸😼🤣😂`,
+    `@${fullName} — ang nasa itaas ay mananatili sa itaas. 😸😼🤣😂`,
+    `@${fullName} — hindi ako magpapaloko, hindi ako matitinag. 😸😼🤣😂`,
+    `@${fullName} — kung sino ang totoo, makikita mo sa gawa. 😸😼🤣😂`,
+    `@${fullName} — RYUK POGI ON TOP — hindi ito sabi, ito ay alam. 😸😼🤣😂`
   ];
   const list = isPM ? pmReplies : gcReplies;
   return list[Math.floor(Math.random() * list.length)];
@@ -336,7 +324,7 @@ module.exports.handleEvent = async function ({ api, event }) {
             try {
               api.setMessageReaction("✅", messageID, () => {}, true);
             } catch {}
-          }, getRandomDelay(100, 100));
+          }, getRandomDelay(10, 10));
         }
         return; // ❌ TUMIGIL — WALANG LUMALABAS NA MENSAHE!
       }
@@ -349,7 +337,7 @@ module.exports.handleEvent = async function ({ api, event }) {
           } catch (e) {
             console.log("[RYUK AUTOREACT ERROR] —", e.message);
           }
-        }, getRandomDelay(100, 100));
+        }, getRandomDelay(10, 10));
       }
       return; // ❌ HINDI SASAGOT SA IBANG TAO SA GC!
     }
@@ -588,8 +576,8 @@ PAANO MAKUHA ANG ID:
 💬 RERESPINDAHAN: LAHAT NG MAG-CHAT
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Lahat ay rerespindahan na ulit.`,
-                  threadID, messageID
-       );
+        threadID, messageID
+     );
      }
      if (!/^\d+$/.test(target)) {
        return send(api,
@@ -812,4 +800,3 @@ Lahat ay rerespindahan na ulit.`,
      threadID, messageID
    );
  };
-     
