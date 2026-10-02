@@ -316,12 +316,13 @@ function getReplyText(fullName, isPM) {
     `@${fullName} — kung may gusto sila — SABIHIN MO SA AKIN! 😠😡`,
     `@${fullName} — akin ang itaas — HINDI KO IBIBIGAY! 💢🔥`,
     `@${fullName} — sila, puro pangarap — AKO ANG TOTOO! 😡👿`,
-    `@${fullName} — RYUK POGI — HINDI ITO MAGBABAGO KAILANMAN! 👿💢`,
+    `@${fullName} — RYUK POGI ON TOP — HINDI ITO MAGBABAGO KAILANMAN! 👿💢`,
     `@${fullName} — huwag kang mag-alala — HINDI AKO TITIGIL! 😠🔥`,
     `@${fullName} — sila, nagtago — AKO ANG LUMABAN! 💢😡`,
     `@${fullName} — ako, panalo palagi — HINDI NAGBABAGO! 😡🔥`,
     `@${fullName} — RYUK POGI ON TOP — TAPOS NA ANG USAPAN! 👿💢`
   ];
+
    const gcReplies = [
   `@${fullName} — RYUK POGI ON TOP! 💢😡`,
   `@${fullName} — dito, ako ang hari. 👿😡`,
