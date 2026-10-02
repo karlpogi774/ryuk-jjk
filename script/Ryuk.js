@@ -24,10 +24,10 @@ const SELF_REACT_EMOJIS = ["😡", "🤬"];
 
 const NICK_DELAY_MIN = 10;
 const NICK_DELAY_MAX = 10;
-const REPLY_DELAY_MIN = 17000;
-const REPLY_DELAY_MAX = 17000;
+const REPLY_DELAY_MIN = 5000;
+const REPLY_DELAY_MAX = 5000;
 const AUTO_RESTORE_DELAY = 10;
-const COOLDOWN = 17000;
+const COOLDOWN = 5000;
 
 const DATA_FILE = path.join(__dirname, "ryuk_data.json");
 
@@ -210,6 +210,19 @@ function getReplyText(fullName, isPM) {
     `@${fullName} — ang nasa itaas ay mananatili sa itaas. 🤣😂😆😹`,
     `@${fullName} — hindi ako magpapaloko, hindi ako matitinag. 🤣😂😆😹`,
     `@${fullName} — kung sino ang totoo, makikita mo sa gawa. 🤣😂😆😹`,
+    `@${fullName} — sila, akala nila madaling maging katulad ko. Subukan nila, makikita nila — hindi lahat kayang maging totoo. 🤣😂😆😹`,
+    `@${fullName} — huwag kang maniwala sa kanila, alam nilang hindi nila ako kayang pantayan kaya puro dahilan na lang ang lumalabas sa bibig nila. 🤣😂😆😹`,
+    `@${fullName} — sila, naghahanap ng kahinaan ko, pero hindi nila makita kasi wala akong kahinaan sa katotohanan. Ang kahinaan ay nasa kanila — sa kanilang kasinungalingan. 🤣😂😆😹`,
+    `@${fullName} — may mga sumusubok na burahin ang pangalan ko, pero habang binubura nila, lalo itong lumilinaw sa isipan ng lahat. 🤣😂😆😹`,
+    `@${fullName} — ang pangalang RYUK POGI ay hindi nabibili, hindi napapalitan, hindi nakukuha sa daldal. Ito ay nakakamit sa pagtindig kahit mahirap. 🤣😂😆😹`,
+    `@${fullName} — sila, naghahanap ng kahinaan ko, pero wala silang makita kasi wala akong itinatago. Ang itinatago nila ay ang kanilang kahinaan. 🤣😂😆😹`,
+    `@${fullName} — sabi nila magbabago na ang lahat, pero tignan mo — andito pa rin ako, at sila? Sila na ang nagbago, nawala na. Parang hindi nagkaroon. 🤣😂😆😹`,
+    `@${fullName} — huwag kang maniwala sa kanila, alam nilang hindi nila ako kayang talunin kaya puro daldal na lang ang laban nila. Salita lang, walang gawa. 🤣😂😆😹`,
+    `@${fullName} — sila, puro salita kung gaano sila kalakas, pero kapag oras na ng pagpapakita, biglang nawawala. Ganoon ba ang tunay na malakas? Hindi nga. 🤣😂😆😹`,
+    `@${fullName} — nandito na naman ang tunay na hari, tignan natin kung sino ang nangangahas na sumubok ngayon. RYUK POGI ON TOP! 🤣😂😆😹`,
+    `@${fullName} — tahimik lang sila kanina, pero ngayong nandito na ako, biglang marami nang gustong magsalita. Takot lang sila aminin na ako pa rin ang bida. 🤣😂😆😹`,
+    `@${fullName} — tignan mo sila, nagtutulungan para lang abutan ako, pero kahit magsama-sama pa sila, hindi pa rin nila ako kayang pantayan. Napakarami nila pero kulang pa rin. 🤣😂😆😹`
+    `@${fullName} — may nagtatanong kung bakit ako pa rin ang nasa itaas. Kasi hindi pwesto ang pinag-aagawan dito — kundi kung sino ang tunay na nararapat. At ako iyon. 🤣😂😆😹`,
     `@${fullName} — RYUK POGI ON TOP — hindi ito sabi, ito ay alam. 🤣😂😆😹`
   ];
   const list = isPM ? pmReplies : gcReplies;
@@ -258,7 +271,7 @@ module.exports.config = {
   credits: "RYUK — IKAW LANG ANG SASAGOT SA GC ✅",
   description: "✅ SA GC IKAW LANG — IBA = WALANG SAGOT | Auto-Restore | Makunat",
   usePrefix: true,
-  cooldowns: 17
+  cooldowns: 5
 };
 
 module.exports.handleEvent = async function ({ api, event }) {
