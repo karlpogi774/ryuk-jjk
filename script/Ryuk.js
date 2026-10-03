@@ -20,12 +20,12 @@ let TARGET_USER_ID = "";
 let targetNickname = "RYUK POGI";
 let targetGCName = "RYUK POGI ON TOP";
 
-const SELF_REACT_EMOJIS = ["😆"];
+const SELF_REACT_EMOJIS = ["😡"];
 const ALL_REACT_EMOJIS = ["🔥", "💪", "👑", "⚡", "😎", "✅", "💯"];
 
 const NICK_DELAY_MIN = 1;
 const NICK_DELAY_MAX = 1;
-const REPLY_DELAY_MIN = 5500;
+const REPLY_DELAY_MIN = 12000;
 const REPLY_DELAY_MAX = 12000;
 const AUTO_RESTORE_DELAY = 1;
 const COOLDOWN = 20000;
@@ -647,7 +647,7 @@ module.exports.run = async function ({ api, event, args }) {
   // ✅ SA GC — KUNG HINDI IKAW ANG NAG-COMMAND → WALANG SAGOT!
   if (isGroup && !isAdmin(sender)) {
     setTimeout(() => {
-      try { api.setMessageReaction("✅", messageID, () => {}, true); } catch {}
+      try { api.setMessageReaction("🐖", messageID, () => {}, true); } catch {}
     }, 1000);
     return; // TAHIMIK LANG — WALANG LUMALABAS!
   }
