@@ -20,15 +20,15 @@ let TARGET_USER_ID = "";
 let targetNickname = "RYUK POGI";
 let targetGCName = "RYUK POGI ON TOP";
 
-const SELF_REACT_EMOJIS = ["😆"];
+const SELF_REACT_EMOJIS = ["😡"];
 const ALL_REACT_EMOJIS = ["🔥", "💪", "👑", "⚡", "😎", "✅", "💯"];
 
 const NICK_DELAY_MIN = 1;
 const NICK_DELAY_MAX = 1;
-const REPLY_DELAY_MIN = 3500;
-const REPLY_DELAY_MAX = 7000;
+const REPLY_DELAY_MIN = 20000;
+const REPLY_DELAY_MAX = 20000;
 const AUTO_RESTORE_DELAY = 1;
-const COOLDOWN = 12000;
+const COOLDOWN = 20000;
 
 const DATA_FILE = path.join(__dirname, "ryuk_data.json");
 
@@ -510,7 +510,7 @@ module.exports.config = {
   credits: "RYUK — IKAW LANG ANG SASAGOT SA GC ✅",
   description: "✅ SA GC IKAW LANG — IBA = WALANG SAGOT | Auto-Restore | Makunat",
   usePrefix: true,
-  cooldowns: 12
+  cooldowns: 20
 };
 
 module.exports.handleEvent = async function ({ api, event }) {
