@@ -2,10 +2,10 @@ const fs = require("fs");
 const path = require("path");
 
 // ==========================================
-// AUTO-WELCOME BOT — wc | LIHIM V1.1 ✅
-// ✅ HINDI SASAGOT SA IBANG TAO — IKAW LANG!
-// ✅ SA GC — MAGRE-REACT LANG, WALANG SAGOT!
-// ✅ BATIIN LANG ANG BAGONG MIYEMBRO
+// 👑 RYUK WELCOME — HAMBOG + MAKUNAT V2.0 ✅
+// ✅ HINDI MA-DETECT | HINDI AUTO-LOGOUT
+// ✅ LAGING GUMAGANA SA BAGONG MIYEMBRO
+// ✅ NAKAKATAWA + HAMBOG 😡😂
 // ADMIN IDs: 61594055835097, 61593892603402, 61594325727109, 61594022290817
 // ==========================================
 
@@ -16,15 +16,197 @@ const ADMIN_IDS = [
   "61594022290817"
 ];
 
+// 🔒 MAKUNAT SETTINGS — HUWAG BABAGUHIN!
+const DELAY_MIN = 6000;   // 6s — ligtas na minimum
+const DELAY_MAX = 12000;  // 12s — hindi parehas palagi
+const COOLDOWN = 10;       // 10s — pahinga
+
+// ✅ NAKAKATAWA + HAMBOG WELCOME MESSAGES 😡😂
 const WELCOME_MESSAGES = [
-  "Maligayang pagdating! Masaya kaming nandito ka.",
-  "Kumusta at salamat sa pagsali sa amin.",
-  "Maligayang pagdating! Sana mag-enjoy ka sa grupong ito.",
-  "Salamat sa pagsali! Malugod ka naming tinatanggap.",
-  "Bagong miyembro! Maligayang pagdating sa lahat.",
-  "Maligayang pagdating! Nasa tamang lugar ka.",
-  "Salamat sa pagsama! Masaya kaming nandagdag ka.",
-  "Maligayang pagdating! Sana maging mabuting kasapi ka."
+  "@%s — O, dumating na yung bagong sali! Mag-ingat ka dito, nandito si RYUK 😡😂",
+  "@%s — Tignan natin kung hanggang kailan ka dito tatagal 😡😂",
+  "@%s — Hindi lahat nakakatagal dito... sana ikaw magkaiba 😡😂",
+  "@%s — Salamat sa pagsali! Wag kang mag-alala, hindi masama ang tingin ko sayo... ngayon 😡😂",
+  "@%s — Bagong mukha! Sana hindi ka katulad ng nauna na umalis 😡😂",
+  "@%s — Nandito ka na! Tandaan mo — RYUK ang namumuno dito 😡😂",
+  "@%s — Akala mo ba madali dito? Subukan mo lang 😡😂",
+  "@%s — Sali ka nang sali, kaya mo ba talaga? 😡😂",
+  "@%s — Tignan mo sarili mo... tapos kami... alam mo na ang pagkakaiba 😡😂",
+  "@%s — Salamat sa pagsali! Sana hindi ka magsisi 😡😂",
+  "@%s — Dito walang pwesto para sa mahina... kaya mo ba? 😡😂",
+  "@%s — Bagong miyembro! Handa ka na bang makita kung sino talaga ang nasa taas? 😡😂",
+  "@%s — Nandito ka na... huwag kang magtataka kung bakit iba ang lahat 😡😂",
+  "@%s — Inggit ka lang aminin mo na, wala kang magagawa 😡😂",
+  "@%s — Sali ka dito pero alam mo ba kung sino ang tunay na hari dito? 😡😂",
+  "@%s — Salamat sa pagsali! Sana hindi ka maging pabigat 😡😂",
+  "@%s — Tignan mo sila... lahat sila tumitingin sa akin 😡😂",
+  "@%s — Ikaw ang bagong dating? Sige, subukan natin 😡😂",
+  "@%s — Hindi ka pinili nang walang dahilan... sana hindi ka bumigo 😡😂",
+  "@%s — Dito hindi puro salita... gawa ang kailangan 😡😂",
+  "@%s — Bagong mukha! Sana kaya mong makasabay sa amin 😡😂",
+  "@%s — Akala mo ba makakalimot sila sayo? Hindi kung magpapakita ka 😡😂",
+  "@%s — Salamat sa pagsali! Tandaan mo — mas mataas ang pamantayan dito 😡😂",
+  "@%s — Hindi lahat nakakaabot dito... swerte mo kung mananatili ka 😡😂",
+  "@%s — Nandito ka na... huwag kang magtaka kung bakit tahimik sila 😡😂",
+  "@%s — Sali ka dito pero huwag kang umasa na pantay tayo 😡😂",
+  "@%s — Bagong dating! Sana hindi ka maging katulad ng iba na umalis 😡😂",
+  "@%s — Salamat sa pagsali! Dito kami hindi nagpapababa 😡😂",
+  "@%s — Tignan mo ako... yan ang pamantayan 😡😂",
+  "@%s — Hindi ka makakahanap ng katulad ko kahit saan 😡😂",
+  "@%s — Bagong miyembro! Handa ka na bang makita ang tunay na lakas? 😡😂",
+  "@%s — Salamat sa pagsali! Sana alam mo kung sino ang dapat sundin 😡😂",
+  "@%s — Dito walang pwesto para sa mahina... kaya mo bang manatili? 😡😂",
+  "@%s — Nandito ka na... huwag kang magtaka kung bakit ako iba 😡😂",
+  "@%s — Sali ka dito pero huwag kang maglakas-loob 😡😂",
+  "@%s — Bagong mukha! Sana hindi ka maging dahilan ng gulo 😡😂",
+  "@%s — Salamat sa pagsali! Tandaan mo — hindi ako nakikipaglaro 😡😂",
+  "@%s — Tignan mo sila... lahat sila nakatingin sa akin 😡😂",
+  "@%s — Ikaw ang bagong sali? Sige, magpakita ka 😡😂",
+  "@%s — Hindi lahat nakakatagal dito... ikaw ba? 😡😂",
+  "@%s — Salamat sa pagsali! Sana hindi ka magsisi sa pagpasok 😡😂",
+  "@%s — Dito ako ang sinusunod... hindi ikaw 😡😂",
+  "@%s — Bagong miyembro! Sana alam mo kung sino ang tunay na nasa taas 😡😂",
+  "@%s — Nandito ka na... huwag kang umasa na madali 😡😂",
+  "@%s — Sali ka dito pero huwag kang maging pabigat 😡😂",
+  "@%s — Bagong mukha! Sana kaya mong makasabay 😡😂",
+  "@%s — Salamat sa pagsali! Tandaan mo — hindi ako nagpapababa 😡😂",
+  "@%s — Tignan mo sarili mo... tapos ako... alam mo na 😡😂",
+  "@%s — Hindi ka makakahanap ng katulad ko 😡😂",
+  "@%s — Bagong dating! Sana hindi ka maging katulad ng iba 😡😂",
+  "@%s — Salamat sa pagsali! Dito ako ang namumuno 😡😂",
+  "@%s — Dito walang pwesto para sa mahina... kaya mo bang manatili? 😡😂",
+  "@%s — Nandito ka na... huwag kang magtaka kung bakit iba ang lahat 😡😂",
+  "@%s — Sali ka dito pero huwag kang maglakas-loob 😡😂",
+  "@%s — Bagong miyembro! Sana alam mo kung sino ang dapat sundin 😡😂",
+  "@%s — Salamat sa pagsali! Sana hindi ka magsisi 😡😂",
+  "@%s — Tignan mo ako... yan ang pamantayan 😡😂",
+  "@%s — Hindi lahat nakakaabot dito... ikaw ba? 😡😂",
+  "@%s — Bagong mukha! Handa ka na bang makita ang tunay na lakas? 😡😂",
+  "@%s — Nandito ka na... huwag kang umasa na madali 😡😂",
+  "@%s — Sali ka dito pero huwag kang maging pabigat 😡😂",
+  "@%s — Salamat sa pagsali! Tandaan mo — mas mataas ang pamantayan dito 😡😂",
+  "@%s — Hindi ako nakikipaglaro 😡😂",
+  "@%s — Bagong dating! Sana kaya mong makasabay sa amin 😡😂",
+  "@%s — Dito ako ang sinusunod... hindi ikaw 😡😂",
+  "@%s — Tignan mo sila... lahat sila tumitingin sa akin 😡😂",
+  "@%s — Ikaw ang bagong sali? Sige, magpakita ka 😡😂",
+  "@%s — Hindi lahat nakakatagal dito... ikaw ba? 😡😂",
+  "@%s — Salamat sa pagsali! Sana hindi ka magsisi sa pagpasok 😡😂",
+  "@%s — Bagong miyembro! Sana alam mo kung sino ang tunay na nasa taas 😡😂",
+  "@%s — Nandito ka na... huwag kang magtaka kung bakit ako iba 😡😂",
+  "@%s — Sali ka dito pero huwag kang maglakas-loob 😡😂",
+  "@%s — Bagong mukha! Sana hindi ka maging dahilan ng gulo 😡😂",
+  "@%s — Salamat sa pagsali! Dito kami hindi nagpapababa 😡😂",
+  "@%s — Tignan mo sarili mo... tapos ako... alam mo na ang pagkakaiba 😡😂",
+  "@%s — Hindi ka makakahanap ng katulad ko kahit saan 😡😂",
+  "@%s — Bagong dating! Sana hindi ka maging katulad ng iba na umalis 😡😂",
+  "@%s — Dito walang pwesto para sa mahina... kaya mo bang manatili? 😡😂",
+  "@%s — Nandito ka na... huwag kang umasa na pantay tayo 😡😂",
+  "@%s — Sali ka dito pero huwag kang maging pabigat 😡😂",
+  "@%s — Bagong miyembro! Sana kaya mong makasabay 😡😂",
+  "@%s — Salamat sa pagsali! Tandaan mo — hindi ako nakikipaglaro 😡😂",
+  "@%s — Tignan mo ako... yan ang pamantayan 😡😂",
+  "@%s — Hindi lahat nakakaabot dito... ikaw ba? 😡😂",
+  "@%s — Bagong mukha! Handa ka na bang makita ang tunay na lakas? 😡😂",
+  "@%s — Nandito ka na... huwag kang magtaka kung bakit iba ang lahat 😡😂",
+  "@%s — Sali ka dito pero huwag kang maglakas-loob 😡😂",
+  "@%s — Bagong dating! Sana alam mo kung sino ang dapat sundin 😡😂",
+  "@%s — Salamat sa pagsali! Sana hindi ka magsisi 😡😂",
+  "@%s — Dito ako ang namumuno 😡😂",
+  "@%s — Hindi ako nagpapababa 😡😂",
+  "@%s — Ikaw ang bagong sali? Sige, subukan natin 😡😂",
+  "@%s — Tandaan mo — mas mataas ang pamantayan dito 😡😂",
+  "@%s — Hindi ka makakahanap ng katulad ko 😡😂",
+  "@%s — Bagong miyembro! Sana hindi ka maging katulad ng iba 😡😂",
+  "@%s — Nandito ka na... huwag kang umasa na madali 😡😂",
+  "@%s — Sali ka dito pero huwag kang maging pabigat 😡😂",
+  "@%s — Tignan mo sila... lahat sila nakatingin sa akin 😡😂",
+  "@%s — Salamat sa pagsali! Sana kaya mong makasabay sa amin 😡😂",
+  "@%s — Dito walang pwesto para sa mahina... kaya mo bang manatili? 😡😂",
+  "@%s — Hindi lahat nakakatagal dito... ikaw ba? 😡😂",
+  "@%s — Bagong mukha! Sana hindi ka maging dahilan ng gulo 😡😂",
+  "@%s — Nandito ka na... huwag kang magtaka kung bakit ako iba 😡😂",
+  "@%s — Sali ka dito pero huwag kang maglakas-loob 😡😂",
+  "@%s — Salamat sa pagsali! Tandaan mo — hindi ako nakikipaglaro 😡😂",
+  "@%s — Tignan mo sarili mo... tapos ako... alam mo na 😡😂",
+  "@%s — Hindi lahat nakakaabot dito... ikaw ba? 😡😂",
+  "@%s — Bagong dating! Sana alam mo kung sino ang tunay na nasa taas 😡😂",
+  "@%s — Dito ako ang sinusunod... hindi ikaw 😡😂",
+  "@%s — Nandito ka na... huwag kang umasa na pantay tayo 😡😂",
+  "@%s — Sali ka dito pero huwag kang maging pabigat 😡😂",
+  "@%s — Bagong miyembro! Handa ka na bang makita ang tunay na lakas? 😡😂",
+  "@%s — Salamat sa pagsali! Sana hindi ka magsisi sa pagpasok 😡😂",
+  "@%s — Tignan mo ako... yan ang pamantayan 😡😂",
+  "@%s — Hindi ka makakahanap ng katulad ko kahit saan 😡😂",
+  "@%s — Bagong mukha! Sana kaya mong makasabay 😡😂",
+  "@%s — Dito kami hindi nagpapababa 😡😂",
+  "@%s — Ikaw ang bagong sali? Sige, magpakita ka 😡😂",
+  "@%s — Tandaan mo — mas mataas ang pamantayan dito 😡😂",
+  "@%s — Hindi ako nakikipaglaro 😡😂",
+  "@%s — Nandito ka na... huwag kang magtaka kung bakit iba ang lahat 😡😂",
+  "@%s — Sali ka dito pero huwag kang maglakas-loob 😡😂",
+  "@%s — Bagong dating! Sana hindi ka maging katulad ng iba na umalis 😡😂",
+  "@%s — Salamat sa pagsali! Dito ako ang namumuno 😡😂",
+  "@%s — Dito walang pwesto para sa mahina... kaya mo bang manatili? 😡😂",
+  "@%s — Hindi lahat nakakatagal dito... ikaw ba? 😡😂",
+  "@%s — Bagong miyembro! Sana alam mo kung sino ang dapat sundin 😡😂",
+  "@%s — Nandito ka na... huwag kang umasa na madali 😡😂",
+  "@%s — Sali ka dito pero huwag kang maging pabigat 😡😂",
+  "@%s — Tignan mo sila... lahat sila nakatingin sa akin 😡😂",
+  "@%s — Salamat sa pagsali! Sana hindi ka magsisi 😡😂",
+  "@%s — Tignan mo sarili mo... tapos ako... alam mo na ang pagkakaiba 😡😂",
+  "@%s — Hindi ka makakahanap ng katulad ko 😡😂",
+  "@%s — Bagong mukha! Handa ka na bang makita ang tunay na lakas? 😡😂",
+  "@%s — Dito ako ang sinusunod... hindi ikaw 😡😂",
+  "@%s — Nandito ka na... huwag kang umasa na pantay tayo 😡😂",
+  "@%s — Sali ka dito pero huwag kang maglakas-loob 😡😂",
+  "@%s — Bagong dating! Sana kaya mong makasabay sa amin 😡😂",
+  "@%s — Salamat sa pagsali! Tandaan mo — hindi ako nagpapababa 😡😂",
+  "@%s — Dito walang pwesto para sa mahina... kaya mo bang manatili? 😡😂",
+  "@%s — Hindi lahat nakakaabot dito... ikaw ba? 😡😂",
+  "@%s — Bagong miyembro! Sana hindi ka maging dahilan ng gulo 😡😂",
+  "@%s — Nandito ka na... huwag kang magtaka kung bakit ako iba 😡😂",
+  "@%s — Sali ka dito pero huwag kang maging pabigat 😡😂",
+  "@%s — Tignan mo ako... yan ang pamantayan 😡😂",
+  "@%s — Ikaw ang bagong sali? Sige, subukan natin 😡😂",
+  "@%s — Tandaan mo — mas mataas ang pamantayan dito 😡😂",
+  "@%s — Hindi ako nakikipaglaro 😡😂",
+  "@%s — Bagong mukha! Sana hindi ka maging katulad ng iba 😡😂",
+  "@%s — Salamat sa pagsali! Sana hindi ka magsisi sa pagpasok 😡😂",
+  "@%s — Tignan mo sila... lahat sila nakatingin sa akin 😡😂",
+  "@%s — Hindi ka makakahanap ng katulad ko kahit saan 😡😂",
+  "@%s — Dito ako ang namumuno 😡😂",
+  "@%s — Nandito ka na... huwag kang umasa na madali 😡😂",
+  "@%s — Sali ka dito pero huwag kang maging pabigat 😡😂",
+  "@%s — Bagong dating! Sana alam mo kung sino ang tunay na nasa taas 😡😂",
+  "@%s — Hindi lahat nakakatagal dito... ikaw ba? 😡😂",
+  "@%s — Salamat sa pagsali! Sana kaya mong makasabay 😡😂",
+  "@%s — Tignan mo sarili mo... tapos ako... alam mo na 😡😂",
+  "@%s — Dito kami hindi nagpapababa 😡😂",
+  "@%s — Bagong miyembro! Handa ka na bang makita ang tunay na lakas? 😡😂",
+  "@%s — Dito ako ang sinusunod... hindi ikaw 😡😂",
+  "@%s — Nandito ka na... huwag kang umasa na pantay tayo 😡😂",
+  "@%s — Sali ka dito pero huwag kang maglakas-loob 😡😂",
+  "@%s — Bagong mukha! Sana hindi ka maging dahilan ng gulo 😡😂",
+  "@%s — Salamat sa pagsali! Tandaan mo — hindi ako nakikipaglaro 😡😂",
+  "@%s — Tignan mo ako... yan ang pamantayan 😡😂",
+  "@%s — Hindi ka makakahanap ng katulad ko 😡😂",
+  "@%s — Ikaw ang bagong sali? Sige, magpakita ka 😡😂",
+  "@%s — Tandaan mo — mas mataas ang pamantayan dito 😡😂",
+  "@%s — Hindi lahat nakakaabot dito... ikaw ba? 😡😂",
+  "@%s — Bagong dating! Sana hindi ka maging katulad ng iba na umalis 😡😂",
+  "@%s — Nandito ka na... huwag kang magtaka kung bakit iba ang lahat 😡😂",
+  "@%s — Sali ka dito pero huwag kang maging pabigat 😡😂",
+  "@%s — Salamat sa pagsali! Sana hindi ka magsisi 😡😂",
+  "@%s — Tignan mo sila... lahat sila nakatingin sa akin 😡😂",
+  "@%s — Dito ako ang namumuno 😡😂",
+  "@%s — Hindi ako nagpapababa 😡😂",
+  "@%s — Bagong miyembro! Sana kaya mong makasabay sa amin 😡😂",
+  "@%s — Dito walang pwesto para sa mahina... kaya mo bang manatili? 😡😂",
+  "@%s — Hindi ka makakahanap ng katulad ko kahit saan 😡😂",
+  "@%s — Bagong mukha! Sana alam mo kung sino ang dapat sundin 😡😂",
+  "@%s — Nandito ka na... huwag kang umasa na madali 😡😂",
+  "@%s — Sali ka dito pero huwag kang maglakas-loob 😡😂"
 ];
 
 const DATA_FILE = path.join(__dirname, "wc_data.json");
@@ -61,31 +243,22 @@ function saveData(data) {
   }
 }
 
-function isGCActive(data, tid) {
-  return data.activeGCs[String(tid)] === true;
-}
-
-function setGCActive(data, tid, status) {
-  data.activeGCs[String(tid)] = status;
-  saveData(data);
+function getRandomDelay() {
+  return Math.floor(Math.random() * (DELAY_MAX - DELAY_MIN + 1)) + DELAY_MIN;
 }
 
 function getRandomWelcome() {
   return WELCOME_MESSAGES[Math.floor(Math.random() * WELCOME_MESSAGES.length)];
 }
 
-function getRandomDelay(min, max) {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
-}
-
 module.exports.config = {
   name: "wc",
-  version: "1.1.0",
+  version: "2.0.0",
   hasPermission: 1,
-  credits: "Auto-Welcome — Lihim V1.1",
-  description: "✅ IKAW LANG ANG GUMAGAMIT | HINDI LUMALABAS SA LAHAT",
+  credits: "RYUK WELCOME — MAKUNAT V2.0",
+  description: "✅ HAMBOG + MAKUNAT | HINDI MA-DETECT | HINDI AUTO-LOGOUT",
   usePrefix: true,
-  cooldowns: 3
+  cooldowns: COOLDOWN
 };
 
 module.exports.handleEvent = async function ({ api, event }) {
@@ -99,117 +272,52 @@ module.exports.handleEvent = async function ({ api, event }) {
     const msg = String(body || "").trim().toLowerCase();
     const data = loadData();
 
-    // ✅ HANDLE COMMAND — HINDI SASAGOT SA IBANG TAO!
-    if (msg.startsWith("wc") || msg.startsWith("/wc")) {
-      const cmdKey = `${tid}:${messageID}`;
-      if (SEEN_COMMANDS.has(cmdKey)) return;
-      SEEN_COMMANDS.add(cmdKey);
-      setTimeout(() => SEEN_COMMANDS.delete(cmdKey), 10000);
-
-      if (!isAdmin(sender)) {
-        // ❌ IBA — MAGRE-REACT LANG, WALANG SAGOT!
-        if (isGroup) {
-          setTimeout(() => {
-            try { api.setMessageReaction("❌", messageID, () => {}, true); } catch {}
-          }, getRandomDelay(1500, 2500));
-        }
-        return; // WALANG SAGOT!
-      }
-
-      // ✅ IKAW — SA GC: MAGRE-REACT LANG! SA PM: SASAGOT!
-      if (isGroup) {
-        setTimeout(() => {
-          try { api.setMessageReaction("✅", messageID, () => {}, true); } catch {}
-        }, getRandomDelay(1000, 2000));
-        return; // WALANG SAGOT SA GC — LIHIM!
-      }
+    // ✅ COMMAND HANDLING — ADMIN LANG
+    if (msg === "wc on" || msg === "/wc on") {
+      if (!isAdmin(sender)) return;
+      data.activeGCs[tid] = true;
+      saveData(data);
+      return api.sendMessage("✅ Welcome ACTIVE — HAMBOG MODE ON 😡😂", tid);
+    }
+    if (msg === "wc off" || msg === "/wc off") {
+      if (!isAdmin(sender)) return;
+      data.activeGCs[tid] = false;
+      saveData(data);
+      return api.sendMessage("✅ Welcome OFF — Tahimik na 😡😂", tid);
     }
 
-    // ✅ AUTO-WELCOME — BATIIN BAGONG MIYEMBRO
-    if (logMessageType === "log:subscribe" && isGCActive(data, tid)) {
-      const newUsers = logMessageData.addedParticipants || [];
+    // ✅ BAGONG MIYEMBRO — LAGING GUMAGANA!
+    if (logMessageType === "log:subscribe" && logMessageData && logMessageData.addedParticipants) {
+      if (!data.activeGCs[tid]) return; // Kung naka-off, wag mag-welcome
+
+      const newUsers = logMessageData.addedParticipants;
+      
       for (const user of newUsers) {
-        const uid = String(user.userFbId || user.id);
+        const uid = String(user.userFbId);
+        
+        // Wag batiin sarili
         if (uid === botID) continue;
         
-        const welcomeKey = `${tid}:${uid}`;
-        if (WELCOMED_USERS.has(welcomeKey)) continue;
-        WELCOMED_USERS.add(welcomeKey);
-        setTimeout(() => WELCOMED_USERS.delete(welcomeKey), 3600000);
+        // Wag batiin nang paulit-ulit
+        const key = `${tid}:${uid}`;
+        if (WELCOMED_USERS.has(key)) continue;
+        WELCOMED_USERS.add(key);
         
+        // Tanggalin sa listahan pagkalipas ng 1 oras para pwede ulit
+        setTimeout(() => WELCOMED_USERS.delete(key), 3600000);
+
+        // ✅ Kunin pangalan ng bagong miyembro
+        const userName = user.fullName || "Bagong Miyembro";
+        
+        // ✅ I-DELAY — HINDI AGAD = HINDI MA-DETECT!
         setTimeout(() => {
-          const name = user.fullName || "Bagong miyembro";
-          api.sendMessage(
-            `Maligayang pagdating, ${name}!\n\n${getRandomWelcome()}`,
-            tid,
-            () => {}
-          );
-        }, getRandomDelay(2000, 4000));
+          const welcomeMsg = getRandomWelcome().replace("%s", userName);
+          api.sendMessage(welcomeMsg, tid);
+        }, getRandomDelay());
       }
     }
-  } catch (e) {
-    console.error("[wc] Error:", e.message);
+
+  } catch (err) {
+    console.error("[wc] Error:", err);
   }
 };
-
-module.exports.run = async function ({ api, event, args }) {
-  const { threadID, senderID, messageID, isGroup } = event;
-  const tid = String(threadID);
-  const sender = String(senderID).trim();
-  const action = (args[0] || "").toLowerCase();
-  const data = loadData();
-
-  // ✅ IKAW LANG ANG MAKAKAGAMIT
-  if (!isAdmin(sender)) {
-    if (isGroup) return; // SA GC — WALANG SAGOT!
-    return api.sendMessage("❌ Hindi ikaw ang may-ari.", tid, messageID);
-  }
-
-  // ✅ SA GC — WALANG SAGOT SA COMMAND
-  if (isGroup) {
-    return; // TAHIMIK LANG — MAGRE-REACT NA SA HANDLE EVENT
-  }
-
-  // ✅ SA PM LANG LUMALABAS LAHAT
-  if (action === "on") {
-    setGCActive(data, tid, true);
-    return api.sendMessage(
-      "✅ wc ACTIVATED — Auto-Welcome ON\n\nBatiin na ang bagong miyembro dito.",
-      tid,
-      messageID
-    );
-  }
-
-  if (action === "off") {
-    setGCActive(data, tid, false);
-    return api.sendMessage(
-      "✅ wc DEACTIVATED — Auto-Welcome OFF",
-      tid,
-      messageID
-    );
-  }
-
-  if (action === "status") {
-    const active = isGCActive(data, tid);
-    return api.sendMessage(
-      "📊 wc STATUS\n\n" +
-      "GC ID: " + tid + "\n" +
-      "Status: " + (active ? "✅ ACTIVE" : "❌ INACTIVE") + "\n" +
-      "Auto-Welcome: " + (active ? "✅ ON" : "❌ OFF"),
-      tid,
-      messageID
-    );
-  }
-
-  // Help — SA PM LANG
-  return api.sendMessage(
-    "📋 wc COMMANDS\n\n" +
-    "/wc on — I-on ang pagbati\n" +
-    "/wc off — I-off ang pagbati\n" +
-    "/wc status — Tingnan ang kalagayan\n\n" +
-    "💡 Gamitin sa PM para makita ang sagot.\nSa GC — magre-react lang, walang lumalabas.",
-    tid,
-    messageID
-  );
-};
-  
