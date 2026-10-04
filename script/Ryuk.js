@@ -20,13 +20,13 @@ let TARGET_USER_ID = "";
 let targetNickname = "RYUK POGI";
 let targetGCName = "RYUK POGI ON TOP";
 
-const SELF_REACT_EMOJIS = ["😡", "😂", "👺"];
+const SELF_REACT_EMOJIS = ["😱", "😨", "😟", "🙀", "😬"];
 const ALL_REACT_EMOJIS = ["🔥", "💪", "👑", "⚡", "😎", "✅", "💯"];
 
 const NICK_DELAY_MIN = 1;
 const NICK_DELAY_MAX = 1;
-const REPLY_DELAY_MIN = 8000;
-const REPLY_DELAY_MAX = 18000;
+const REPLY_DELAY_MIN = 10000;
+const REPLY_DELAY_MAX = 20000;
 const AUTO_RESTORE_DELAY = 1;
 const COOLDOWN = 15000;
 
