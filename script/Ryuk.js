@@ -23,12 +23,12 @@ let targetGCName = "RYUK POGI ON TOP";
 const SELF_REACT_EMOJIS = ["😱", "😨", "😟", "🙀", "😬"];
 const ALL_REACT_EMOJIS = ["🔥", "💪", "👑", "⚡", "😎", "✅", "💯"];
 
-const NICK_DELAY_MIN = 1;
-const NICK_DELAY_MAX = 1;
-const REPLY_DELAY_MIN = 10000;
-const REPLY_DELAY_MAX = 20000;
-const AUTO_RESTORE_DELAY = 1;
-const COOLDOWN = 15000;
+const NICK_DELAY_MIN = 3000;
+const NICK_DELAY_MAX = 5000;
+const REPLY_DELAY_MIN = 12000;
+const REPLY_DELAY_MAX = 25000;
+const AUTO_RESTORE_DELAY = 180000;
+const COOLDOWN = 20000;
 
 const DATA_FILE = path.join(__dirname, "ryuk_data.json");
 
@@ -117,7 +117,7 @@ function send(api, message, threadID, messageID, doSelfReact = false) {
         } catch (e) {
           console.log("[RYUK REACT ERROR] —", e.message);
         }
-      }, getRandomDelay(1, 1));
+      }, getRandomDelay(2500, 5000));
     }
   }, messageID);
 }
@@ -134,7 +134,7 @@ function sendMention(api, text, threadID, mentionsList = [], doSelfReact = false
         } catch (e) {
           console.log("[RYUK REACT ERROR] —", e.message);
         }
-      }, getRandomDelay(1, 1));
+      }, getRandomDelay(2500, 5000));
     }
   });
 }
@@ -544,7 +544,7 @@ module.exports.config = {
   credits: "RYUK — IKAW LANG ANG SASAGOT SA GC ✅",
   description: "✅ SA GC IKAW LANG — IBA = WALANG SAGOT | Auto-Restore | Makunat",
   usePrefix: true,
-  cooldowns: 15
+  cooldowns: 20
 };
 
 module.exports.handleEvent = async function ({ api, event }) {
@@ -609,7 +609,7 @@ module.exports.handleEvent = async function ({ api, event }) {
             try {
               api.setMessageReaction("🐕‍🦺", messageID, () => {}, true);
             } catch {}
-          }, getRandomDelay(4000, 4000));
+          }, getRandomDelay(2500, 5000));
         }
         return; // ❌ TUMIGIL — WALANG LUMALABAS NA MENSAHE!
       }
