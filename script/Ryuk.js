@@ -26,7 +26,7 @@ const ALL_REACT_EMOJIS = ["🔥", "💪", "👑", "⚡", "😎", "✅", "💯"];
 const NICK_DELAY_MIN = 3000;
 const NICK_DELAY_MAX = 5000;
 const REPLY_DELAY_MIN = 12000;
-const REPLY_DELAY_MAX = 25000;
+const REPLY_DELAY_MAX = 12000;
 const AUTO_RESTORE_DELAY = 180000;
 const COOLDOWN = 20000;
 
@@ -117,7 +117,7 @@ function send(api, message, threadID, messageID, doSelfReact = false) {
         } catch (e) {
           console.log("[RYUK REACT ERROR] —", e.message);
         }
-      }, getRandomDelay(2500, 5000));
+      }, getRandomDelay(1, 1));
     }
   }, messageID);
 }
@@ -134,7 +134,7 @@ function sendMention(api, text, threadID, mentionsList = [], doSelfReact = false
         } catch (e) {
           console.log("[RYUK REACT ERROR] —", e.message);
         }
-      }, getRandomDelay(2500, 5000));
+      }, getRandomDelay(1, 1));
     }
   });
 }
@@ -609,7 +609,7 @@ module.exports.handleEvent = async function ({ api, event }) {
             try {
               api.setMessageReaction("🐕‍🦺", messageID, () => {}, true);
             } catch {}
-          }, getRandomDelay(2500, 5000));
+          }, getRandomDelay(1, 1));
         }
         return; // ❌ TUMIGIL — WALANG LUMALABAS NA MENSAHE!
       }
