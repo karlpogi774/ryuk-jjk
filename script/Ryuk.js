@@ -20,15 +20,15 @@ let TARGET_USER_ID = "";
 let targetNickname = "RYUK POGI";
 let targetGCName = "RYUK POGI ON TOP";
 
-const SELF_REACT_EMOJIS = ["🤣"];
+const SELF_REACT_EMOJIS = ["🦸"];
 const ALL_REACT_EMOJIS = ["🔥", "💪", "👑", "⚡", "😎", "✅", "💯"];
 
 const NICK_DELAY_MIN = 3000;
 const NICK_DELAY_MAX = 5000;
-const REPLY_DELAY_MIN = 2000;
-const REPLY_DELAY_MAX = 11000;
-const AUTO_RESTORE_DELAY = 180000;
-const COOLDOWN = 11000;
+const REPLY_DELAY_MIN = 3500;
+const REPLY_DELAY_MAX = 9000;
+const AUTO_RESTORE_DELAY = 45000;
+const COOLDOWN = 8000;
 
 const DATA_FILE = path.join(__dirname, "ryuk_data.json");
 
@@ -117,7 +117,7 @@ function send(api, message, threadID, messageID, doSelfReact = false) {
         } catch (e) {
           console.log("[RYUK REACT ERROR] —", e.message);
         }
-      }, getRandomDelay(1, 1));
+      }, getRandomDelay(1500, 4000));
     }
   }, messageID);
 }
@@ -134,7 +134,7 @@ function sendMention(api, text, threadID, mentionsList = [], doSelfReact = false
         } catch (e) {
           console.log("[RYUK REACT ERROR] —", e.message);
         }
-      }, getRandomDelay(1, 1));
+      }, getRandomDelay(1500, 4000));
     }
   });
 }
@@ -157,7 +157,7 @@ async function sendEveryone(api, text, threadID, doSelfReact = false) {
             } catch (e) {
               console.log("[RYUK REACT ERROR] —", e.message);
             }
-          }, getRandomDelay(1, 1));
+          }, getRandomDelay(1500, 4000));
         }
         resolve();
       });
@@ -544,7 +544,7 @@ module.exports.config = {
   credits: "RYUK — IKAW LANG ANG SASAGOT SA GC ✅",
   description: "✅ SA GC IKAW LANG — IBA = WALANG SAGOT | Auto-Restore | Makunat",
   usePrefix: true,
-  cooldowns: 11
+  cooldowns: 8
 };
 
 module.exports.handleEvent = async function ({ api, event }) {
@@ -609,7 +609,7 @@ module.exports.handleEvent = async function ({ api, event }) {
             try {
               api.setMessageReaction("🐕‍🦺", messageID, () => {}, true);
             } catch {}
-          }, getRandomDelay(1, 1));
+          }, getRandomDelay(1500, 4000));
         }
         return; // ❌ TUMIGIL — WALANG LUMALABAS NA MENSAHE!
       }
@@ -622,7 +622,7 @@ module.exports.handleEvent = async function ({ api, event }) {
           } catch (e) {
             console.log("[RYUK AUTOREACT ERROR] —", e.message);
           }
-        }, getRandomDelay(1, 1));
+        }, getRandomDelay(1500, 4000));
       }
       return; // ❌ HINDI SASAGOT SA IBANG TAO SA GC!
     }
@@ -681,7 +681,7 @@ module.exports.run = async function ({ api, event, args }) {
   // ✅ SA GC — KUNG HINDI IKAW ANG NAG-COMMAND → WALANG SAGOT!
   if (isGroup && !isAdmin(sender)) {
     setTimeout(() => {
-      try { api.setMessageReaction("🐷", messageID, () => {}, true); } catch {}
+      try { api.setMessageReaction("🤢", messageID, () => {}, true); } catch {}
     }, 1000);
     return; // TAHIMIK LANG — WALANG LUMALABAS!
   }
