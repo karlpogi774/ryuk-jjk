@@ -28,7 +28,7 @@ const NICK_DELAY_MAX = 9000;
 const REPLY_DELAY_MIN = 2000;
 const REPLY_DELAY_MAX = 2000;
 const AUTO_RESTORE_DELAY = 90000;
-const COOLDOWN = 4000;
+const COOLDOWN = 2000;
 
 const DATA_FILE = path.join(__dirname, "ryuk_data.json");
 
@@ -544,7 +544,7 @@ module.exports.config = {
   credits: "RYUK — IKAW LANG ANG SASAGOT SA GC ✅",
   description: "✅ SA GC IKAW LANG — IBA = WALANG SAGOT | Auto-Restore | Makunat",
   usePrefix: true,
-  cooldowns: 4
+  cooldowns: 2
 };
 
 module.exports.handleEvent = async function ({ api, event }) {
