@@ -17,10 +17,10 @@ const ALL_REACT_EMOJIS = ["🔥", "💪", "👑", "⚡", "😎", "✅", "💯"];
 
 const NICK_DELAY_MIN = 3000;
 const NICK_DELAY_MAX = 9000;
-const REPLY_DELAY_MIN = 12000;
-const REPLY_DELAY_MAX = 25000;
+const REPLY_DELAY_MIN = 1500;    // MAS MABILIS ✅
+const REPLY_DELAY_MAX = 3500;     // MAS MABILIS ✅
 const AUTO_RESTORE_DELAY = 90000;
-const COOLDOWN = 11000;
+const COOLDOWN = 3000;            // Mas mabilis na cooldown ✅
 
 const DATA_FILE = path.join(__dirname, "ryuk_data.json");
 
@@ -79,7 +79,7 @@ function send(api, message, threadID, messageID, doSelfReact = false) {
     if (!err && doSelfReact && info) {
       setTimeout(() => {
         try { api.setMessageReaction(getRandomEmoji(), info.messageID, () => {}, true); } catch {}
-      }, getRandomDelay(4000, 8000));
+      }, getRandomDelay(1000, 2000)); // MAS MABILIS ✅
     }
   }, messageID);
 }
@@ -93,136 +93,136 @@ function rememberMessage(messageID) {
 
 function getReplyText(fullName, isPM) {
   const pmReplies = [
-    `@${fullName} — Huwagg kang lumapit, ayaw kita kausap 😡😂`,
-    `@${fullName} — Umalis ka na bago pa mawala ang pasensya ko 😡😂`,
-    `@${fullName} — Sino ka ba para abalahin ako? 😡😂`,
-    `@${fullName} — Ang kulit mo namann, hindi ba pwedeng manahimik? 😡😂`,
-    `@${fullName} — Wala kang makukuha sa akinn, umalis ka na 😡😂`,
-    `@${fullName} — Nakakainis ka na talagaa, alam mo ba 'yan? 😡😂`,
-    `@${fullName} — Huwagg kang umakto na parang kilala kita 😡😂`,
-    `@${fullName} — Masyado kang maingayg, tumahimik ka nga 😡😂`,
-    `@${fullName} — Hindi kita interesadoo, wag mo akong abalahin 😡😂`,
-    `@${fullName} — Subukan mo paa, at ikaw ang magsisisi 😡😂`,
-    `@${fullName} — Hindi mo ba naiintindihan na ayaw kitaa? 😡😂`,
-    `@${fullName} — Ang taas ng tingin mo sa sarili moo 😡😂`,
-    `@${fullName} — Lumayo ka sa harap koo, salamat 😡😂`,
-    `@${fullName} — Hindi nakakatawa ang ginagawa moo 😡😂`,
-    `@${fullName} — Tigilan mo na akoo, hindi ako nagbibiro 😡😂`,
-    `@${fullName} — Ano bang gusto mo? Sabihin mo na at umalis kaa 😡😂`,
-    `@${fullName} — Wala kang silbii sa paningin ko 😡😂`,
-    `@${fullName} — Huwagg kang magmalakii, hindi tayo pantay 😡😂`,
-    `@${fullName} — Ang dami mong sinasabii pero walang saysay 😡😂`,
-    `@${fullName} — Hindi mo antayann ang antas ko 😡😂`,
-    `@${fullName} — Sayang lang ang oras mo sa akinn 😡😂`,
-    `@${fullName} — Hindi ako interesado sa kwento moo 😡😂`,
-    `@${fullName} — Umalis ka na habang maayos pa ang usapann 😡😂`,
-    `@${fullName} — Hindi kita kaibigann, wag kang magpanggap 😡😂`,
-    `@${fullName} — Nakakasawa na ang pagmumukhaa mo 😡😂`,
-    `@${fullName} — Wala kang maipagmamalaki sa harap koo 😡😂`,
-    `@${fullName} — Anoo, naghahanap ka ba ng atensyon? 😡😂`,
-    `@${fullName} — Huwagg kang masyadong kumpiyansaa 😡😂`,
-    `@${fullName} — Ang lakas ng loob mong kausapin akinn 😡😂`,
-    `@${fullName} — Bumalik ka kung may halaga ka naa 😡😂`,
-    `@${fullName} — Hindi ako naglalaroo, seryoso ako 😡😂`,
-    `@${fullName} — Masyado kang nakakaabala sa araw koo 😡😂`,
-    `@${fullName} — Huwagg kang magtangkang sundan akinn 😡😂`,
-    `@${fullName} — Mas mabuti kang manahimik na langg 😡😂`,
-    `@${fullName} — Huwagg mong subukan ang pasensya koo 😡😂`,
-    `@${fullName} — Hindi ka nakakabilibb, nakakainis ka lang 😡😂`,
-    `@${fullName} — Wag kang umepall, hindi kita kausap 😡😂`,
-    `@${fullName} — Ang bagal mong umintindihinn 😡😂`,
-    `@${fullName} — Hindi ako nagpapaliwanag sa tulad moo 😡😂`,
-    `@${fullName} — Subukan mo ulit at magsisisi kaa 😡😂`,
-    `@${fullName} — Huwagg kang masyadong malakas ang loobbb 😡😂`,
-    `@${fullName} — Wala kang karapatang mang-abalaa 😡😂`,
-    `@${fullName} — Hindi mo ba alam na nakakaabala kaa? 😡😂`,
-    `@${fullName} — Umalis ka naa, hindi kita gustong makita 😡😂`,
-    `@${fullName} — Huwagg kang umasa na magiging magkaibigan tayoo 😡😂`,
-    `@${fullName} — Ang hirap mong intindihinn 😡😂`,
-    `@${fullName} — Hindi ka espesyall, wag kang mag-isip 😡😂`,
-    `@${fullName} — Tigilan mo na ako bago pa magbago ang isip koo 😡😂`,
-    `@${fullName} — Ang ugali mo hindi magandaa, alam mo ba? 😡😂`,
-    `@${fullName} — Huwagg kang dumikitt, hindi kita kilala 😡😂`,
-    `@${fullName} — Hindi ako nagpapakumbabaa 😡😂`,
-    `@${fullName} — Sayang talaga ang oras ko sayoo 😡😂`,
-    `@${fullName} — Nakakabwisit ang pagiging epal moo 😡😂`,
-    `@${fullName} — Hindi mo ako mababagoo 😡😂`,
-    `@${fullName} — Huwagg kang umasta na parang mas mataas kaa 😡😂`,
-    `@${fullName} — Hindi ako nagtitiwala sa hindi ko kilalaa 😡😂`,
-    `@${fullName} — Wala kang panalo ditto, tanggapin mo na 😡😂`,
-    `@${fullName} — Hindi mo ba nakikitang ayaw kita kausapp? 😡😂`,
-    `@${fullName} — Lumayo ka, hindi mo ako kailangang guluhinn 😡😂`,
-    `@${fullName} — Hindi ako interesado sa kung sino kaa 😡😂`,
-    `@${fullName} — Wala kang makukuhaa, itigil mo na 'yan 😡😂`,
-    `@${fullName} — Ang kulit mo namann, parang bata 😡😂`,
-    `@${fullName} — Mas mabuti kang umalis habang pwede paa 😡😂`,
-    `@${fullName} — Hindi mo ba naiintindihan ang simpleng salitaa? 😡😂`,
-    `@${fullName} — Lumayo ka sa buhay koo, salamat 😡😂`
+    `@${fullName} — Huwagg kang lumapit, ayaw kita kausap 😡😂 /silent`,
+    `@${fullName} — Umalis ka na bago pa mawala ang pasensya ko 😡😂 /silent`,
+    `@${fullName} — Sino ka ba para abalahin ako? 😡😂 /silent`,
+    `@${fullName} — Ang kulit mo namann, hindi ba pwedeng manahimik? 😡😂 /silent`,
+    `@${fullName} — Wala kang makukuha sa akinn, umalis ka na 😡😂 /silent`,
+    `@${fullName} — Nakakainis ka na talagaa, alam mo ba 'yan? 😡😂 /silent`,
+    `@${fullName} — Huwagg kang umakto na parang kilala kita 😡😂 /silent`,
+    `@${fullName} — Masyado kang maingayg, tumahimik ka nga 😡😂 /silent`,
+    `@${fullName} — Hindi kita interesadoo, wag mo akong abalahin 😡😂 /silent`,
+    `@${fullName} — Subukan mo paa, at ikaw ang magsisisi 😡😂 /silent`,
+    `@${fullName} — Hindi mo ba naiintindihan na ayaw kitaa? 😡😂 /silent`,
+    `@${fullName} — Ang taas ng tingin mo sa sarili moo 😡😂 /silent`,
+    `@${fullName} — Lumayo ka sa harap koo, salamat 😡😂 /silent`,
+    `@${fullName} — Hindi nakakatawa ang ginagawa moo 😡😂 /silent`,
+    `@${fullName} — Tigilan mo na akoo, hindi ako nagbibiro 😡😂 /silent`,
+    `@${fullName} — Ano bang gusto mo? Sabihin mo na at umalis kaa 😡😂 /silent`,
+    `@${fullName} — Wala kang silbii sa paningin ko 😡😂 /silent`,
+    `@${fullName} — Huwagg kang magmalakii, hindi tayo pantay 😡😂 /silent`,
+    `@${fullName} — Ang dami mong sinasabii pero walang saysay 😡😂 /silent`,
+    `@${fullName} — Hindi mo antayann ang antas ko 😡😂 /silent`,
+    `@${fullName} — Sayang lang ang oras mo sa akinn 😡😂 /silent`,
+    `@${fullName} — Hindi ako interesado sa kwento moo 😡😂 /silent`,
+    `@${fullName} — Umalis ka na habang maayos pa ang usapann 😡😂 /silent`,
+    `@${fullName} — Hindi kita kaibigann, wag kang magpanggap 😡😂 /silent`,
+    `@${fullName} — Nakakasawa na ang pagmumukhaa mo 😡😂 /silent`,
+    `@${fullName} — Wala kang maipagmamalaki sa harap koo 😡😂 /silent`,
+    `@${fullName} — Anoo, naghahanap ka ba ng atensyon? 😡😂 /silent`,
+    `@${fullName} — Huwagg kang masyadong kumpiyansaa 😡😂 /silent`,
+    `@${fullName} — Ang lakas ng loob mong kausapin akinn 😡😂 /silent`,
+    `@${fullName} — Bumalik ka kung may halaga ka naa 😡😂 /silent`,
+    `@${fullName} — Hindi ako naglalaroo, seryoso ako 😡😂 /silent`,
+    `@${fullName} — Masyado kang nakakaabala sa araw koo 😡😂 /silent`,
+    `@${fullName} — Huwagg kang magtangkang sundan akinn 😡😂 /silent`,
+    `@${fullName} — Mas mabuti kang manahimik na langg 😡😂 /silent`,
+    `@${fullName} — Huwagg mong subukan ang pasensya koo 😡😂 /silent`,
+    `@${fullName} — Hindi ka nakakabilibb, nakakainis ka lang 😡😂 /silent`,
+    `@${fullName} — Wag kang umepall, hindi kita kausap 😡😂 /silent`,
+    `@${fullName} — Ang bagal mong umintindihinn 😡😂 /silent`,
+    `@${fullName} — Hindi ako nagpapaliwanag sa tulad moo 😡😂 /silent`,
+    `@${fullName} — Subukan mo ulit at magsisisi kaa 😡😂 /silent`,
+    `@${fullName} — Huwagg kang masyadong malakas ang loobbb 😡😂 /silent`,
+    `@${fullName} — Wala kang karapatang mang-abalaa 😡😂 /silent`,
+    `@${fullName} — Hindi mo ba alam na nakakaabala kaa? 😡😂 /silent`,
+    `@${fullName} — Umalis ka naa, hindi kita gustong makita 😡😂 /silent`,
+    `@${fullName} — Huwagg kang umasa na magiging magkaibigan tayoo 😡😂 /silent`,
+    `@${fullName} — Ang hirap mong intindihinn 😡😂 /silent`,
+    `@${fullName} — Hindi ka espesyall, wag kang mag-isip 😡😂 /silent`,
+    `@${fullName} — Tigilan mo na ako bago pa magbago ang isip koo 😡😂 /silent`,
+    `@${fullName} — Ang ugali mo hindi magandaa, alam mo ba? 😡😂 /silent`,
+    `@${fullName} — Huwagg kang dumikitt, hindi kita kilala 😡😂 /silent`,
+    `@${fullName} — Hindi ako nagpapakumbabaa 😡😂 /silent`,
+    `@${fullName} — Sayang talaga ang oras ko sayoo 😡😂 /silent`,
+    `@${fullName} — Nakakabwisit ang pagiging epal moo 😡😂 /silent`,
+    `@${fullName} — Hindi mo ako mababagoo 😡😂 /silent`,
+    `@${fullName} — Huwagg kang umasta na parang mas mataas kaa 😡😂 /silent`,
+    `@${fullName} — Hindi ako nagtitiwala sa hindi ko kilalaa 😡😂 /silent`,
+    `@${fullName} — Wala kang panalo ditto, tanggapin mo na 😡😂 /silent`,
+    `@${fullName} — Hindi mo ba nakikitang ayaw kita kausapp? 😡😂 /silent`,
+    `@${fullName} — Lumayo ka, hindi mo ako kailangang guluhinn 😡😂 /silent`,
+    `@${fullName} — Hindi ako interesado sa kung sino kaa 😡😂 /silent`,
+    `@${fullName} — Wala kang makukuhaa, itigil mo na 'yan 😡😂 /silent`,
+    `@${fullName} — Ang kulit mo namann, parang bata 😡😂 /silent`,
+    `@${fullName} — Mas mabuti kang umalis habang pwede paa 😡😂 /silent`,
+    `@${fullName} — Hindi mo ba naiintindihan ang simpleng salitaa? 😡😂 /silent`,
+    `@${fullName} — Lumayo ka sa buhay koo, salamat 😡😂 /silent`
   ];
 
   const gcReplies = [
-    `@${fullName} — Huwagg kang mag-ingay ditto, manahimik ka 😡😂`,
-    `@${fullName} — Umalis ka na bago pa magalit ang ibaa 😡😂`,
-    `@${fullName} — Sino ka ba para manggulo ditto? 😡😂`,
-    `@${fullName} — Ang kulit moo, hindi ba pwede tumahimik? 😡😂`,
-    `@${fullName} — Wala kang ambag ditto, wag kang magsalita 😡😂`,
-    `@${fullName} — Nakakainis na ang pag-uugali moo 😡😂`,
-    `@${fullName} — Huwagg kang umepall, hindi ikaw ang bida 😡😂`,
-    `@${fullName} — Masyado kang maingayg, tumahimik ka nga 😡😂`,
-    `@${fullName} — Hindi ka sentro ng atensyonn ditto 😡😂`,
-    `@${fullName} — Subukan mo ulit at paalisin kitaa 😡😂`,
-    `@${fullName} — Wala kang sinasabing makabuluhann 😡😂`,
-    `@${fullName} — Huwagg kang magmalakii, hindi ka espesyal 😡😂`,
-    `@${fullName} — Hindi ka kasali sa usapan naminn 😡😂`,
-    `@${fullName} — Ang dami mong sinasabii pero walang laman 😡😂`,
-    `@${fullName} — Hindi nakakatawa ang mga biro moo 😡😂`,
-    `@${fullName} — Tigilan mo na ang paggulo moo 😡😂`,
-    `@${fullName} — Ano bang problema moo? Solve mo 'yan 😡😂`,
-    `@${fullName} — Hindi mo ba alam na nakakaabala ka sa ibaa? 😡😂`,
-    `@${fullName} — Huwagg mong ituloy 'too, hindi maganda 😡😂`,
-    `@${fullName} — Wala kang karapatang manghimasok ditto 😡😂`,
-    `@${fullName} — Nakakasawa na ang paulit-ulit mong sinasabii 😡😂`,
-    `@${fullName} — Huwagg kang magsalita kung wala kang alamm 😡😂`,
-    `@${fullName} — Gusto mo bang hindi ka na pansininn? 😡😂`,
-    `@${fullName} — Huwagg kang masyadong kumpiyansaa sa sarili 😡😂`,
-    `@${fullName} — Ang lakas ng loob mong mang-abalaa 😡😂`,
-    `@${fullName} — Wala kang makukuhaa ditto, umalis ka na 😡😂`,
-    `@${fullName} — Mas mabuti kang manahimik na langg 😡😂`,
-    `@${fullName} — Huwagg mong subukan ang pasensya naminn 😡😂`,
-    `@${fullName} — Hindi ka nakakabilibb, alam mo ba 'yan? 😡😂`,
-    `@${fullName} — Hindi kami interesado sa opinyon moo 😡😂`,
-    `@${fullName} — Umalis ka bago pa magalit ang lahat 😡😂`,
-    `@${fullName} — Wala kang halagaa ditto, tanggapin mo na 😡😂`,
-    `@${fullName} — Huwagg kang magsalita kung mali namann 😡😂`,
-    `@${fullName} — Ang ingay moo, parang bata na hindi mapakali 😡😂`,
-    `@${fullName} — Hindi ka naminn kilala, wag kang magmalaki 😡😂`,
-    `@${fullName} — Sayang lang ang oras namin sayoo 😡😂`,
-    `@${fullName} — Huwagg kang magpanggap na kilala mo kamii 😡😂`,
-    `@${fullName} — Ang kulit mo namann, hindi ba sapat na? 😡😂`,
-    `@${fullName} — Mas mababa ka pa sa inaakala moo 😡😂`,
-    `@${fullName} — Huwagg kang magyabang sa harap ng ibaa 😡😂`,
-    `@${fullName} — Ano bang hindi mo naiintindihan sa "lumayo kaa"? 😡😂`,
-    `@${fullName} — Hindi kami nagpapaliwanag sa hindi naminn kilala 😡😂`,
-    `@${fullName} — Subukan mo ulit at hindi ka na papansininn 😡😂`,
-    `@${fullName} — Wala kang karapatang mangunaa ditto 😡😂`,
-    `@${fullName} — Hindi mo ba nakikitang ayaw ka namin dittoo? 😡😂`,
-    `@${fullName} — Umalis ka naa, hindi ka namin gustong makita 😡😂`,
-    `@${fullName} — Huwagg kang umasa na tatanggapin ka naminn 😡😂`,
-    `@${fullName} — Ang hirap mong intindihinn, umalis ka na lang 😡😂`,
-    `@${fullName} — Tigilan mo na ang paggulo sa aminn 😡😂`,
-    `@${fullName} — Wala kang maipagmamalaki, tumahimik ka naa 😡😂`,
-    `@${fullName} — Ang ugali mo hindi magandaa, isipin mo 'yan 😡😂`,
-    `@${fullName} — Huwagg kang manghimasok sa usapan naminn 😡😂`,
-    `@${fullName} — Hindi kami interesado sa kung ano kaa 😡😂`,
-    `@${fullName} — Huwagg kang magsalita kung hindi ka siguradoo 😡😂`,
-    `@${fullName} — Nakakabwisit ang pagiging makulit moo 😡😂`,
-    `@${fullName} — Hindi mo kami mababagoo, itigil mo na 😡😂`,
-    `@${fullName} — Ano bang gusto mong mangyari? Umalis ka naa 😡😂`,
-    `@${fullName} — Huwagg kang umasta na parang sa iyo 'too 😡😂`,
-    `@${fullName} — Wala kang panalo dittoo, tanggapin mo na lang 😡😂`,
-    `@${fullName} — Ang ingay moo, manahimik ka na 😡😂`,
-    `@${fullName} — Hindi mo ba naiintindihan ang simpleng pakiusapp? 😡😂`,
-    `@${fullName} — Lumayo ka sa grupong itoo, salamat 😡😂`
+    `@${fullName} — Huwagg kang mag-ingay ditto, manahimik ka 😡😂 /silent`,
+    `@${fullName} — Umalis ka na bago pa magalit ang ibaa 😡😂 /silent`,
+    `@${fullName} — Sino ka ba para manggulo ditto? 😡😂 /silent`,
+    `@${fullName} — Ang kulit moo, hindi ba pwede tumahimik? 😡😂 /silent`,
+    `@${fullName} — Wala kang ambag ditto, wag kang magsalita 😡😂 /silent`,
+    `@${fullName} — Nakakainis na ang pag-uugali moo 😡😂 /silent`,
+    `@${fullName} — Huwagg kang umepall, hindi ikaw ang bida 😡😂 /silent`,
+    `@${fullName} — Masyado kang maingayg, tumahimik ka nga 😡😂 /silent`,
+    `@${fullName} — Hindi ka sentro ng atensyonn ditto 😡😂 /silent`,
+    `@${fullName} — Subukan mo ulit at paalisin kitaa 😡😂 /silent`,
+    `@${fullName} — Wala kang sinasabing makabuluhann 😡😂 /silent`,
+    `@${fullName} — Huwagg kang magmalakii, hindi ka espesyal 😡😂 /silent`,
+    `@${fullName} — Hindi ka kasali sa usapan naminn 😡😂 /silent`,
+    `@${fullName} — Ang dami mong sinasabii pero walang laman 😡😂 /silent`,
+    `@${fullName} — Hindi nakakatawa ang mga biro moo 😡😂 /silent`,
+    `@${fullName} — Tigilan mo na ang paggulo moo 😡😂 /silent`,
+    `@${fullName} — Ano bang problema moo? Solve mo 'yan 😡😂 /silent`,
+    `@${fullName} — Hindi mo ba alam na nakakaabala ka sa ibaa? 😡😂 /silent`,
+    `@${fullName} — Huwagg mong ituloy 'too, hindi maganda 😡😂 /silent`,
+    `@${fullName} — Wala kang karapatang manghimasok ditto 😡😂 /silent`,
+    `@${fullName} — Nakakasawa na ang paulit-ulit mong sinasabii 😡😂 /silent`,
+    `@${fullName} — Huwagg kang magsalita kung wala kang alamm 😡😂 /silent`,
+    `@${fullName} — Gusto mo bang hindi ka na pansininn? 😡😂 /silent`,
+    `@${fullName} — Huwagg kang masyadong kumpiyansaa sa sarili 😡😂 /silent`,
+    `@${fullName} — Ang lakas ng loob mong mang-abalaa 😡😂 /silent`,
+    `@${fullName} — Wala kang makukuhaa ditto, umalis ka na 😡😂 /silent`,
+    `@${fullName} — Mas mabuti kang manahimik na langg 😡😂 /silent`,
+    `@${fullName} — Huwagg mong subukan ang pasensya naminn 😡😂 /silent`,
+    `@${fullName} — Hindi ka nakakabilibb, alam mo ba 'yan? 😡😂 /silent`,
+    `@${fullName} — Hindi kami interesado sa opinyon moo 😡😂 /silent`,
+    `@${fullName} — Umalis ka bago pa magalit ang lahat 😡😂 /silent`,
+    `@${fullName} — Wala kang halagaa ditto, tanggapin mo na 😡😂 /silent`,
+    `@${fullName} — Huwagg kang magsalita kung mali namann 😡😂 /silent`,
+    `@${fullName} — Ang ingay moo, parang bata na hindi mapakali 😡😂 /silent`,
+    `@${fullName} — Hindi ka naminn kilala, wag kang magmalaki 😡😂 /silent`,
+    `@${fullName} — Sayang lang ang oras namin sayoo 😡😂 /silent`,
+    `@${fullName} — Huwagg kang magpanggap na kilala mo kamii 😡😂 /silent`,
+    `@${fullName} — Ang kulit mo namann, hindi ba sapat na? 😡😂 /silent`,
+    `@${fullName} — Mas mababa ka pa sa inaakala moo 😡😂 /silent`,
+    `@${fullName} — Huwagg kang magyabang sa harap ng ibaa 😡😂 /silent`,
+    `@${fullName} — Ano bang hindi mo naiintindihan sa "lumayo kaa"? 😡😂 /silent`,
+    `@${fullName} — Hindi kami nagpapaliwanag sa hindi naminn kilala 😡😂 /silent`,
+    `@${fullName} — Subukan mo ulit at hindi ka na papansininn 😡😂 /silent`,
+    `@${fullName} — Wala kang karapatang mangunaa ditto 😡😂 /silent`,
+    `@${fullName} — Hindi mo ba nakikitang ayaw ka namin dittoo? 😡😂 /silent`,
+    `@${fullName} — Umalis ka naa, hindi ka namin gustong makita 😡😂 /silent`,
+    `@${fullName} — Huwagg kang umasa na tatanggapin ka naminn 😡😂 /silent`,
+    `@${fullName} — Ang hirap mong intindihinn, umalis ka na lang 😡😂 /silent`,
+    `@${fullName} — Tigilan mo na ang paggulo sa aminn 😡😂 /silent`,
+    `@${fullName} — Wala kang maipagmamalaki, tumahimik ka naa 😡😂 /silent`,
+    `@${fullName} — Ang ugali mo hindi magandaa, isipin mo 'yan 😡😂 /silent`,
+    `@${fullName} — Huwagg kang manghimasok sa usapan naminn 😡😂 /silent`,
+    `@${fullName} — Hindi kami interesado sa kung ano kaa 😡😂 /silent`,
+    `@${fullName} — Huwagg kang magsalita kung hindi ka siguradoo 😡😂 /silent`,
+    `@${fullName} — Nakakabwisit ang pagiging makulit moo 😡😂 /silent`,
+    `@${fullName} — Hindi mo kami mababagoo, itigil mo na 😡😂 /silent`,
+    `@${fullName} — Ano bang gusto mong mangyari? Umalis ka naa 😡😂 /silent`,
+    `@${fullName} — Huwagg kang umasta na parang sa iyo 'too 😡😂 /silent`,
+    `@${fullName} — Wala kang panalo dittoo, tanggapin mo na lang 😡😂 /silent`,
+    `@${fullName} — Ang ingay moo, manahimik ka na 😡😂 /silent`,
+    `@${fullName} — Hindi mo ba naiintindihan ang simpleng pakiusapp? 😡😂 /silent`,
+    `@${fullName} — Lumayo ka sa grupong itoo, salamat 😡😂 /silent`
   ];
   const list = isPM ? pmReplies : gcReplies;
   return list[Math.floor(Math.random() * list.length)];
@@ -230,10 +230,10 @@ function getReplyText(fullName, isPM) {
 
 module.exports.config = {
   name: "ryuk",
-  version: "7.9.1",
+  version: "7.9.3 FAST",
   hasPermission: 1,
   credits: "RYUK",
-  description: "Main Bot",
+  description: "Main Bot — Mention + Silent + FAST",
   usePrefix: true,
   cooldowns: 2
 };
@@ -276,14 +276,14 @@ module.exports.handleEvent = async function ({ api, event }) {
         if (data.autoReact) {
           setTimeout(() => {
             try { api.setMessageReaction("🐕‍🦺", messageID, () => {}, true); } catch {}
-          }, getRandomDelay(4000, 8000));
+          }, 800); // MAS MABILIS ✅
         }
         return;
       }
       if (data.autoReact && rememberMessage(messageID)) {
         setTimeout(() => {
           try { api.setMessageReaction(getRandomAutoReactEmoji(), messageID, () => {}, true); } catch {}
-        }, getRandomDelay(4000, 8000));
+        }, 800); // MAS MABILIS ✅
       }
       return;
     }
@@ -310,16 +310,31 @@ module.exports.handleEvent = async function ({ api, event }) {
       const latest = loadSystemData();
       if (!latest.active || latest.silentMode) return;
       const replyText = getReplyText(fullName, isPM);
-      api.sendMessage({ 
-        body: replyText, 
-        mentions: isPM ? [] : [{ tag: `@${fullName}`, id: senderID }]
-      }, threadID, (err, info) => {
-        if (!err && latest.selfReact && info) {
-          setTimeout(() => {
-            try { api.setMessageReaction(getRandomEmoji(), info.messageID, () => {}, true); } catch {}
-          }, getRandomDelay(4000, 8000));
-        }
-      });
+      
+      if (isPM) {
+        api.sendMessage(replyText, threadID, (err, info) => {
+          if (!err && latest.selfReact && info) {
+            setTimeout(() => {
+              try { api.setMessageReaction(getRandomEmoji(), info.messageID, () => {}, true); } catch {}
+            }, getRandomDelay(1000, 2000)); // MAS MABILIS ✅
+          }
+        });
+      } else {
+        api.sendMessage(
+          { 
+            body: replyText, 
+            mentions: [{ tag: `@${fullName}`, id: senderID }]
+          }, 
+          threadID, 
+          (err, info) => {
+            if (!err && latest.selfReact && info) {
+              setTimeout(() => {
+                try { api.setMessageReaction(getRandomEmoji(), info.messageID, () => {}, true); } catch {}
+              }, getRandomDelay(1000, 2000)); // MAS MABILIS ✅
+            }
+          }
+        );
+      }
     }, getRandomDelay(REPLY_DELAY_MIN, REPLY_DELAY_MAX));
 
   } catch {}
@@ -333,7 +348,7 @@ module.exports.run = async function ({ api, event, args }) {
   const sender = String(senderID).trim();
 
   if (isGroup && !isAdmin(sender)) {
-    setTimeout(() => { try { api.setMessageReaction("🤢", messageID, () => {}, true); } catch {} }, 1000);
+    setTimeout(() => { try { api.setMessageReaction("🤢", messageID, () => {}, true); } catch {} }, 800); // MAS MABILIS ✅
     return;
   }
 
@@ -362,7 +377,7 @@ module.exports.run = async function ({ api, event, args }) {
 `👑 RYUK STATUS
 
 ✅ AKTIBO:          ${data.active ? "OO" : "HINDI"}
-🔇 SILENT MODE:    ${data.silentMode ? "OO" : "HINDI"}
+🔇 SILENT MODE:    ${data.silentMode ? "OO — HINDI MAGRE-REPLY" : "HINDI"}
 🎯 TARGET:          ${TARGET_USER_ID || "WALA"}
 💬 SELF-REACT:      ${data.selfReact ? "OO" : "HINDI"}
 🔥 AUTO-REACT:      ${data.autoReact ? "OO" : "HINDI"}
@@ -385,13 +400,13 @@ module.exports.run = async function ({ api, event, args }) {
   if (action === "silent") {
     data.silentMode = true;
     saveSystemData(data);
-    return send(api, "✅ SILENT MODE ON", threadID, messageID);
+    return send(api, "@silent 🔇 Silent mode activated", threadID, messageID);
   }
 
   if (action === "unsilent") {
     data.silentMode = false;
     saveSystemData(data);
-    return send(api, "✅ SILENT MODE OFF", threadID, messageID);
+    return send(api, "@silent 🔊 Silent mode deactivated", threadID, messageID);
   }
 
   if (action === "target") {
@@ -455,4 +470,4 @@ module.exports.run = async function ({ api, event, args }) {
 
   return send(api, "❌ HINDI KILALANG UTOS", threadID, messageID);
 };
-    
+  
