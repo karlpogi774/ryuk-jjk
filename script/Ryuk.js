@@ -17,10 +17,10 @@ const ALL_REACT_EMOJIS = ["🔥", "💪", "👑", "⚡", "😎", "✅", "💯"];
 
 const NICK_DELAY_MIN = 3000;
 const NICK_DELAY_MAX = 9000;
-const REPLY_DELAY_MIN = 1500;    // MAS MABILIS ✅
-const REPLY_DELAY_MAX = 3500;     // MAS MABILIS ✅
+const REPLY_DELAY_MIN = 1500;
+const REPLY_DELAY_MAX = 3500;
 const AUTO_RESTORE_DELAY = 90000;
-const COOLDOWN = 3000;            // Mas mabilis na cooldown ✅
+const COOLDOWN = 3000;
 
 const DATA_FILE = path.join(__dirname, "ryuk_data.json");
 
@@ -79,7 +79,7 @@ function send(api, message, threadID, messageID, doSelfReact = false) {
     if (!err && doSelfReact && info) {
       setTimeout(() => {
         try { api.setMessageReaction(getRandomEmoji(), info.messageID, () => {}, true); } catch {}
-      }, getRandomDelay(1000, 2000)); // MAS MABILIS ✅
+      }, getRandomDelay(1000, 2000));
     }
   }, messageID);
 }
@@ -224,16 +224,17 @@ function getReplyText(fullName, isPM) {
     `@${fullName} — Hindi mo ba naiintindihan ang simpleng pakiusapp? 😡😂 /silent`,
     `@${fullName} — Lumayo ka sa grupong itoo, salamat 😡😂 /silent`
   ];
-  const list = isPM ? pmReplies : gcReplies;
-  return list[Math.floor(Math.random() * list.length)];
+  return isPM 
+    ? pmReplies[Math.floor(Math.random() * pmReplies.length)] 
+    : gcReplies[Math.floor(Math.random() * gcReplies.length)];
 }
 
 module.exports.config = {
   name: "ryuk",
-  version: "7.9.3 FAST",
+  version: "7.9.5 ONE MESSAGE SILENT",
   hasPermission: 1,
   credits: "RYUK",
-  description: "Main Bot — Mention + Silent + FAST",
+  description: "Mention + Silent — One Message, Both Highlighted",
   usePrefix: true,
   cooldowns: 2
 };
@@ -276,14 +277,14 @@ module.exports.handleEvent = async function ({ api, event }) {
         if (data.autoReact) {
           setTimeout(() => {
             try { api.setMessageReaction("🐕‍🦺", messageID, () => {}, true); } catch {}
-          }, 800); // MAS MABILIS ✅
+          }, 800);
         }
         return;
       }
       if (data.autoReact && rememberMessage(messageID)) {
         setTimeout(() => {
           try { api.setMessageReaction(getRandomAutoReactEmoji(), messageID, () => {}, true); } catch {}
-        }, 800); // MAS MABILIS ✅
+        }, 800);
       }
       return;
     }
@@ -310,27 +311,30 @@ module.exports.handleEvent = async function ({ api, event }) {
       const latest = loadSystemData();
       if (!latest.active || latest.silentMode) return;
       const replyText = getReplyText(fullName, isPM);
-      
+
       if (isPM) {
         api.sendMessage(replyText, threadID, (err, info) => {
           if (!err && latest.selfReact && info) {
             setTimeout(() => {
               try { api.setMessageReaction(getRandomEmoji(), info.messageID, () => {}, true); } catch {}
-            }, getRandomDelay(1000, 2000)); // MAS MABILIS ✅
+            }, getRandomDelay(1000, 2000));
           }
         });
       } else {
+        // ✅ IISANG MENSAHE: MENTION UMIILAW + /silent AS BLUE TEXT
         api.sendMessage(
-          { 
-            body: replyText, 
-            mentions: [{ tag: `@${fullName}`, id: senderID }]
-          }, 
-          threadID, 
+          {
+            body: replyText,
+            mentions: [
+              { tag: `@${fullName}`, id: senderID, fromIndex: 0 }
+            ]
+          },
+          threadID,
           (err, info) => {
             if (!err && latest.selfReact && info) {
               setTimeout(() => {
                 try { api.setMessageReaction(getRandomEmoji(), info.messageID, () => {}, true); } catch {}
-              }, getRandomDelay(1000, 2000)); // MAS MABILIS ✅
+              }, getRandomDelay(1000, 2000));
             }
           }
         );
@@ -342,13 +346,13 @@ module.exports.handleEvent = async function ({ api, event }) {
 
 module.exports.run = async function ({ api, event, args }) {
   const { threadID, senderID, messageID, isGroup } = event;
-  const action = (args[0] || "help").toLowerCase();
+  const action = (args[0] || "").toLowerCase();
   const data = loadSystemData();
   const isPM = !isGroup;
   const sender = String(senderID).trim();
 
   if (isGroup && !isAdmin(sender)) {
-    setTimeout(() => { try { api.setMessageReaction("🤢", messageID, () => {}, true); } catch {} }, 800); // MAS MABILIS ✅
+    setTimeout(() => { try { api.setMessageReaction("🤢", messageID, () => {}, true); } catch {} }, 800);
     return;
   }
 
@@ -376,98 +380,92 @@ module.exports.run = async function ({ api, event, args }) {
     return send(api,
 `👑 RYUK STATUS
 
-✅ AKTIBO:          ${data.active ? "OO" : "HINDI"}
-🔇 SILENT MODE:    ${data.silentMode ? "OO — HINDI MAGRE-REPLY" : "HINDI"}
-🎯 TARGET:          ${TARGET_USER_ID || "WALA"}
-💬 SELF-REACT:      ${data.selfReact ? "OO" : "HINDI"}
-🔥 AUTO-REACT:      ${data.autoReact ? "OO" : "HINDI"}
-👑 GC NAME:        ${targetGCName}
-👤 NICKNAME:       ${targetNickname}`, threadID, messageID);
+✅ ACTIVE: ${data.active ? "ONLINE" : "OFFLINE"}
+🔇 SILENT: ${data.silentMode ? "ON" : "OFF"}
+🎯 TARGET: ${TARGET_USER_ID || "LAHAT"}
+💬 AUTO-REACT: ${data.autoReact ? "ON" : "OFF"}
+😊 SELF-REACT: ${data.selfReact ? "ON" : "OFF"}
+🏷️ GC NAME: ${targetGCName}
+👤 NICKNAME: ${targetNickname}`, threadID, messageID);
   }
 
   if (action === "on") {
     data.active = true;
     saveSystemData(data);
-    return send(api, "✅ RYUK NAKABUHAY", threadID, messageID);
+    return send(api, "✅ RYUK → ACTIVATED", threadID, messageID);
   }
 
   if (action === "off") {
     data.active = false;
     saveSystemData(data);
-    return send(api, "❌ RYUK NAKAPATAY", threadID, messageID);
+    return send(api, "❌ RYUK → DEACTIVATED", threadID, messageID);
   }
 
   if (action === "silent") {
     data.silentMode = true;
     saveSystemData(data);
-    return send(api, "@silent 🔇 Silent mode activated", threadID, messageID);
+    return send(api, "🔇 SILENT MODE → ON", threadID, messageID);
   }
 
   if (action === "unsilent") {
     data.silentMode = false;
     saveSystemData(data);
-    return send(api, "@silent 🔊 Silent mode deactivated", threadID, messageID);
+    return send(api, "🔊 SILENT MODE → OFF", threadID, messageID);
   }
 
   if (action === "target") {
-    const target = args.slice(1).join(" ").trim();
-    if (!target) return send(api, `🎯 KASALUKUYANG TARGET:\n${TARGET_USER_ID || "WALA"}`, threadID, messageID);
-    if (target === "off") {
+    if (args[1] && args[1] !== "off") {
+      TARGET_USER_ID = args[1];
+      saveSystemData(data);
+      return send(api, `🎯 TARGET SET: ${TARGET_USER_ID}`, threadID, messageID);
+    } else if (args[1] === "off") {
       TARGET_USER_ID = "";
       saveSystemData(data);
-      return send(api, "✅ TARGET TINANGGAL", threadID, messageID);
+      return send(api, "🎯 TARGET → OFF", threadID, messageID);
     }
-    if (!/^\d+$/.test(target)) return send(api, "❌ MALI ANG ID — NUMERO LANG", threadID, messageID);
-    TARGET_USER_ID = target;
-    saveSystemData(data);
-    return send(api, `✅ TARGET NAKA-SET:\n${TARGET_USER_ID}`, threadID, messageID);
+    return send(api, "⚠️ GAMIT: /ryuk target [ID]", threadID, messageID);
   }
 
   if (action === "setgname") {
     if (isPM) return send(api, "❌ SA GC LANG PWEDI", threadID, messageID);
     const newName = args.slice(1).join(" ").trim();
-    if (!newName) return send(api, `📋 KASALUKUYANG GC NAME:\n${targetGCName}`, threadID, messageID);
-    if (newName.length > 30) return send(api, "❌ 30 LETRA LANG ANG PWEDI", threadID, messageID);
+    if (!newName) return send(api, "⚠️ GAMIT: /ryuk setgname [pangalan]", threadID, messageID);
     targetGCName = newName;
-    saveSystemData(data);
     api.setTitle(targetGCName, threadID, () => {});
-    return send(api, `✅ GC NAME:\n${targetGCName}`, threadID, messageID);
+    saveSystemData(data);
+    return send(api, `✅ GC NAME → ${targetGCName}`, threadID, messageID);
   }
 
   if (action === "setnick") {
     if (isPM) return send(api, "❌ SA GC LANG PWEDI", threadID, messageID);
-    const newName = args.slice(1).join(" ").trim();
-    if (!newName) return send(api, `📋 KASALUKUYANG NICKNAME:\n${targetNickname}`, threadID, messageID);
-    if (newName.length > 25) return send(api, "❌ 25 LETRA LANG ANG PWEDI", threadID, messageID);
-    targetNickname = newName;
+    const newNick = args.slice(1).join(" ").trim();
+    if (!newNick) return send(api, "⚠️ GAMIT: /ryuk setnick [pangalan]", threadID, messageID);
+    targetNickname = newNick;
     saveSystemData(data);
-    return send(api, `✅ NICKNAME:\n${targetNickname}`, threadID, messageID);
+    return send(api, `✅ NICKNAME → ${targetNickname}`, threadID, messageID);
   }
 
   if (action === "selfreacton") {
     data.selfReact = true;
     saveSystemData(data);
-    return send(api, "✅ SELF-REACT ON", threadID, messageID);
+    return send(api, "✅ SELF-REACT → ON", threadID, messageID);
   }
 
   if (action === "selfreactoff") {
     data.selfReact = false;
     saveSystemData(data);
-    return send(api, "❌ SELF-REACT OFF", threadID, messageID);
+    return send(api, "❌ SELF-REACT → OFF", threadID, messageID);
   }
 
   if (action === "reacton") {
     data.autoReact = true;
     saveSystemData(data);
-    return send(api, "✅ AUTO-REACT ON", threadID, messageID);
+    return send(api, "✅ AUTO-REACT → ON", threadID, messageID);
   }
 
   if (action === "reactoff") {
     data.autoReact = false;
     saveSystemData(data);
-    return send(api, "❌ AUTO-REACT OFF", threadID, messageID);
+    return send(api, "❌ AUTO-REACT → OFF", threadID, messageID);
   }
-
-  return send(api, "❌ HINDI KILALANG UTOS", threadID, messageID);
 };
-  
