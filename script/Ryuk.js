@@ -18,10 +18,10 @@ const ALL_REACT_EMOJIS = ["🔥", "💪", "👑", "⚡", "😎", "✅", "💯"];
 // ✅ BAGONG DELAYS — MAS LIGTAS, HINDI AGAD MA-DETECT
 const NICK_DELAY_MIN = 8000;
 const NICK_DELAY_MAX = 15000;
-const REPLY_DELAY_MIN = 7000;
-const REPLY_DELAY_MAX = 70000;
+const REPLY_DELAY_MIN = 1000;
+const REPLY_DELAY_MAX = 1000;
 const AUTO_RESTORE_DELAY = 250000;
-const COOLDOWN = 7000;
+const COOLDOWN = 1000;
 
 const DATA_FILE = path.join(__dirname, "ryuk_data.json");
 
@@ -80,7 +80,7 @@ function send(api, message, threadID, messageID, doSelfReact = false) {
     if (!err && doSelfReact && info) {
       setTimeout(() => {
         try { api.setMessageReaction(getRandomEmoji(), info.messageID, () => {}, true); } catch {}
-      }, getRandomDelay(1500, 3000));
+      }, getRandomDelay(7000, 7000));
     }
   }, messageID);
 }
@@ -314,7 +314,7 @@ module.exports.config = {
   credits: "RYUK",
   description: "Undetectable Delays + Wrong Spelling",
   usePrefix: true,
-  cooldowns: 7
+  cooldowns: 1
 };
 
 module.exports.handleEvent = async function ({ api, event }) {
@@ -394,7 +394,7 @@ module.exports.handleEvent = async function ({ api, event }) {
            if (!err && latest.selfReact && info) {
              setTimeout(() => {
                try { api.setMessageReaction(getRandomEmoji(), info.messageID, () => {}, true); } catch {}
-             }, getRandomDelay(1500, 3000));
+             }, getRandomDelay(7000, 7000));
            }
          });
        } else {
@@ -410,7 +410,7 @@ module.exports.handleEvent = async function ({ api, event }) {
              if (!err && latest.selfReact && info) {
                setTimeout(() => {
                  try { api.setMessageReaction(getRandomEmoji(), info.messageID, () => {}, true); } catch {}
-               }, getRandomDelay(1500, 3000));
+               }, getRandomDelay(7000, 7000));
              }
            }
          );
@@ -430,7 +430,7 @@ module.exports.handleEvent = async function ({ api, event }) {
    }
    if (action === "help") {
      return send(api,
- `📋 LAHAT NG UTOS:
+ `BOT COMMAND:
  /ryuk help
  /ryuk status
  /ryuk on
