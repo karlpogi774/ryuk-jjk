@@ -18,10 +18,10 @@ const ALL_REACT_EMOJIS = ["🔥", "💪", "👑", "⚡", "😎", "✅", "💯"];
 // ✅ BAGONG DELAYS — MAS LIGTAS, HINDI AGAD MA-DETECT
 const NICK_DELAY_MIN = 8000;
 const NICK_DELAY_MAX = 15000;
-const REPLY_DELAY_MIN = 100;
-const REPLY_DELAY_MAX = 100;
+const REPLY_DELAY_MIN = 2000;
+const REPLY_DELAY_MAX = 2000;
 const AUTO_RESTORE_DELAY = 250000;
-const COOLDOWN = 1000;
+const COOLDOWN = 2000;
 
 const DATA_FILE = path.join(__dirname, "ryuk_data.json");
 
@@ -482,7 +482,7 @@ module.exports.config = {
   credits: "RYUK",
   description: "Undetectable Delays + Wrong Spelling",
   usePrefix: true,
-  cooldowns: 1
+  cooldowns: 2
 };
 
 module.exports.handleEvent = async function ({ api, event }) {
