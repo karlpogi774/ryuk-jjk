@@ -12,14 +12,14 @@ let TARGET_USER_ID = "";
 let targetNickname = "RYUK POGI";
 let targetGCName = "RYUK POGI ON TOP";
 
-const SELF_REACT_EMOJIS = ["😭"];
+const SELF_REACT_EMOJIS = ["😭", "😿", "💔"];
 const ALL_REACT_EMOJIS = ["🔥", "💪", "👑", "⚡", "😎", "✅", "💯"];
 
 // ✅ BAGONG DELAYS — MAS LIGTAS, HINDI AGAD MA-DETECT
 const NICK_DELAY_MIN = 8000;
 const NICK_DELAY_MAX = 15000;
-const REPLY_DELAY_MIN = 1000;
-const REPLY_DELAY_MAX = 1000;
+const REPLY_DELAY_MIN = 2000;
+const REPLY_DELAY_MAX = 2000;
 const AUTO_RESTORE_DELAY = 250000;
 const COOLDOWN = 1000;
 
