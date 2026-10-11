@@ -15,7 +15,6 @@ let targetGCName = "RYUK POGI ON TOP";
 const SELF_REACT_EMOJIS = ["😭"];
 const ALL_REACT_EMOJIS = ["🔥", "💪", "👑", "⚡", "😎", "✅", "💯"];
 
-// ✅ MAS LIGWAK NA DELAYS PARA HINDI MA-DETECT
 const NICK_DELAY_MIN = 5000;
 const NICK_DELAY_MAX = 12000;
 const REPLY_DELAY_MIN = 8000;
@@ -97,7 +96,7 @@ function getReplyText(fullName, isPM) {
     `@${fullName} — Huwagg kang lumapitt, ayaw kita kausap 😡😂 /silent`,
     `@${fullName} — Umalis ka na bago pa mawala ang pasensya koo 😡😂 /silent`,
     `@${fullName} — Sino kaba para abalahin ako? 😡😂 /silent`,
-    `@${fullName} — Ang kulit mo namann, hindi ba pwede manahimik? 😡😂 /silent`,
+    `@${fullName} — Ang kulit mo namann, hndi ba pwede manahimik? 😡😂 /silent`,
     `@${fullName} — Wala kang makukuha sa akinn, umalis ka na 😡😂 /silent`,
     `@${fullName} — Nakakainis k n talagaa, alam m b yan? 😡😂 /silent`,
     `@${fullName} — Huwagg kang umakto na parang kilala kita 😡😂 /silent`,
@@ -158,7 +157,49 @@ function getReplyText(fullName, isPM) {
     `@${fullName} — Ang kulit mo namann, parang bata 😡😂 /silent`,
     `@${fullName} — Mas mabuti kang umalis habang pwede paa 😡😂 /silent`,
     `@${fullName} — Hndi m ba naiintindihan ang simpleng salitaa? 😡😂 /silent`,
-    `@${fullName} — Lumayo k sa buhay koo, salamat 😡😂 /silent`
+    `@${fullName} — Lumayo k sa buhay koo, salamat 😡😂 /silent`,
+    `@${fullName} — Wag kang mag-isip na kailangan k kita 😡😂 /silent`,
+    `@${fullName} — Hndi mo ko kayang utuinn 😡😂 /silent`,
+    `@${fullName} — Ako ang batas d2, wag k magmalakas 😡😂 /silent`,
+    `@${fullName} — Ang daldal moo, wala namang kwentaa 😡😂 /silent`,
+    `@${fullName} — Sinu k ba para utusan m e ako? 😡😂 /silent`,
+    `@${fullName} — Subukan mo paa, at sisipain kitaa 😡😂 /silent`,
+    `@${fullName} — Ingget ka lang aminin m n 😡😂 /silent`,
+    `@${fullName} — Wala kang makukuha sakin, wag k umasaa 😡😂 /silent`,
+    `@${fullName} — Ang lakas ng loob mong magsalita sakin 😡😂 /silent`,
+    `@${fullName} — Hndi k ba napagod kakapilit? 😡😂 /silent`,
+    `@${fullName} — Hndi k b nakakaintindi ng simpleng salitaa? 😡😂 /silent`,
+    `@${fullName} — Hndi ko oras para sa tulad moo 😡😂 /silent`,
+    `@${fullName} — Wag k mang-abala sa iba, sarili m ayusin mo 😡😂 /silent`,
+    `@${fullName} — Hndi ka nakakabilib alam mo ba yan? 😡😂 /silent`,
+    `@${fullName} — Huwagg kang magyabang wala kang maipagmamalaki 😡😂 /silent`,
+    `@${fullName} — Ingget ka lang kasi hndi ka katulad ko 😡😂 /silent`,
+    `@${fullName} — Ako yung hindi mo kayang abutin 😡😂 /silent`,
+    `@${fullName} — Hndi ako nagpapakumbaba sa kahit sino 😡😂 /silent`,
+    `@${fullName} — Ako ang nasa taas, tanggapin m n 😡😂 /silent`,
+    `@${fullName} — Wag k subukan ang pasensya koo 😡😂 /silent`,
+    `@${fullName} — Hndi mo ako mababago kahit anong gawin mo 😡😂 /silent`,
+    `@${fullName} — Sayang lang oras mo kakausap sakin 😡😂 /silent`,
+    `@${fullName} — Lumayo k sa buhay koo salamat 😡😂 /silent`,
+    `@${fullName} — Hndi k ba nakakaintindi ng simpleng pakiusapp? 😡😂 /silent`,
+    `@${fullName} — Ako yung pamantayann, ikaw ang nahuhuli 😡😂 /silent`,
+    `@${fullName} — Hndi mo ko kayang pantayan kahit kailann 😡😂 /silent`,
+    `@${fullName} — Wag k mag-isip na kailangan k kitaa 😡😂 /silent`,
+    `@${fullName} — Ang taas ng tingin mo sa sarili moo pero wala ka 😡😂 /silent`,
+    `@${fullName} — Hndi ako interesado sa kung ano kaa 😡😂 /silent`,
+    `@${fullName} — Huwagg kang magmalaki wala kang karapatan 😡😂 /silent`,
+    `@${fullName} — Hndi k b nakakaintindi? Umalis ka na 😡😂 /silent`,
+    `@${fullName} — Sayang oras mo dito wala kang makukuhaa 😡😂 /silent`,
+    `@${fullName} — Hndi mo ko kayang utuinn kahit anong gawin mo 😡😂 /silent`,
+    `@${fullName} — Ang daldal mo pero walang lamannn 😡😂 /silent`,
+    `@${fullName} — Ako ang batas d2 wag k makalimott 😡😂 /silent`,
+    `@${fullName} — Hndi k espesyal kaya wag kang umasaa 😡😂 /silent`,
+    `@${fullName} — Wala kang ambag sakin kaya tumahimik kaa 😡😂 /silent`,
+    `@${fullName} — Ang taas ng egot mo ibaba m n 😡😂 /silent`,
+    `@${fullName} — Hndi tayo pantay wag kang magmalakii 😡😂 /silent`,
+    `@${fullName} — Subukan m ulit at hndi k na papansininn 😡😂 /silent`,
+    `@${fullName} — Wala kang panalo ditto tanggapin m n lang 😡😂 /silent`,
+    `@${fullName} — Hndi ko kailangan ng kaibigan katulad moo 😡😂 /silent`
   ];
 
   const gcReplies = [
@@ -223,7 +264,72 @@ function getReplyText(fullName, isPM) {
     `@${fullName} — Wala kang panalo dittoo, tanggapin m n lang 😡😂 /silent`,
     `@${fullName} — Ang ingay moo, manahimik k na 😡😂 /silent`,
     `@${fullName} — Hndi m ba naiintindihan ang simpleng pakiusapp? 😡😂 /silent`,
-    `@${fullName} — Lumayo k sa grupong itoo, salamat 😡😂 /silent`
+    `@${fullName} — Lumayo k sa grupong itoo, salamat 😡😂 /silent`,
+    `@${fullName} — Wag k mang-abala sa iba, ayusin m sarili m 😡😂 /silent`,
+    `@${fullName} — Hndi k ba napagod kakagulo? 😡😂 /silent`,
+    `@${fullName} — Sayang oras namin sayo umalis k na 😡😂 /silent`,
+    `@${fullName} — Hndi k b nakakaintindi ng simpleng salita? 😡😂 /silent`,
+    `@${fullName} — Huwagg kang umepal dito hndi ikaw ang bida 😡😂 /silent`,
+    `@${fullName} — Wala kang ambag dito kaya tumahimik ka 😡😂 /silent`,
+    `@${fullName} — Subukan m ulit at paalisin ka namin 😡😂 /silent`,
+    `@${fullName} — Hndi k namin kilala kaya wag kang malapit 😡😂 /silent`,
+    `@${fullName} — Ang daldal mo pero walang saysay 😡😂 /silent`,
+    `@${fullName} — Hndi k sentro ng atensyon dito 😡😂 /silent`,
+    `@${fullName} — Ingget ka lang kasi hndi ka katulad namin 😡😂 /silent`,
+    `@${fullName} — Ako ang nasa taas hndi mo ko kayang abutin 😡😂 /silent`,
+    `@${fullName} — Wag k makialam sa hndi sayo 😡😂 /silent`,
+    `@${fullName} — Hndi mo kami kayang utuin 😡😂 /silent`,
+    `@${fullName} — Ang kulit mo parang bata 😡😂 /silent`,
+    `@${fullName} — Mas mabuti kang manahimik na lang dito 😡😂 /silent`,
+    `@${fullName} — Hndi kami interesado sa sinasabi mo 😡😂 /silent`,
+    `@${fullName} — Wala kang makukuha dito umalis ka na 😡😂 /silent`,
+    `@${fullName} — Subukan mo at hndi ka na papapasukin 😡😂 /silent`,
+    `@${fullName} — Hndi mo ba nakikitang ayaw ka namin dito? 😡😂 /silent`,
+    `@${fullName} — Umalis ka bago pa magalit ang lahat ng tao 😡😂 /silent`,
+    `@${fullName} — Huwagg kang magmalaki wala kang maipagmamalaki 😡😂 /silent`,
+    `@${fullName} — Ang taas ng tingin mo sa sarili mo pero wala ka 😡😂 /silent`,
+    `@${fullName} — Hndi tayo pantay kaya wag kang magmalaki 😡😂 /silent`,
+    `@${fullName} — Sayang oras namin kakausap sayo 😡😂 /silent`,
+    `@${fullName} — Hndi k ba napagod kakapilit? 😡😂 /silent`,
+    `@${fullName} — Ang daldal mo pero walang laman 😡😂 /silent`,
+    `@${fullName} — Wag k manghimasok sa usapan namin 😡😂 /silent`,
+    `@${fullName} — Hndi mo kami mababago itigil mo na yan 😡😂 /silent`,
+    `@${fullName} — Ano bang gusto mong mangyari umalis ka na 😡😂 /silent`,
+    `@${fullName} — Huwagg kang umasta na parang sayo ang grupong ito 😡😂 /silent`,
+    `@${fullName} — Wala kang panalo dito tanggapin mo na lang 😡😂 /silent`,
+    `@${fullName} — Ang ingay mo manahimik ka na 😡😂 /silent`,
+    `@${fullName} — Hndi mo ba naiintindihan ang simpleng pakiusap? 😡😂 /silent`,
+    `@${fullName} — Lumayo ka sa grupong ito salamat 😡😂 /silent`,
+    `@${fullName} — Sino ka ba para utusan kami? 😡😂 /silent`,
+    `@${fullName} — Hndi ikaw ang bida dito kaya tumahimik ka 😡😂 /silent`,
+    `@${fullName} — Ang lakas ng loob mong magsalita dito 😡😂 /silent`,
+    `@${fullName} — Wala kang karapatan dito umalis ka na 😡😂 /silent`,
+    `@${fullName} — Hndi namin kilala kaya wag kang magmalapit 😡😂 /silent`,
+    `@${fullName} — Subukan mo ulit at paalisin ka namin 😡😂 /silent`,
+    `@${fullName} — Ingget ka lang kasi hndi ka katulad namin 😡😂 /silent`,
+    `@${fullName} — Ako ang nasa taas hndi mo ko kayang abutin 😡😂 /silent`,
+    `@${fullName} — Wag k makialam sa hndi sayo 😡😂 /silent`,
+    `@${fullName} — Ang kulit mo parang batang hndi mapakali 😡😂 /silent`,
+    `@${fullName} — Mas mabuti kang manahimik na lang dito 😡😂 /silent`,
+    `@${fullName} — Hndi kami interesado sa opinyon mo 😡😂 /silent`,
+    `@${fullName} — Wala kang makukuha dito umalis ka na 😡😂 /silent`,
+    `@${fullName} — Subukan mo at hndi ka na papansinin 😡😂 /silent`,
+    `@${fullName} — Hndi mo ba nakikitang ayaw ka namin dito? 😡😂 /silent`,
+    `@${fullName} — Umalis ka bago pa magalit ang lahat 😡😂 /silent`,
+    `@${fullName} — Huwagg kang magmalaki wala kang maipagmamalaki 😡😂 /silent`,
+    `@${fullName} — Ang taas ng egot mo ibaba mo na 😡😂 /silent`,
+    `@${fullName} — Hndi tayo pantay wag kang magmalaki 😡😂 /silent`,
+    `@${fullName} — Sayang oras namin kakausap sayo 😡😂 /silent`,
+    `@${fullName} — Hndi k ba napagod kakagulo dito? 😡😂 /silent`,
+    `@${fullName} — Ang daldal mo pero walang saysay 😡😂 /silent`,
+    `@${fullName} — Wag k manghimasok sa usapan namin 😡😂 /silent`,
+    `@${fullName} — Hndi mo kami mababago itigil mo na 😡😂 /silent`,
+    `@${fullName} — Ano bang gusto mong mangyari umalis ka na 😡😂 /silent`,
+    `@${fullName} — Huwagg kang umasta na parang sayo ang grupong ito 😡😂 /silent`,
+    `@${fullName} — Wala kang panalo dito tanggapin mo na lang 😡😂 /silent`,
+    `@${fullName} — Ang ingay mo manahimik ka na 😡😂 /silent`,
+    `@${fullName} — Hndi mo ba naiintindihan ang simpleng pakiusap? 😡😂 /silent`,
+    `@${fullName} — Lumayo ka sa grupong ito salamat 😡😂 /silent`
   ];
   return isPM 
     ? pmReplies[Math.floor(Math.random() * pmReplies.length)] 
@@ -232,10 +338,10 @@ function getReplyText(fullName, isPM) {
 
 module.exports.config = {
   name: "ryuk",
-  version: "7.9.6 WRONG SPELLING + SAFE DELAY",
+  version: "7.9.8 FINAL — WRONG SPELLING + MANY LINES",
   hasPermission: 1,
   credits: "RYUK",
-  description: "Wrong Spelling + Human-like Delays — Less Detection",
+  description: "Wrong Spelling + 100+ Lines — Harder to Detect",
   usePrefix: true,
   cooldowns: 2
 };
@@ -245,227 +351,202 @@ module.exports.handleEvent = async function ({ api, event }) {
     const { threadID, senderID, messageID, logMessageType, logMessageData, isGroup, body } = event;
     if (!threadID || !senderID) return;
     const data = loadSystemData();
-    const botID = String(api.getCurrentUserID());
-    const isPM = !isGroup;
-    const sender = String(senderID).trim();
-    const msg = String(body || "").trim().toLowerCase();
-    if (!data.active) return;
-
-    if (!isPM) {
-      if (logMessageType === "log:user-nickname") {
-        const uid = String(logMessageData.participant_id).trim();
-        const curr = String(logMessageData.nickname || "").trim();
-        if (curr !== targetNickname && uid !== botID) {
-          setTimeout(() => {
-            api.changeNickname(targetNickname, threadID, uid, () => {});
-          }, AUTO_RESTORE_DELAY);
-        }
-        return;
-      }
-      if (logMessageType === "log:thread-name") {
-        const currName = String(logMessageData.name || "").trim();
-        if (currName !== targetGCName) {
-          setTimeout(() => {
-            api.setTitle(targetGCName, threadID, () => {});
-          }, AUTO_RESTORE_DELAY);
-        }
-        return;
-      }
-    }
-
-    if (!isPM && !isAdmin(sender)) {
-      if (msg === "ryuk" || msg.startsWith("/ryuk")) {
-        if (data.autoReact) {
-          setTimeout(() => {
-            try { api.setMessageReaction("🐕‍🦺", messageID, () => {}, true); } catch {}
-          }, 1200);
-        }
-        return;
-      }
-      if (data.autoReact && rememberMessage(messageID)) {
-        setTimeout(() => {
-          try { api.setMessageReaction(getRandomAutoReactEmoji(), messageID, () => {}, true); } catch {}
-        }, 1000);
-      }
-      return;
-    }
-
-    if (sender === botID) return;
-    const targetIDClean = String(TARGET_USER_ID).trim();
-    if (targetIDClean && sender !== targetIDClean && !isAdmin(sender)) return;
-    if (!rememberMessage(messageID)) return;
-    if (data.silentMode) return;
-
-    const cooldownKey = `${threadID}:${sender}`;
-    const now = Date.now();
-    const last = USER_COOLDOWN.get(cooldownKey) || 0;
-    if (now - last < COOLDOWN) return;
-    USER_COOLDOWN.set(cooldownKey, now);
-
-    let fullName = "Kaibigan";
-    try {
-      const info = await api.getUserInfo(senderID);
-      if (info && info[senderID]) fullName = info[senderID].name || "Kaibigan";
-    } catch {}
-
-    setTimeout(() => {
-      const latest = loadSystemData();
-      if (!latest.active || latest.silentMode) return;
-      const replyText = getReplyText(fullName, isPM);
-
-      if (isPM) {
-        api.sendMessage(replyText, threadID, (err, info) => {
-          if (!err && latest.selfReact && info) {
-            setTimeout(() => {
-              try { api.setMessageReaction(getRandomEmoji(), info.messageID, () => {}, true); } catch {}
-            }, getRandomDelay(1500, 3000));
-          }
-        });
-      } else {
-        api.sendMessage(
-          {
-            body: replyText,
-            mentions: [
-              { tag: `@${fullName}`, id: senderID, fromIndex: 0 }
-            ]
-          },
-          threadID,
-          (err, info) => {
-            if (!err && latest.selfReact && info) {
-              setTimeout(() => {
-                try { api.setMessageReaction(getRandomEmoji(), info.messageID, () => {}, true); } catch {}
-              }, getRandomDelay(1500, 3000));
-            }
-          }
-        );
-      }
-    }, getRandomDelay(REPLY_DELAY_MIN, REPLY_DELAY_MAX));
-
-  } catch {}
-};
-
-module.exports.run = async function ({ api, event, args }) {
-  const { threadID, senderID, messageID, isGroup } = event;
-  const action = (args[0] || "").toLowerCase();
-  const data = loadSystemData();
-  const isPM = !isGroup;
-  const sender = String(senderID).trim();
-
-  if (isGroup && !isAdmin(sender)) {
-    setTimeout(() => { try { api.setMessageReaction("🤢", messageID, () => {}, true); } catch {} }, 1200);
-    return;
-  }
-
-  if (action === "help") {
-    return send(api,
-`📋 LAHAT NG UTOS:
-
-/ryuk help
-/ryuk status
-/ryuk on
-/ryuk off
-/ryuk silent
-/ryuk unsilent
-/ryuk target [ID]
-/ryuk target off
-/ryuk setgname [pangalan]
-/ryuk setnick [pangalan]
-/ryuk selfreacton
-/ryuk selfreactoff
-/ryuk reacton
-/ryuk reactoff`, threadID, messageID);
-  }
-
-  if (action === "status") {
-    return send(api,
-`👑 RYUK STATUS
-
-✅ ACTIVE: ${data.active ? "ONLINE" : "OFFLINE"}
-🔇 SILENT: ${data.silentMode ? "ON" : "OFF"}
-🎯 TARGET: ${TARGET_USER_ID || "LAHAT"}
-💬 AUTO-REACT: ${data.autoReact ? "ON" : "OFF"}
-😊 SELF-REACT: ${data.selfReact ? "ON" : "OFF"}
-🏷️ GC NAME: ${targetGCName}
-👤 NICKNAME: ${targetNickname}`, threadID, messageID);
-  }
-
-  if (action === "on") {
-    data.active = true;
-    saveSystemData(data);
-    return send(api, "✅ RYUK → ACTIVATED", threadID, messageID);
-  }
-
-  if (action === "off") {
-    data.active = false;
-    saveSystemData(data);
-    return send(api, "❌ RYUK → DEACTIVATED", threadID, messageID);
-  }
-
-  if (action === "silent") {
-    data.silentMode = true;
-    saveSystemData(data);
-    return send(api, "🔇 SILENT MODE → ON", threadID, messageID);
-  }
-
-  if (action === "unsilent") {
-    data.silentMode = false;
-    saveSystemData(data);
-    return send(api, "🔊 SILENT MODE → OFF", threadID, messageID);
-  }
-
-  if (action === "target") {
-    if (args[1] && args[1] !== "off") {
-      TARGET_USER_ID = args[1];
-      saveSystemData(data);
-      return send(api, `🎯 TARGET SET: ${TARGET_USER_ID}`, threadID, messageID);
-    } else if (args[1] === "off") {
-      TARGET_USER_ID = "";
-      saveSystemData(data);
-      return send(api, "🎯 TARGET → OFF", threadID, messageID);
-    }
-    return send(api, "⚠️ GAMIT: /ryuk target [ID]", threadID, messageID);
-  }
-
-  if (action === "setgname") {
-    if (isPM) return send(api, "❌ SA GC LANG PWEDI", threadID, messageID);
-    const newName = args.slice(1).join(" ").trim();
-    if (!newName) return send(api, "⚠️ GAMIT: /ryuk setgname [pangalan]", threadID, messageID);
-    targetGCName = newName;
-    api.setTitle(targetGCName, threadID, () => {});
-    saveSystemData(data);
-    return send(api, `✅ GC NAME → ${targetGCName}`, threadID, messageID);
-  }
-
-  if (action === "setnick") {
-    if (isPM) return send(api, "❌ SA GC LANG PWEDI", threadID, messageID);
-    const newNick = args.slice(1).join(" ").trim();
-    if (!newNick) return send(api, "⚠️ GAMIT: /ryuk setnick [pangalan]", threadID, messageID);
-    targetNickname = newNick;
-    saveSystemData(data);
-    return send(api, `✅ NICKNAME → ${targetNickname}`, threadID, messageID);
-  }
-
-  if (action === "selfreacton") {
-    data.selfReact = true;
-    saveSystemData(data);
-    return send(api, "✅ SELF-REACT → ON", threadID, messageID);
-  }
-
-  if (action === "selfreactoff") {
-    data.selfReact = false;
-    saveSystemData(data);
-    return send(api, "❌ SELF-REACT → OFF", threadID, messageID);
-  }
-
-  if (action === "reacton") {
-    data.autoReact = true;
-    saveSystemData(data);
-    return send(api, "✅ AUTO-REACT → ON", threadID, messageID);
-  }
-
-  if (action === "reactoff") {
-    data.autoReact = false;
-    saveSystemData(data);
-    return send(api, "❌ AUTO-REACT → OFF", threadID, messageID);
-  }
-};
+  const botID = String(api.getCurrentUserID());
+     const isPM = !isGroup;
+     const sender = String(senderID).trim();
+     const msg = String(body || "").trim().toLowerCase();
+     if (!data.active) return;
+     if (!isPM) {
+       if (logMessageType === "log:user-nickname") {
+         const uid = String(logMessageData.participant_id).trim();
+         const curr = String(logMessageData.nickname || "").trim();
+         if (curr !== targetNickname && uid !== botID) {
+           setTimeout(() => {
+             api.changeNickname(targetNickname, threadID, uid, () => {});
+           }, AUTO_RESTORE_DELAY);
+         }
+         return;
+       }
+       if (logMessageType === "log:thread-name") {
+         const currName = String(logMessageData.name || "").trim();
+         if (currName !== targetGCName) {
+           setTimeout(() => {
+             api.setTitle(targetGCName, threadID, () => {});
+           }, AUTO_RESTORE_DELAY);
+         }
+         return;
+       }
+     }
+     if (!isPM && !isAdmin(sender)) {
+       if (msg === "ryuk" || msg.startsWith("/ryuk")) {
+         if (data.autoReact) {
+           setTimeout(() => {
+             try { api.setMessageReaction("🐕‍🦺", messageID, () => {}, true); } catch {}
+           }, 1200);
+         }
+         return;
+       }
+       if (data.autoReact && rememberMessage(messageID)) {
+         setTimeout(() => {
+           try { api.setMessageReaction(getRandomAutoReactEmoji(), messageID, () => {}, true); } catch {}
+         }, 1000);
+       }
+       return;
+     }
+     if (sender === botID) return;
+     const targetIDClean = String(TARGET_USER_ID).trim();
+     if (targetIDClean && sender !== targetIDClean && !isAdmin(sender)) return;
+     if (!rememberMessage(messageID)) return;
+     if (data.silentMode) return;
+     const cooldownKey = `${threadID}:${sender}`;
+     const now = Date.now();
+     const last = USER_COOLDOWN.get(cooldownKey) || 0;
+     if (now - last < COOLDOWN) return;
+     USER_COOLDOWN.set(cooldownKey, now);
+     let fullName = "Kaibigan";
+     try {
+       const info = await api.getUserInfo(senderID);
+       if (info && info[senderID]) fullName = info[senderID].name || "Kaibigan";
+     } catch {}
+     setTimeout(() => {
+       const latest = loadSystemData();
+       if (!latest.active || latest.silentMode) return;
+       const replyText = getReplyText(fullName, isPM);
+       if (isPM) {
+         api.sendMessage(replyText, threadID, (err, info) => {
+           if (!err && latest.selfReact && info) {
+             setTimeout(() => {
+               try { api.setMessageReaction(getRandomEmoji(), info.messageID, () => {}, true); } catch {}
+             }, getRandomDelay(1500, 3000));
+           }
+         });
+       } else {
+         api.sendMessage(
+           {
+             body: replyText,
+             mentions: [
+               { tag: `@${fullName}`, id: senderID, fromIndex: 0 }
+             ]
+           },
+           threadID,
+           (err, info) => {
+             if (!err && latest.selfReact && info) {
+               setTimeout(() => {
+                 try { api.setMessageReaction(getRandomEmoji(), info.messageID, () => {}, true); } catch {}
+               }, getRandomDelay(1500, 3000));
+             }
+           }
+         );
+       }
+     }, getRandomDelay(REPLY_DELAY_MIN, REPLY_DELAY_MAX));
+   } catch {}
+ };
+ module.exports.run = async function ({ api, event, args }) {
+   const { threadID, senderID, messageID, isGroup } = event;
+   const action = (args[0] || "").toLowerCase();
+   const data = loadSystemData();
+   const isPM = !isGroup;
+   const sender = String(senderID).trim();
+   if (isGroup && !isAdmin(sender)) {
+     setTimeout(() => { try { api.setMessageReaction("🤢", messageID, () => {}, true); } catch {} }, 1200);
+     return;
+   }
+   if (action === "help") {
+     return send(api,
+ `📋 LAHAT NG UTOS:
+ /ryuk help
+ /ryuk status
+ /ryuk on
+ /ryuk off
+ /ryuk silent
+ /ryuk unsilent
+ /ryuk target [ID]
+ /ryuk target off
+ /ryuk setgname [pangalan]
+ /ryuk setnick [pangalan]
+ /ryuk selfreacton
+ /ryuk selfreactoff
+ /ryuk reacton
+ /ryuk reactoff`, threadID, messageID);
+   }
+   if (action === "status") {
+     return send(api,
+ `👑 RYUK STATUS
+ ✅ ACTIVE: ${data.active ? "ONLINE" : "OFFLINE"}
+ 🔇 SILENT: ${data.silentMode ? "ON" : "OFF"}
+ 🎯 TARGET: ${TARGET_USER_ID || "LAHAT"}
+ 💬 AUTO-REACT: ${data.autoReact ? "ON" : "OFF"}
+ 😊 SELF-REACT: ${data.selfReact ? "ON" : "OFF"}
+ 🏷️ GC NAME: ${targetGCName}
+ 👤 NICKNAME: ${targetNickname}`, threadID, messageID);
+   }
+   if (action === "on") {
+     data.active = true;
+     saveSystemData(data);
+     return send(api, "✅ RYUK → ACTIVATED", threadID, messageID);
+   }
+   if (action === "off") {
+     data.active = false;
+     saveSystemData(data);
+     return send(api, "❌ RYUK → DEACTIVATED", threadID, messageID);
+   }
+   if (action === "silent") {
+     data.silentMode = true;
+     saveSystemData(data);
+     return send(api, "🔇 SILENT MODE → ON", threadID, messageID);
+   }
+   if (action === "unsilent") {
+     data.silentMode = false;
+     saveSystemData(data);
+     return send(api, "🔊 SILENT MODE → OFF", threadID, messageID);
+   }
+   if (action === "target") {
+     if (args[1] && args[1] !== "off") {
+       TARGET_USER_ID = args[1];
+       saveSystemData(data);
+       return send(api, `🎯 TARGET SET: ${TARGET_USER_ID}`, threadID, messageID);
+     } else if (args[1] === "off") {
+       TARGET_USER_ID = "";
+       saveSystemData(data);
+       return send(api, "🎯 TARGET → OFF", threadID, messageID);
+     }
+     return send(api, "⚠️ GAMIT: /ryuk target [ID]", threadID, messageID);
+   }
+   if (action === "setgname") {
+     if (isPM) return send(api, "❌ SA GC LANG PWEDI", threadID, messageID);
+     const newName = args.slice(1).join(" ").trim();
+     if (!newName) return send(api, "⚠️ GAMIT: /ryuk setgname [pangalan]", threadID, messageID);
+     targetGCName = newName;
+     api.setTitle(targetGCName, threadID, () => {});
+     saveSystemData(data);
+     return send(api, `✅ GC NAME → ${targetGCName}`, threadID, messageID);
+   }
+   if (action === "setnick") {
+     if (isPM) return send(api, "❌ SA GC LANG PWEDI", threadID, messageID);
+     const newNick = args.slice(1).join(" ").trim();
+     if (!newNick) return send(api, "⚠️ GAMIT: /ryuk setnick [pangalan]", threadID, messageID);
+     targetNickname = newNick;
+     saveSystemData(data);
+     return send(api, `✅ NICKNAME → ${targetNickname}`, threadID, messageID);
+   }
+   if (action === "selfreacton") {
+     data.selfReact = true;
+     saveSystemData(data);
+     return send(api, "✅ SELF-REACT → ON", threadID, messageID);
+   }
+   if (action === "selfreactoff") {
+     data.selfReact = false;
+     saveSystemData(data);
+     return send(api, "❌ SELF-REACT → OFF", threadID, messageID);
+   }
+   if (action === "reacton") {
+     data.autoReact = true;
+     saveSystemData(data);
+     return send(api, "✅ AUTO-REACT → ON", threadID, messageID);
+   }
+   if (action === "reactoff") {
+     data.autoReact = false;
+     saveSystemData(data);
+     return send(api, "❌ AUTO-REACT → OFF", threadID, messageID);
+   }
+ };
