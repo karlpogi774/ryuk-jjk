@@ -15,12 +15,13 @@ let targetGCName = "RYUK POGI ON TOP";
 const SELF_REACT_EMOJIS = ["😭"];
 const ALL_REACT_EMOJIS = ["🔥", "💪", "👑", "⚡", "😎", "✅", "💯"];
 
-const NICK_DELAY_MIN = 5000;
-const NICK_DELAY_MAX = 12000;
-const REPLY_DELAY_MIN = 1000;
-const REPLY_DELAY_MAX = 1000;
-const AUTO_RESTORE_DELAY = 180000;
-const COOLDOWN = 2000;
+// ✅ BAGONG DELAYS — MAS LIGTAS, HINDI AGAD MA-DETECT
+const NICK_DELAY_MIN = 8000;
+const NICK_DELAY_MAX = 15000;
+const REPLY_DELAY_MIN = 15000;
+const REPLY_DELAY_MAX = 30000;
+const AUTO_RESTORE_DELAY = 250000;
+const COOLDOWN = 12000;
 
 const DATA_FILE = path.join(__dirname, "ryuk_data.json");
 
@@ -299,36 +300,6 @@ function getReplyText(fullName, isPM) {
     `@${fullName} — Wala kang panalo dito tanggapin mo na lang 😡😂 /silent`,
     `@${fullName} — Ang ingay mo manahimik ka na 😡😂 /silent`,
     `@${fullName} — Hndi mo ba naiintindihan ang simpleng pakiusap? 😡😂 /silent`,
-    `@${fullName} — Lumayo ka sa grupong ito salamat 😡😂 /silent`,
-    `@${fullName} — Sino ka ba para utusan kami? 😡😂 /silent`,
-    `@${fullName} — Hndi ikaw ang bida dito kaya tumahimik ka 😡😂 /silent`,
-    `@${fullName} — Ang lakas ng loob mong magsalita dito 😡😂 /silent`,
-    `@${fullName} — Wala kang karapatan dito umalis ka na 😡😂 /silent`,
-    `@${fullName} — Hndi namin kilala kaya wag kang magmalapit 😡😂 /silent`,
-    `@${fullName} — Subukan mo ulit at paalisin ka namin 😡😂 /silent`,
-    `@${fullName} — Ingget ka lang kasi hndi ka katulad namin 😡😂 /silent`,
-    `@${fullName} — Ako ang nasa taas hndi mo ko kayang abutin 😡😂 /silent`,
-    `@${fullName} — Wag k makialam sa hndi sayo 😡😂 /silent`,
-    `@${fullName} — Ang kulit mo parang batang hndi mapakali 😡😂 /silent`,
-    `@${fullName} — Mas mabuti kang manahimik na lang dito 😡😂 /silent`,
-    `@${fullName} — Hndi kami interesado sa opinyon mo 😡😂 /silent`,
-    `@${fullName} — Wala kang makukuha dito umalis ka na 😡😂 /silent`,
-    `@${fullName} — Subukan mo at hndi ka na papansinin 😡😂 /silent`,
-    `@${fullName} — Hndi mo ba nakikitang ayaw ka namin dito? 😡😂 /silent`,
-    `@${fullName} — Umalis ka bago pa magalit ang lahat 😡😂 /silent`,
-    `@${fullName} — Huwagg kang magmalaki wala kang maipagmamalaki 😡😂 /silent`,
-    `@${fullName} — Ang taas ng egot mo ibaba mo na 😡😂 /silent`,
-    `@${fullName} — Hndi tayo pantay wag kang magmalaki 😡😂 /silent`,
-    `@${fullName} — Sayang oras namin kakausap sayo 😡😂 /silent`,
-    `@${fullName} — Hndi k ba napagod kakagulo dito? 😡😂 /silent`,
-    `@${fullName} — Ang daldal mo pero walang saysay 😡😂 /silent`,
-    `@${fullName} — Wag k manghimasok sa usapan namin 😡😂 /silent`,
-    `@${fullName} — Hndi mo kami mababago itigil mo na 😡😂 /silent`,
-    `@${fullName} — Ano bang gusto mong mangyari umalis ka na 😡😂 /silent`,
-    `@${fullName} — Huwagg kang umasta na parang sayo ang grupong ito 😡😂 /silent`,
-    `@${fullName} — Wala kang panalo dito tanggapin mo na lang 😡😂 /silent`,
-    `@${fullName} — Ang ingay mo manahimik ka na 😡😂 /silent`,
-    `@${fullName} — Hndi mo ba naiintindihan ang simpleng pakiusap? 😡😂 /silent`,
     `@${fullName} — Lumayo ka sa grupong ito salamat 😡😂 /silent`
   ];
   return isPM 
@@ -338,10 +309,10 @@ function getReplyText(fullName, isPM) {
 
 module.exports.config = {
   name: "ryuk",
-  version: "7.9.8 FINAL — WRONG SPELLING + MANY LINES",
+  version: "7.9.9 SAFE DELAYS",
   hasPermission: 1,
   credits: "RYUK",
-  description: "Wrong Spelling + 100+ Lines — Harder to Detect",
+  description: "Undetectable Delays + Wrong Spelling",
   usePrefix: true,
   cooldowns: 2
 };
@@ -351,65 +322,71 @@ module.exports.handleEvent = async function ({ api, event }) {
     const { threadID, senderID, messageID, logMessageType, logMessageData, isGroup, body } = event;
     if (!threadID || !senderID) return;
     const data = loadSystemData();
-  const botID = String(api.getCurrentUserID());
-     const isPM = !isGroup;
-     const sender = String(senderID).trim();
-     const msg = String(body || "").trim().toLowerCase();
-     if (!data.active) return;
-     if (!isPM) {
-       if (logMessageType === "log:user-nickname") {
-         const uid = String(logMessageData.participant_id).trim();
-         const curr = String(logMessageData.nickname || "").trim();
-         if (curr !== targetNickname && uid !== botID) {
-           setTimeout(() => {
-             api.changeNickname(targetNickname, threadID, uid, () => {});
-           }, AUTO_RESTORE_DELAY);
-         }
-         return;
-       }
-       if (logMessageType === "log:thread-name") {
-         const currName = String(logMessageData.name || "").trim();
-         if (currName !== targetGCName) {
-           setTimeout(() => {
-             api.setTitle(targetGCName, threadID, () => {});
-           }, AUTO_RESTORE_DELAY);
-         }
-         return;
-       }
-     }
-     if (!isPM && !isAdmin(sender)) {
-       if (msg === "ryuk" || msg.startsWith("/ryuk")) {
-         if (data.autoReact) {
-           setTimeout(() => {
-             try { api.setMessageReaction("🐕‍🦺", messageID, () => {}, true); } catch {}
-           }, 1200);
-         }
-         return;
-       }
-       if (data.autoReact && rememberMessage(messageID)) {
-         setTimeout(() => {
-           try { api.setMessageReaction(getRandomAutoReactEmoji(), messageID, () => {}, true); } catch {}
-         }, 1000);
-       }
-       return;
-     }
-     if (sender === botID) return;
-     const targetIDClean = String(TARGET_USER_ID).trim();
-     if (targetIDClean && sender !== targetIDClean && !isAdmin(sender)) return;
-     if (!rememberMessage(messageID)) return;
-     if (data.silentMode) return;
-     const cooldownKey = `${threadID}:${sender}`;
-     const now = Date.now();
-     const last = USER_COOLDOWN.get(cooldownKey) || 0;
-     if (now - last < COOLDOWN) return;
-     USER_COOLDOWN.set(cooldownKey, now);
-     let fullName = "Kaibigan";
-     try {
-       const info = await api.getUserInfo(senderID);
-       if (info && info[senderID]) fullName = info[senderID].name || "Kaibigan";
-     } catch {}
-     setTimeout(() => {
-       const latest = loadSystemData();
+    const botID = String(api.getCurrentUserID());
+    const isPM = !isGroup;
+    const sender = String(senderID).trim();
+    const msg = String(body || "").trim().toLowerCase();
+    if (!data.active) return;
+
+    if (!isPM) {
+      if (logMessageType === "log:user-nickname") {
+        const uid = String(logMessageData.participant_id).trim();
+        const curr = String(logMessageData.nickname || "").trim();
+        if (curr !== targetNickname && uid !== botID) {
+          setTimeout(() => {
+            api.changeNickname(targetNickname, threadID, uid, () => {});
+          }, AUTO_RESTORE_DELAY);
+        }
+        return;
+      }
+      if (logMessageType === "log:thread-name") {
+        const currName = String(logMessageData.name || "").trim();
+        if (currName !== targetGCName) {
+          setTimeout(() => {
+            api.setTitle(targetGCName, threadID, () => {});
+          }, AUTO_RESTORE_DELAY);
+        }
+        return;
+      }
+    }
+
+    if (!isPM && !isAdmin(sender)) {
+      if (msg === "ryuk" || msg.startsWith("/ryuk")) {
+        if (data.autoReact) {
+          setTimeout(() => {
+            try { api.setMessageReaction("🐕‍🦺", messageID, () => {}, true); } catch {}
+          }, 1200);
+        }
+        return;
+      }
+      if (data.autoReact && rememberMessage(messageID)) {
+        setTimeout(() => {
+          try { api.setMessageReaction(getRandomAutoReactEmoji(), messageID, () => {}, true); } catch {}
+        }, 1000);
+      }
+      return;
+    }
+
+    if (sender === botID) return;
+    const targetIDClean = String(TARGET_USER_ID).trim();
+    if (targetIDClean && sender !== targetIDClean && !isAdmin(sender)) return;
+    if (!rememberMessage(messageID)) return;
+    if (data.silentMode) return;
+
+    const cooldownKey = `${threadID}:${sender}`;
+    const now = Date.now();
+    const last = USER_COOLDOWN.get(cooldownKey) || 0;
+    if (now - last < COOLDOWN) return;
+    USER_COOLDOWN.set(cooldownKey, now);
+
+    let fullName = "Kaibigan";
+    try {
+      const info = await api.getUserInfo(senderID);
+      if (info && info[senderID]) fullName = info[senderID].name || "Kaibigan";
+    } catch {}
+
+    setTimeout(() => {
+              const latest = loadSystemData();
        if (!latest.active || latest.silentMode) return;
        const replyText = getReplyText(fullName, isPM);
        if (isPM) {
