@@ -17,8 +17,8 @@ const ALL_REACT_EMOJIS = ["🔥", "💪", "👑", "⚡", "😎", "✅", "💯"];
 
 const NICK_DELAY_MIN = 5000;
 const NICK_DELAY_MAX = 12000;
-const REPLY_DELAY_MIN = 2000;
-const REPLY_DELAY_MAX = 2000;
+const REPLY_DELAY_MIN = 1000;
+const REPLY_DELAY_MAX = 1000;
 const AUTO_RESTORE_DELAY = 180000;
 const COOLDOWN = 2000;
 
