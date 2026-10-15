@@ -2,8 +2,8 @@ const fs = require("fs");
 const path = require("path");
 
 // ==========================================
-// 🔒 GC NAME LOCK — SAFE VERSION
-// AUTO-REVERT | ✅ HINDI MA-DETECT | BAWAS API CALLS
+// 🔒 GC NAME LOCK + NAME REQUEST
+// AUTO-REVERT | ✅ REVERT: 3 SECONDS
 // ==========================================
 
 const ADMIN_IDS = [
@@ -14,14 +14,13 @@ const ADMIN_IDS = [
   "61595507156493"
 ];
 
-const TARGET_GC_NAME = "RYUK DOMAIN EXPANSION";
+let TARGET_GC_NAME = "RYUK DOMAIN EXPANSION";
 
-// ✅ LIGTAS NA DELAY SETTINGS
-const REVERT_DELAY_MIN = 5000;    // Min 5s
-const REVERT_DELAY_MAX = 10000;   // Max 10s — random
-const CHECK_INTERVAL = 60000;      // Check bawat 60s ✅
-const COOLDOWN = 10000;            // Pahinga 10s bago susunod
-const MAX_RETRIES = 2;             // Hanggang 2 subok lang ✅
+const DATA_FILE = path.join(__dirname, "gc_lock_data.json");
+const REVERT_DELAY = 3000;        // ⏱️ EXACTLY 3 SECONDS
+const CHECK_INTERVAL = 60000;
+const COOLDOWN = 5000;
+const MAX_RETRIES = 3;
 
 const IS_LOCKED = {};
 const LAST_CHECK = {};
@@ -32,21 +31,32 @@ function isAdmin(id) {
   return ADMIN_IDS.includes(String(id).trim());
 }
 
-// 🎲 Random delay — para natural ang galaw
-function randomDelay(min, max) {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
+function saveData() {
+  try {
+    fs.writeFileSync(DATA_FILE, JSON.stringify({ TARGET_GC_NAME }, null, 2));
+  } catch (e) {}
 }
+
+function loadData() {
+  try {
+    if (fs.existsSync(DATA_FILE)) {
+      const data = JSON.parse(fs.readFileSync(DATA_FILE, "utf8"));
+      if (data.TARGET_GC_NAME) TARGET_GC_NAME = data.TARGET_GC_NAME;
+    }
+  } catch (e) {}
+}
+loadData();
 
 module.exports.config = {
   name: "ngc",
   aliases: ["gclock", "lockgc"],
-  version: "1.2.0-SAFE",
+  version: "1.3.1",
   hasPermission: 1,
   credits: "RYUK DOMAIN LOCK",
-  description: "📛 NGC — Lock GC Name | Safe Mode",
+  description: "📛 NGC — Lock/Set GC Name | Auto-revert 3s",
   usePrefix: true,
   commandCategory: "Admin",
-  cooldowns: 10
+  cooldowns: 8
 };
 
 module.exports.handleEvent = async function ({ api, event }) {
@@ -56,55 +66,42 @@ module.exports.handleEvent = async function ({ api, event }) {
 
     const tid = String(threadID);
     if (!IS_LOCKED[tid]) return;
-
     const now = Date.now();
-
-    // 🛡️ Cooldown — huwag masyadong mabilis
     if (LAST_ACTION[tid] && now - LAST_ACTION[tid] < COOLDOWN) return;
 
-    // May nagpalit ng pangalan
     if (logMessageType === "log:thread-name") {
       const newName = logMessageData.name || "";
       if (newName !== TARGET_GC_NAME) {
         RETRY_COUNT[tid] = (RETRY_COUNT[tid] || 0);
         if (RETRY_COUNT[tid] >= MAX_RETRIES) return;
-
         RETRY_COUNT[tid]++;
-        const delay = randomDelay(REVERT_DELAY_MIN, REVERT_DELAY_MAX);
-
         setTimeout(() => {
           api.setTitle(TARGET_GC_NAME, tid, () => {});
           LAST_ACTION[tid] = Date.now();
-        }, delay);
+        }, REVERT_DELAY);
       } else {
         RETRY_COUNT[tid] = 0;
       }
       return;
     }
 
-    // Regular check — mas madalang ✅
     if (!LAST_CHECK[tid] || now - LAST_CHECK[tid] >= CHECK_INTERVAL) {
       LAST_CHECK[tid] = now;
-
       api.getThreadInfo(tid, (err, info) => {
         if (err || !info) return;
         if (info.threadName !== TARGET_GC_NAME) {
           RETRY_COUNT[tid] = (RETRY_COUNT[tid] || 0);
           if (RETRY_COUNT[tid] >= MAX_RETRIES) return;
-
           RETRY_COUNT[tid]++;
-          const delay = randomDelay(REVERT_DELAY_MIN, REVERT_DELAY_MAX);
-
           setTimeout(() => {
             api.setTitle(TARGET_GC_NAME, tid, () => {});
             LAST_ACTION[tid] = Date.now();
-          }, delay);
+          }, REVERT_DELAY);
         } else {
           RETRY_COUNT[tid] = 0;
         }
       });
     }
-
   } catch (err) {
     console.error("[NGC Lock Error]:", err);
   }
@@ -122,20 +119,34 @@ module.exports.run = async function ({ api, event, args }) {
 
     const action = (args[0] || "").toLowerCase();
 
+    if (action === "set") {
+      const newName = args.slice(1).join(" ").trim();
+      if (!newName) {
+        return api.sendMessage("❌ Ilagay ang pangalan!\nHalimbawa: ngc set RYUK KINGDOM", tid);
+      }
+      TARGET_GC_NAME = newName;
+      saveData();
+      setTimeout(() => {
+        api.setTitle(TARGET_GC_NAME, tid, () => {});
+      }, 1000);
+      return api.sendMessage(
+`📛 GC NAME UPDATED ✅
+📛 Bagong Name: "${TARGET_GC_NAME}"
+🔒 Auto-revert: 3 seconds`, tid);
+    }
+
     if (action === "on") {
       IS_LOCKED[tid] = true;
       RETRY_COUNT[tid] = 0;
       LAST_ACTION[tid] = 0;
-
       setTimeout(() => {
         api.setTitle(TARGET_GC_NAME, tid, () => {});
-      }, randomDelay(1500, 3000));
-
+      }, 1000);
       return api.sendMessage(
 `📛 NGC! ACTIVATED ✅
 📌 GC LOCKED: ${tid}
 📛 Name: "${TARGET_GC_NAME}"
-🛡️ Revert: 5-10s (safe mode)`, tid);
+⏱️ Auto-revert: 3 seconds`, tid);
     }
 
     if (action === "off") {
@@ -149,12 +160,14 @@ module.exports.run = async function ({ api, event, args }) {
 `📛 NGC STATUS
 📌 Status: ${status}
 📛 Target: "${TARGET_GC_NAME}"
-🛡️ Revert: 5-10s random
-Check: every 60s
-Gamitin: ngc on | ngc off`, tid);
+⏱️ Auto-revert: 3 seconds
+📖 Commands:
+• ngc set <pangalan> — Palitan GC Name
+• ngc on — I-lock
+• ngc off — I-unlock`, tid);
 
   } catch (err) {
     console.error("[NGC Command Error]:", err);
   }
 };
-      
+          
