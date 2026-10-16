@@ -16,13 +16,16 @@ let targetGCName = "RYUK POGI ON TOP";
 const SELF_REACT_EMOJIS = ["🌙", "🖤", "🕊️", "☁️", "🦋", "🌑", "🌌"];
 const ALL_REACT_EMOJIS = ["🔥", "💪", "👑", "⚡", "😎", "✅", "💯"];
 
-// ✅ MGA AYUS NA DELAYS — HINDI NA MABILIS, HINDI MA-DETECT
+// ✅ AUTO BROADCAST SETTINGS
+const AUTO_MESSAGE_INTERVAL_MIN = 25 * 60 * 1000;  // Min 25 minutes
+const AUTO_MESSAGE_INTERVAL_MAX = 45 * 60 * 1000;  // Max 45 minutes
+
+// ✅ MGA AYUS NA DELAYS
 const NICK_DELAY_MIN = 8000;
 const NICK_DELAY_MAX = 15000;
-const REPLY_DELAY_MIN = 3500;    // ✅ DATI 2000 → 3500 mas ligtas
-const REPLY_DELAY_MAX = 6000;    // ✅ DATI 2000 → 6000 random delay
-const AUTO_RESTORE_DELAY = 250000;
-const COOLDOWN = 3000;           // ✅ DATI 2000 → 3000 mas mahaba pahinga
+const REPLY_DELAY_MIN = 3500;
+const REPLY_DELAY_MAX = 6000;
+const COOLDOWN = 3000;
 
 // ✅ ON/OFF REACT EMOJI
 const REACT_ON = "😺";
@@ -30,11 +33,26 @@ const REACT_OFF = "😿";
 
 const DATA_FILE = path.join(__dirname, "ryuk_data.json");
 
+// ✅ MGA RANDOM NA MESSAGE NG BOT KAHIT WALANG NAG-CHAT
+const AUTO_MESSAGES = [
+  "👁️",
+  "🖤",
+  "🌙",
+  "👑 Watching...",
+  "☁️",
+  "🦋 Silent but watching",
+  "🌑",
+  "⚡",
+  "🕊️",
+  "😶"
+];
+
 const DEFAULT_DATA = {
   active: true,
   silentMode: false,
   autoReact: false,
   selfReact: true,
+  autoChat: true,
   targetNickname: "RYUK POGI",
   targetGCName: "RYUK POGI ON TOP",
   targetUserID: ""
@@ -42,6 +60,8 @@ const DEFAULT_DATA = {
 
 const USER_COOLDOWN = new Map();
 const SEEN_MESSAGES = new Set();
+let AUTO_CHAT_TIMER = null;
+let CURRENT_THREAD_ID = null;
 
 function isAdmin(senderID) {
   return ADMIN_IDS.includes(String(senderID).trim());
@@ -57,6 +77,10 @@ function getRandomEmoji() {
 
 function getRandomAutoReactEmoji() {
   return ALL_REACT_EMOJIS[Math.floor(Math.random() * ALL_REACT_EMOJIS.length)];
+}
+
+function getRandomAutoMessage() {
+  return AUTO_MESSAGES[Math.floor(Math.random() * AUTO_MESSAGES.length)];
 }
 
 function loadSystemData() {
@@ -80,12 +104,47 @@ function saveSystemData(data) {
   }
 }
 
+// ✅ AUTO CHAT SYSTEM
+function startAutoChat(api, threadID) {
+  CURRENT_THREAD_ID = threadID;
+  stopAutoChat();
+  scheduleNextAutoMessage(api);
+}
+
+function stopAutoChat() {
+  if (AUTO_CHAT_TIMER) {
+    clearTimeout(AUTO_CHAT_TIMER);
+    AUTO_CHAT_TIMER = null;
+  }
+}
+
+function scheduleNextAutoMessage(api) {
+  const data = loadSystemData();
+  if (!data.active || !data.autoChat || !CURRENT_THREAD_ID) return;
+  
+  const delay = getRandomDelay(AUTO_MESSAGE_INTERVAL_MIN, AUTO_MESSAGE_INTERVAL_MAX);
+  
+  AUTO_CHAT_TIMER = setTimeout(() => {
+    if (data.active && data.autoChat && CURRENT_THREAD_ID) {
+      const msg = getRandomAutoMessage();
+      api.sendMessage(msg, CURRENT_THREAD_ID, (err, info) => {
+        if (!err && data.selfReact && info) {
+          setTimeout(() => {
+            try { api.setMessageReaction(getRandomEmoji(), info.messageID, () => {}, true); } catch {}
+          }, getRandomDelay(3000, 6000));
+        }
+        scheduleNextAutoMessage(api);
+      });
+    }
+  }, delay);
+}
+
 function send(api, message, threadID, messageID, doSelfReact = false) {
   return api.sendMessage(message, threadID, (err, info) => {
     if (!err && doSelfReact && info) {
       setTimeout(() => {
         try { api.setMessageReaction(getRandomEmoji(), info.messageID, () => {}, true); } catch {}
-      }, getRandomDelay(5000, 8000)); // ✅ Random delay sa self-react
+      }, getRandomDelay(5000, 8000));
     }
   }, messageID);
 }
@@ -103,12 +162,7 @@ function getReplyText(fullName, isPM) {
     `@${fullName} — さっさと消えろ。俺の機嫌が悪くなる前にな 😡😂 /silent`,
     `@${fullName} — お前誰だよ？俺の時間を無駄にするな 😡😂 /silent`,
     `@${fullName} — うるさい。静かにできないのか 😡😂 /silent`,
-    `@${fullName} — 俺から何も得られるものはない。帰れ 😡😂 /silent`,
-    `@${fullName} — 本当にしつこいな。いい加減にしろ 😡😂 /silent`,
-    `@${fullName} — 知り合いでもないのに馴れ馴れしい 😡😂 /silent`,
-    `@${fullName} — 声が大きすぎる。黙れ 😡😂 /silent`,
-    `@${fullName} — お前と話す気はない。邪魔するな 😡😂 /silent`,
-    `@${fullName} — もう一度言ってみろ。後悔することになるぞ 😡😂 /silent`
+    `@${fullName} — 俺から何も得られるものはない。帰れ 😡😂 /silent`
   ];
     
   const gcReplies = [
@@ -116,12 +170,7 @@ function getReplyText(fullName, isPM) {
     `@${fullName} — Umalis k na bago pa magalit ang ibaa 😡😂 /silent`,
     `@${fullName} — Sino kaba para manggulo ditto? 😡😂 /silent`,
     `@${fullName} — Ang kulit moo, hndi ba pwede tumahimik? 😡😂 /silent`,
-    `@${fullName} — Wala kang ambag ditto, wag kang magsalita 😡😂 /silent`,
-    `@${fullName} — Nakakainis n ang pag-uugali moo 😡😂 /silent`,
-    `@${fullName} — Huwagg kang umepall, hndi ikaw ang bida 😡😂 /silent`,
-    `@${fullName} — Masyado kang maingayg, tumahimik k nga 😡😂 /silent`,
-    `@${fullName} — Hndi k sentro ng atensyonn ditto 😡😂 /silent`,
-    `@${fullName} — Subukan m ulit at paalisin kitaa 😡😂 /silent`
+    `@${fullName} — Wala kang ambag ditto, wag kang magsalita 😡😂 /silent`
   ];
   return isPM 
     ? pmReplies[Math.floor(Math.random() * pmReplies.length)] 
@@ -130,10 +179,10 @@ function getReplyText(fullName, isPM) {
 
 module.exports.config = {
   name: "ryuk",
-  version: "7.10.0 SAFE DELAYS",
+  version: "7.20.0 AUTO-CHAT",
   hasPermission: 1,
   credits: "RYUK",
-  description: "✅ Safe delays + on/off emoji react",
+  description: "✅ Auto-Chat + Safe Delays + On/Off React",
   usePrefix: true,
   cooldowns: 3
 };
@@ -149,6 +198,11 @@ module.exports.handleEvent = async function ({ api, event }) {
     const msg = String(body || "").trim().toLowerCase();
     if (!data.active) return;
 
+    // ✅ Start auto-chat kapag may pumasok na message sa GC
+    if (!isPM && data.autoChat && !CURRENT_THREAD_ID) {
+      startAutoChat(api, threadID);
+    }
+
     if (!isPM) {
       if (logMessageType === "log:user-nickname") {
         const uid = String(logMessageData.participant_id).trim();
@@ -156,7 +210,7 @@ module.exports.handleEvent = async function ({ api, event }) {
         if (curr !== targetNickname && uid !== botID) {
           setTimeout(() => {
             api.changeNickname(targetNickname, threadID, uid, () => {});
-          }, getRandomDelay(NICK_DELAY_MIN, NICK_DELAY_MAX)); // ✅ Random delay
+          }, getRandomDelay(NICK_DELAY_MIN, NICK_DELAY_MAX));
         }
         return;
       }
@@ -165,7 +219,7 @@ module.exports.handleEvent = async function ({ api, event }) {
         if (currName !== targetGCName) {
           setTimeout(() => {
             api.setTitle(targetGCName, threadID, () => {});
-          }, getRandomDelay(NICK_DELAY_MIN, NICK_DELAY_MAX)); // ✅ Random delay
+          }, getRandomDelay(NICK_DELAY_MIN, NICK_DELAY_MAX));
         }
         return;
       }
@@ -176,14 +230,14 @@ module.exports.handleEvent = async function ({ api, event }) {
         if (data.autoReact) {
           setTimeout(() => {
             try { api.setMessageReaction("🐕‍🦺", messageID, () => {}, true); } catch {}
-          }, getRandomDelay(1500, 2500)); // ✅ Random delay sa auto-react
+          }, getRandomDelay(1500, 2500));
         }
         return;
       }
       if (data.autoReact && rememberMessage(messageID)) {
         setTimeout(() => {
           try { api.setMessageReaction(getRandomAutoReactEmoji(), messageID, () => {}, true); } catch {}
-        }, getRandomDelay(1500, 3000)); // ✅ Random delay — hindi parehas palagi
+        }, getRandomDelay(1500, 3000));
       }
       return;
     }
@@ -236,7 +290,7 @@ module.exports.handleEvent = async function ({ api, event }) {
           }
         );
       }
-    }, getRandomDelay(REPLY_DELAY_MIN, REPLY_DELAY_MAX)); // ✅ Random reply delay
+    }, getRandomDelay(REPLY_DELAY_MIN, REPLY_DELAY_MAX));
   } catch {}
 };
 
@@ -261,6 +315,8 @@ module.exports.run = async function ({ api, event, args }) {
  /ryuk off
  /ryuk silent
  /ryuk unsilent
+ /ryuk autochat on
+ /ryuk autochat off
  /ryuk target [ID]
  /ryuk target off
  /ryuk setgname [pangalan]
@@ -276,6 +332,7 @@ module.exports.run = async function ({ api, event, args }) {
 `👑 RYUK STATUS
  ✅ ACTIVE: ${data.active ? "ONLINE" : "OFFLINE"}
  🔇 SILENT: ${data.silentMode ? "ON" : "OFF"}
+ 💬 AUTO-CHAT: ${data.autoChat ? "ON" : "OFF"}
  🎯 TARGET: ${TARGET_USER_ID || "LAHAT"}
  💬 AUTO-REACT: ${data.autoReact ? "ON" : "OFF"}
  😊 SELF-REACT: ${data.selfReact ? "ON" : "OFF"}
@@ -286,14 +343,16 @@ module.exports.run = async function ({ api, event, args }) {
   if (action === "on") {
     data.active = true;
     saveSystemData(data);
-    api.setMessageReaction(REACT_ON, messageID, () => {}, true); // ✅ 😺 react
+    api.setMessageReaction(REACT_ON, messageID, () => {}, true);
     return send(api, "✅ RYUK → ACTIVATED 😺", threadID, messageID);
   }
   
   if (action === "off") {
     data.active = false;
+    data.autoChat = false;
+    stopAutoChat();
     saveSystemData(data);
-    api.setMessageReaction(REACT_OFF, messageID, () => {}, true); // ✅ 😿 react
+    api.setMessageReaction(REACT_OFF, messageID, () => {}, true);
     return send(api, "❌ RYUK → DEACTIVATED 😿", threadID, messageID);
   }
   
@@ -307,6 +366,21 @@ module.exports.run = async function ({ api, event, args }) {
     data.silentMode = false;
     saveSystemData(data);
     return send(api, "🔊 SILENT MODE → OFF", threadID, messageID);
+  }
+
+  // ✅ AUTO-CHAT COMMANDS
+  if (action === "autochat" && args[1] === "on") {
+    data.autoChat = true;
+    saveSystemData(data);
+    if (!isPM) startAutoChat(api, threadID);
+    return send(api, "💬 AUTO-CHAT → ON\nBot will send random messages every 25-45 mins ✅", threadID, messageID);
+  }
+  
+  if (action === "autochat" && args[1] === "off") {
+    data.autoChat = false;
+    stopAutoChat();
+    saveSystemData(data);
+    return send(api, "💬 AUTO-CHAT → OFF ✅", threadID, messageID);
   }
   
   if (action === "target") {
