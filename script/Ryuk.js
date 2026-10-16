@@ -35,16 +35,16 @@ const DATA_FILE = path.join(__dirname, "ryuk_data.json");
 
 // ✅ MGA RANDOM NA MESSAGE NG BOT KAHIT WALANG NAG-CHAT
 const AUTO_MESSAGES = [
-  "👁️",
-  "🖤",
-  "🌙",
-  "👑 Watching...",
-  "☁️",
-  "🦋 Silent but watching",
-  "🌑",
-  "⚡",
-  "🕊️",
-  "😶"
+  "😡",
+  "😠",
+  "🤬",
+  "😤 Watching...",
+  "😾",
+  "😡 Silent but watching",
+  "😠",
+  "🤬",
+  "😾",
+  "😤"
 ];
 
 const DEFAULT_DATA = {
