@@ -16,14 +16,15 @@ let targetGCName = "RYUK POGI ON TOP";
 const SELF_REACT_EMOJIS = ["😡", "😠", "🤬", "😤", "😾"];
 const ALL_REACT_EMOJIS = ["🔥", "💪", "👑", "⚡", "😎", "✅", "💯"];
 
-const AUTO_MESSAGE_INTERVAL_MIN = 25 * 60 * 1000;
-const AUTO_MESSAGE_INTERVAL_MAX = 45 * 60 * 1000;
+const AUTO_MESSAGE_INTERVAL_MIN = 20 * 60 * 1000;
+const AUTO_MESSAGE_INTERVAL_MAX = 35 * 60 * 1000;
 
-const NICK_DELAY_MIN = 8000;
-const NICK_DELAY_MAX = 15000;
-const REPLY_DELAY_MIN = 3500;
-const REPLY_DELAY_MAX = 6000;
-const COOLDOWN = 3000;
+// ⚡ PINABILIS KO NA LAHAT
+const NICK_DELAY_MIN = 1500;    // DATI 8000 → 1500
+const NICK_DELAY_MAX = 3000;    // DATI 15000 → 3000
+const REPLY_DELAY_MIN = 600;    // DATI 3500 → 600
+const REPLY_DELAY_MAX = 1200;   // DATI 6000 → 1200
+const COOLDOWN = 1500;          // DATI 3000 → 1500
 
 const REACT_ON = "😺";
 const REACT_OFF = "😿";
@@ -55,7 +56,7 @@ const DEFAULT_DATA = {
 };
 
 const USER_COOLDOWN = new Map();
-const PROCESSED_MESSAGES = new Set(); // ✅ Para 1 message = 1 reply lang
+const PROCESSED_MESSAGES = new Set();
 let AUTO_CHAT_TIMER = null;
 let CURRENT_THREAD_ID = null;
 
@@ -126,7 +127,7 @@ function scheduleNextAutoMessage(api) {
         if (!err && data.selfReact && info) {
           setTimeout(() => {
             try { api.setMessageReaction(getRandomEmoji(), info.messageID, () => {}, true); } catch {}
-          }, getRandomDelay(3000, 6000));
+          }, getRandomDelay(800, 1500)); // ⚡ PINABILIS
         }
         scheduleNextAutoMessage(api);
       });
@@ -139,7 +140,7 @@ function send(api, message, threadID, messageID, doSelfReact = false) {
     if (!err && doSelfReact && info) {
       setTimeout(() => {
         try { api.setMessageReaction(getRandomEmoji(), info.messageID, () => {}, true); } catch {}
-      }, getRandomDelay(5000, 8000));
+      }, getRandomDelay(800, 1500)); // ⚡ PINABILIS
     }
   }, messageID);
 }
@@ -174,12 +175,12 @@ function getReplyText(fullName, isPM) {
 
 module.exports.config = {
   name: "ryuk",
-  version: "7.21.0 ONE_REPLY_PER_MESSAGE",
+  version: "7.22.0 FAST REPLY",
   hasPermission: 1,
   credits: "RYUK",
-  description: "✅ 1 Message = 1 Reply Only + Auto-Chat",
+  description: "⚡ Fast Reply + 1 Message = 1 Reply",
   usePrefix: true,
-  cooldowns: 3
+  cooldowns: 1
 };
 
 module.exports.handleEvent = async function ({ api, event }) {
@@ -193,7 +194,6 @@ module.exports.handleEvent = async function ({ api, event }) {
     const msg = String(body || "").trim().toLowerCase();
     if (!data.active) return;
 
-    // ✅ 1 MESSAGE = 1 REPLY — Kung na-process na, wag na ulitin
     if (!markAsProcessed(messageID)) return;
 
     if (!isPM && data.autoChat && !CURRENT_THREAD_ID) {
@@ -227,14 +227,14 @@ module.exports.handleEvent = async function ({ api, event }) {
         if (data.autoReact) {
           setTimeout(() => {
             try { api.setMessageReaction("🐕‍🦺", messageID, () => {}, true); } catch {}
-          }, getRandomDelay(1500, 2500));
+          }, getRandomDelay(500, 1000)); // ⚡ PINABILIS
         }
         return;
       }
       if (data.autoReact) {
         setTimeout(() => {
           try { api.setMessageReaction(getRandomAutoReactEmoji(), messageID, () => {}, true); } catch {}
-        }, getRandomDelay(1500, 3000));
+        }, getRandomDelay(500, 1000)); // ⚡ PINABILIS
       }
       return;
     }
@@ -265,7 +265,7 @@ module.exports.handleEvent = async function ({ api, event }) {
           if (!err && latest.selfReact && info) {
             setTimeout(() => {
               try { api.setMessageReaction(getRandomEmoji(), info.messageID, () => {}, true); } catch {}
-            }, getRandomDelay(5000, 8000));
+            }, getRandomDelay(800, 1500)); // ⚡ PINABILIS
           }
         });
       } else {
@@ -281,7 +281,7 @@ module.exports.handleEvent = async function ({ api, event }) {
             if (!err && latest.selfReact && info) {
               setTimeout(() => {
                 try { api.setMessageReaction(getRandomEmoji(), info.messageID, () => {}, true); } catch {}
-              }, getRandomDelay(5000, 8000));
+              }, getRandomDelay(800, 1500)); // ⚡ PINABILIS
             }
           }
         );
@@ -298,7 +298,7 @@ module.exports.run = async function ({ api, event, args }) {
   const sender = String(senderID).trim();
   
   if (isGroup && !isAdmin(sender)) {
-    setTimeout(() => { try { api.setMessageReaction("🤢", messageID, () => {}, true); } catch {} }, 1500);
+    setTimeout(() => { try { api.setMessageReaction("🤢", messageID, () => {}, true); } catch {} }, 800); // ⚡ PINABILIS
     return;
   }
   
@@ -368,7 +368,7 @@ module.exports.run = async function ({ api, event, args }) {
     data.autoChat = true;
     saveSystemData(data);
     if (!isPM) startAutoChat(api, threadID);
-    return send(api, "💬 AUTO-CHAT → ON\nBot will send random messages every 25-45 mins ✅", threadID, messageID);
+    return send(api, "💬 AUTO-CHAT → ON\nEvery 20-35 mins ✅", threadID, messageID);
   }
   
   if (action === "autochat" && args[1] === "off") {
