@@ -19,11 +19,10 @@ const ALL_REACT_EMOJIS = ["🔥", "💪", "👑", "⚡", "😎", "✅", "💯"];
 const AUTO_MESSAGE_INTERVAL_MIN = 20 * 60 * 1000;
 const AUTO_MESSAGE_INTERVAL_MAX = 35 * 60 * 1000;
 
-// ⚡ SOBRANG BILIS NA — PARANG FLASH!
 const NICK_DELAY_MIN = 300;
 const NICK_DELAY_MAX = 600;
-const REPLY_DELAY_MIN = 50;     // ⚡ AGAD NA SASAGOT
-const REPLY_DELAY_MAX = 150;    // ⚡ WALANG HINTAY
+const REPLY_DELAY_MIN = 50;
+const REPLY_DELAY_MAX = 150;
 const COOLDOWN = 800;
 
 const REACT_ON = "😺";
@@ -57,8 +56,8 @@ const DEFAULT_DATA = {
 
 const USER_COOLDOWN = new Map();
 const PROCESSED_MESSAGES = new Set();
-let AUTO_CHAT_TIMER = null;
-let CURRENT_THREAD_ID = null;
+const ACTIVE_THREADS = new Set(); // ✅ LAHAT NG GC AY SUSUBAYBAYAN
+const AUTO_CHAT_TIMERS = new Map(); // ✅ HIWALAY NA TIMER SA BAWAT GC
 
 function isAdmin(senderID) {
   return ADMIN_IDS.includes(String(senderID).trim());
@@ -101,38 +100,50 @@ function saveSystemData(data) {
   }
 }
 
-function startAutoChat(api, threadID) {
-  CURRENT_THREAD_ID = threadID;
-  stopAutoChat();
-  scheduleNextAutoMessage(api);
+// ✅ SIMULAN ANG AUTO-CHAT SA ISANG GC
+function startAutoChatForThread(api, threadID) {
+  if (ACTIVE_THREADS.has(threadID)) return;
+  ACTIVE_THREADS.add(threadID);
+  scheduleNextAutoMessage(api, threadID);
 }
 
-function stopAutoChat() {
-  if (AUTO_CHAT_TIMER) {
-    clearTimeout(AUTO_CHAT_TIMER);
-    AUTO_CHAT_TIMER = null;
+// ✅ ITIGIL ANG AUTO-CHAT SA ISANG GC
+function stopAutoChatForThread(threadID) {
+  if (AUTO_CHAT_TIMERS.has(threadID)) {
+    clearTimeout(AUTO_CHAT_TIMERS.get(threadID));
+    AUTO_CHAT_TIMERS.delete(threadID);
   }
+  ACTIVE_THREADS.delete(threadID);
 }
 
-function scheduleNextAutoMessage(api) {
+// ✅ ITIGIL LAHAT NG AUTO-CHAT
+function stopAllAutoChat() {
+  AUTO_CHAT_TIMERS.forEach(timer => clearTimeout(timer));
+  AUTO_CHAT_TIMERS.clear();
+  ACTIVE_THREADS.clear();
+}
+
+function scheduleNextAutoMessage(api, threadID) {
   const data = loadSystemData();
-  if (!data.active || !data.autoChat || !CURRENT_THREAD_ID) return;
+  if (!data.active || !data.autoChat || !ACTIVE_THREADS.has(threadID)) return;
   
   const delay = getRandomDelay(AUTO_MESSAGE_INTERVAL_MIN, AUTO_MESSAGE_INTERVAL_MAX);
   
-  AUTO_CHAT_TIMER = setTimeout(() => {
-    if (data.active && data.autoChat && CURRENT_THREAD_ID) {
+  const timer = setTimeout(() => {
+    if (data.active && data.autoChat && ACTIVE_THREADS.has(threadID)) {
       const msg = getRandomAutoMessage();
-      api.sendMessage(msg, CURRENT_THREAD_ID, (err, info) => {
+      api.sendMessage(msg, threadID, (err, info) => {
         if (!err && data.selfReact && info) {
           setTimeout(() => {
             try { api.setMessageReaction(getRandomEmoji(), info.messageID, () => {}, true); } catch {}
           }, getRandomDelay(400, 800));
         }
-        scheduleNextAutoMessage(api);
+        scheduleNextAutoMessage(api, threadID);
       });
     }
   }, delay);
+  
+  AUTO_CHAT_TIMERS.set(threadID, timer);
 }
 
 function send(api, message, threadID, messageID, doSelfReact = false) {
@@ -175,10 +186,10 @@ function getReplyText(fullName, isPM) {
 
 module.exports.config = {
   name: "ryuk",
-  version: "7.23.0 FLASH SPEED",
+  version: "7.24.0 ALL_GCS_SUPPORT",
   hasPermission: 1,
   credits: "RYUK",
-  description: "⚡ FLASH SPEED — Agad sasagot!",
+  description: "✅ Gagana sa LAHAT NG GC nang sabay!",
   usePrefix: true,
   cooldowns: 0.8
 };
@@ -196,8 +207,9 @@ module.exports.handleEvent = async function ({ api, event }) {
 
     if (!markAsProcessed(messageID)) return;
 
-    if (!isPM && data.autoChat && !CURRENT_THREAD_ID) {
-      startAutoChat(api, threadID);
+    // ✅ SA BAWAT GC NA MAY MESSAGE — MAGAGAWA NG BOT ANG TASK DOON
+    if (!isPM && data.autoChat) {
+      startAutoChatForThread(api, threadID); // ✅ I-REGISTER ANG GC
     }
 
     if (!isPM) {
@@ -329,6 +341,7 @@ module.exports.run = async function ({ api, event, args }) {
  ✅ ACTIVE: ${data.active ? "ONLINE" : "OFFLINE"}
  🔇 SILENT: ${data.silentMode ? "ON" : "OFF"}
  💬 AUTO-CHAT: ${data.autoChat ? "ON" : "OFF"}
+ 📊 ACTIVE GC: ${ACTIVE_THREADS.size} na GC
  🎯 TARGET: ${TARGET_USER_ID || "LAHAT"}
  💬 AUTO-REACT: ${data.autoReact ? "ON" : "OFF"}
  😊 SELF-REACT: ${data.selfReact ? "ON" : "OFF"}
@@ -340,13 +353,13 @@ module.exports.run = async function ({ api, event, args }) {
     data.active = true;
     saveSystemData(data);
     api.setMessageReaction(REACT_ON, messageID, () => {}, true);
-    return send(api, "✅ RYUK → ACTIVATED 😺", threadID, messageID);
+    return send(api, "✅ RYUK → ACTIVATED 😺\nGagana na sa LAHAT NG GC!", threadID, messageID);
   }
   
   if (action === "off") {
+    stopAllAutoChat();
     data.active = false;
     data.autoChat = false;
-    stopAutoChat();
     saveSystemData(data);
     api.setMessageReaction(REACT_OFF, messageID, () => {}, true);
     return send(api, "❌ RYUK → DEACTIVATED 😿", threadID, messageID);
@@ -367,15 +380,15 @@ module.exports.run = async function ({ api, event, args }) {
   if (action === "autochat" && args[1] === "on") {
     data.autoChat = true;
     saveSystemData(data);
-    if (!isPM) startAutoChat(api, threadID);
-    return send(api, "💬 AUTO-CHAT → ON\nEvery 20-35 mins ✅", threadID, messageID);
+    if (!isPM) startAutoChatForThread(api, threadID);
+    return send(api, `💬 AUTO-CHAT → ON ✅\nMag-a-auto-chat na sa LAHAT NG GC!\nDetectado: ${ACTIVE_THREADS.size} na GC`, threadID, messageID);
   }
   
   if (action === "autochat" && args[1] === "off") {
+    stopAllAutoChat();
     data.autoChat = false;
-    stopAutoChat();
     saveSystemData(data);
-    return send(api, "💬 AUTO-CHAT → OFF ✅", threadID, messageID);
+    return send(api, "💬 AUTO-CHAT → OFF ✅\nTumigil na sa LAHAT NG GC", threadID, messageID);
   }
   
   if (action === "target") {
@@ -434,4 +447,4 @@ module.exports.run = async function ({ api, event, args }) {
     return send(api, "❌ AUTO-REACT → OFF", threadID, messageID);
   }
 };
-    
+                           
