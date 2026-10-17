@@ -1,0 +1,344 @@
+const fs = require("fs");
+const path = require("path");
+
+// ADMIN UID RESTRICTION
+const ADMIN_UID = [
+  "61594022290817",
+  "61595507156493"
+];
+
+module.exports.config = {
+  name: "activate",
+  version: "12.0.0",
+  hasPermission: 2, // Admin only
+  credits: "Ryuk",
+  description: "Admin-locked (UID: 61594022290817) Tagalog auto-reply bot with auto self-react, anti-spam, locked GC name & nicknames, anti-unsend listener, and PM support.",
+  usePrefix: true,
+  commandCategory: "Admin",
+  usages: "/activate on | off | status | add <text> | listlines | setnick [name] | setgname [name]",
+  cooldowns: 5
+};
+
+const DATA_PATH = path.join(__dirname, "activate_data.json");
+const DEFAULT_LOCKED_NAME = "The one they can't change";
+
+// Emojis for auto self-react
+const REACT_EMOJIS = ["🔥", "💀", "🤣", "😆", "🤡", "👎", "⚡", "😈"];
+
+// Default Tagalog roasts / replies
+const DEFAULT_TAGALOG_ROASTS = [
+  "Luh, nag-type pa talaga siya oh, akala mo naman may kumpirmasyon. 💀",
+  "Lods, paki-delete na lang 'to bago pa makita ng iba, nakakahiya. 🤣",
+  "Lakas ng loob mo mag-chat, pero yung sinabi mo walang kwenta.",
+  "Sino nagtanong sa'yo? Lakas maka-main character ah.",
+  "Bro, isip muna bago pindot ng send button, napapahalata ka eh.",
+  "Pang-asar ba 'yan o self-humiliation? Clarify natin.",
+  "Sana bago ka nag-text, nag-isip ka muna ng limang beses.",
+  "Quiet ka na lang muna lods, nauubusan na kami ng patience sa'yo.",
+  "I-off mo na wifi mo, hindi para sa'yo ang araw na 'to.",
+  "Ganda ng sinabi mo ah, kasing ganda ng blankong papel. 🤡",
+  "Ulitin mo nga 'yan, para mas lalo ka naming pagtawanan.",
+  "May group chat restraint order ka na ba? Kasi lapit na kita i-report.",
+  "Tigilan mo na 'yan, pati 'yung keyboard mo sumusuko na sa'yo.",
+  "Confidence level: 100%. Sense level: 0%.",
+  "Sige lang, ipagpatuloy mo 'yan... hanggang sa wala nang makipag-usap sa'yo."
+];
+
+function loadData() {
+  try {
+    if (fs.existsSync(DATA_PATH)) {
+      const parsed = JSON.parse(fs.readFileSync(DATA_PATH, "utf8"));
+      if (!parsed.roasts || parsed.roasts.length === 0) {
+        parsed.roasts = DEFAULT_TAGALOG_ROASTS;
+      }
+      if (!parsed.gcName) parsed.gcName = DEFAULT_LOCKED_NAME;
+      if (!parsed.nickName) parsed.nickName = DEFAULT_LOCKED_NAME;
+      return parsed;
+    }
+  } catch {}
+  return { 
+    active: false, 
+    activatedBy: null, 
+    roasts: DEFAULT_TAGALOG_ROASTS, 
+    gcName: DEFAULT_LOCKED_NAME,
+    nickName: DEFAULT_LOCKED_NAME
+  };
+}
+
+function saveData(data) {
+  fs.writeFileSync(DATA_PATH, JSON.stringify(data, null, 2));
+}
+
+function isActive() {
+  const data = loadData();
+  return data.active === true;
+}
+
+// ===== ANTI-SPAM & COOLDOWN SYSTEM =====
+const lastResponseTime = new Map();
+const COOLDOWN_DELAY = 2000; // 2 Seconds Slow Motion Cooldown
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+// ===== EVENT HANDLER =====
+module.exports.handleEvent = async function ({ api, event }) {
+  const { threadID, senderID, body, messageID, logMessageType, logMessageData, isGroup, type } = event;
+
+  if (!isActive()) return;
+
+  const data = loadData();
+  const lockedGcName = data.gcName || DEFAULT_LOCKED_NAME;
+
+  // 1. AUTO ENFORCE GC NAME (Group Chat Only)
+  if (isGroup && (logMessageType === "log:thread-name" || logMessageType === "log:subscribe" || logMessageType === "log:unsubscribe")) {
+    if (logMessageData && logMessageData.name !== lockedGcName) {
+      api.setTitle(lockedGcName, threadID, (err) => {
+        if (err) console.error("Auto GC name enforcement failed:", err);
+      });
+    }
+    return;
+  }
+
+  // 2. FEATURE: ANTI-UNSEND LISTENER
+  if (type === "message_unsend") {
+    return api.sendMessage(`👀 Uh-oh! May nag-unsend ng message sa GC! Huli ka pero hindi kulong. 🤫`, threadID);
+  }
+
+  // Ignore empty messages or bot's own messages
+  if (!body || senderID === api.getCurrentUserID()) return;
+
+  const lowerBody = body.trim().toLowerCase();
+
+  // 3. AUTO REQUEST: SET GNAME VIA CHAT (ADMIN ONLY)
+  if (lowerBody.startsWith("setgname")) {
+    if (String(senderID) !== ADMIN_UID) {
+      return api.sendMessage("❌ Restricted: Admin (61594022290817) lamang ang pwedeng magpalit ng GC Name.", threadID, messageID);
+    }
+    const newGcName = body.slice(8).trim() || DEFAULT_LOCKED_NAME;
+    if (!isGroup) {
+      return api.sendMessage("❌ Ang setgname request ay para lamang sa Group Chat.", threadID, messageID);
+    }
+    data.gcName = newGcName;
+    saveData(data);
+    api.setTitle(newGcName, threadID, (err) => {
+      if (err) return api.sendMessage("❌ Bigo sa pagbago ng pangalan ng GC.", threadID, messageID);
+      return api.sendMessage(`✅ Admin Request Accepted: Locked GC Name updated to "${newGcName}".`, threadID, messageID);
+    });
+    return;
+  }
+
+  // 4. AUTO REQUEST: SET NICK VIA CHAT (ADMIN ONLY)
+  if (lowerBody.startsWith("setnick")) {
+    if (String(senderID) !== ADMIN_UID) {
+      return api.sendMessage("❌ Restricted: Admin (61594022290817) lamang ang pwedeng magpalit ng Nicknames.", threadID, messageID);
+    }
+    const newNick = body.slice(7).trim() || DEFAULT_LOCKED_NAME;
+    if (!isGroup) {
+      return api.sendMessage("❌ Ang setnick request ay para lamang sa Group Chat.", threadID, messageID);
+    }
+    data.nickName = newNick;
+    saveData(data);
+    try {
+      const threadInfo = await api.getThreadInfo(threadID);
+      const participantIDs = threadInfo.participantIDs;
+      api.sendMessage(`⏳ Admin Request Accepted: Changing all member nicknames to "${newNick}"...`, threadID);
+
+      for (const userID of participantIDs) {
+        await sleep(500);
+        api.changeNickname(newNick, threadID, userID, (err) => {
+          if (err) console.error(`Failed nickname change for ${userID}:`, err);
+        });
+      }
+      return api.sendMessage(`✅ All member nicknames successfully set to "${newNick}".`, threadID, messageID);
+    } catch (e) {
+      return api.sendMessage("❌ Bigo sa pagbago ng nicknames.", threadID, messageID);
+    }
+  }
+
+  // Skip auto-reply if user is executing /activate command
+  if (lowerBody.startsWith("/activate")) return;
+
+  const now = Date.now();
+  const lastTime = lastResponseTime.get(threadID) || 0;
+
+  // Anti-Spam Check (2s Slow Motion Delay)
+  if (now - lastTime < COOLDOWN_DELAY) {
+    return;
+  }
+
+  lastResponseTime.set(threadID, now);
+
+  try {
+    const roastsList = data.roasts && data.roasts.length > 0 ? data.roasts : DEFAULT_TAGALOG_ROASTS;
+
+    // Pick random roast line and emoji
+    const randomRoast = roastsList[Math.floor(Math.random() * roastsList.length)];
+    const randomEmoji = REACT_EMOJIS[Math.floor(Math.random() * REACT_EMOJIS.length)];
+
+    // 2 Seconds typing/slow-motion delay
+    await sleep(2000);
+
+    // AUTO REPLY WITH DIRECT QUOTE
+    api.sendMessage({
+      body: randomRoast,
+      mentions: [{ tag: `@${senderID}`, id: senderID }]
+    }, threadID, async (err, info) => {
+      if (!err && info && info.messageID) {
+        // AUTO SELF-REACT (800ms delay)
+        await sleep(800);
+        api.setMessageReaction(randomEmoji, info.messageID, (reactErr) => {
+          if (reactErr) console.error("Self-react error:", reactErr);
+        }, true);
+      }
+    }, messageID);
+  } catch (error) {
+    console.error("Auto-reply error:", error);
+  }
+};
+
+// ===== COMMAND HANDLER (ADMIN PERMISSION ENFORCED) =====
+module.exports.run = async function ({ api, event, args }) {
+  const { threadID, messageID, senderID, isGroup } = event;
+
+  // STRICT ADMIN UID CHECK
+  if (String(senderID) !== ADMIN_UID) {
+    return api.sendMessage("❌ Access Denied: Admin UID (61594022290817) lamang ang pwedeng gumamit ng bot commands na ito.", threadID, messageID);
+  }
+
+  const sub = (args[0] || "").toLowerCase();
+  const data = loadData();
+
+  // Turn ON Bot Features
+  if (sub === "on") {
+    data.active = true;
+    data.activatedBy = senderID;
+    data.activatedAt = Date.now();
+    saveData(data);
+
+    const lockedGcName = data.gcName || DEFAULT_LOCKED_NAME;
+    if (isGroup) {
+      api.setTitle(lockedGcName, threadID, () => {});
+    }
+
+    return api.sendMessage(
+      `🔥 ADMIN BOT ACTIVATED (UID: 61594022290817)\n\n` +
+      `• Duration: INFINITE ♾️\n` +
+      `• Mode: Auto Reply (PM & GC Supported)\n` +
+      `• Anti-Spam: 2s Slow-Motion Buffer\n` +
+      `• Auto Self-React: ACTIVE\n` +
+      `• Enforced GC Name: "${lockedGcName}"\n` +
+      `• Admin Permission Lock: SECURED 🔒\n\n` +
+      `Gamitin ang /activate off para i-stop.`,
+      threadID,
+      messageID
+    );
+  }
+
+  // Turn OFF Bot Features
+  if (sub === "off") {
+    data.active = false;
+    saveData(data);
+    return api.sendMessage("✅ Naka-OFF na ang auto-reply bot.", threadID, messageID);
+  }
+
+  // Status Check
+  if (sub === "status") {
+    if (!data.active) {
+      return api.sendMessage("Naka-OFF ang auto-reply bot sa kasalukuyan.", threadID, messageID);
+    }
+    const totalLines = (data.roasts || DEFAULT_TAGALOG_ROASTS).length;
+    return api.sendMessage(
+      `🔥 Autobot Status: ACTIVE (ADMIN LOCKED)\n` +
+      `Admin UID: 61594022290817\n` +
+      `Location: PM and GC Supported\n` +
+      `Anti-Spam Delay: 2s\n` +
+      `Enforced GC Name: "${data.gcName || DEFAULT_LOCKED_NAME}"\n` +
+      `Enforced Nickname: "${data.nickName || DEFAULT_LOCKED_NAME}"\n` +
+      `Kabuuan ng mga linya: ${totalLines}`,
+      threadID,
+      messageID
+    );
+  }
+
+  // Add Custom Lines
+  if (sub === "add") {
+    const customLine = args.slice(1).join(" ");
+    if (!customLine) {
+      return api.sendMessage("❌ Paki-lagay 'yung linyang gusto mong idagdag.\nHalimbawa: /activate add Tahimik ka na lang lods.", threadID, messageID);
+    }
+
+    if (!data.roasts) data.roasts = DEFAULT_TAGALOG_ROASTS;
+    data.roasts.push(customLine);
+    saveData(data);
+
+    return api.sendMessage(`✅ Tagumpay na naidagdag ang bagong linya:\n"${customLine}"`, threadID, messageID);
+  }
+
+  // List Lines
+  if (sub === "listlines") {
+    const list = data.roasts || DEFAULT_TAGALOG_ROASTS;
+    let msg = `📜 Lahat ng Auto-Reply Lines (${list.length}):\n\n`;
+    list.forEach((line, index) => {
+      msg += `${index + 1}. ${line}\n`;
+    });
+    return api.sendMessage(msg, threadID, messageID);
+  }
+
+  // Command: Set Nicknames
+  if (sub === "setnick") {
+    if (!isGroup) {
+      return api.sendMessage("❌ Ang command na 'to ay para lamang sa Group Chat.", threadID, messageID);
+    }
+    const customNickname = args.slice(1).join(" ") || DEFAULT_LOCKED_NAME;
+    data.nickName = customNickname;
+    saveData(data);
+
+    try {
+      const threadInfo = await api.getThreadInfo(threadID);
+      const participantIDs = threadInfo.participantIDs;
+
+      api.sendMessage(`⏳ Binabago ang nicknames ng lahat ng ${participantIDs.length} miyembro papuntang "${customNickname}"...`, threadID);
+
+      for (const userID of participantIDs) {
+        await sleep(500);
+        api.changeNickname(customNickname, threadID, userID, (err) => {
+          if (err) console.error(`Failed nickname change for ${userID}:`, err);
+        });
+      }
+      return api.sendMessage(`✅ Tagumpay na nabago ang lahat ng nicknames papuntang '${customNickname}'.`, threadID, messageID);
+    } catch (e) {
+      return api.sendMessage("❌ Bigo sa pagbago ng nicknames. Siguraduhing admin ang bot.", threadID, messageID);
+    }
+  }
+
+  // Command: Set Group Name
+  if (sub === "setgname") {
+    if (!isGroup) {
+      return api.sendMessage("❌ Ang command na 'to ay para lamang sa Group Chat.", threadID, messageID);
+    }
+    const customGcName = args.slice(1).join(" ") || DEFAULT_LOCKED_NAME;
+    data.gcName = customGcName;
+    saveData(data);
+
+    api.setTitle(customGcName, threadID, (err) => {
+      if (err) {
+        return api.sendMessage("❌ Bigo sa pagbago ng pangalan ng group chat.", threadID, messageID);
+      }
+      return api.sendMessage(`✅ Ang pangalan ng GC ay pinalitan na sa '${customGcName}'.`, threadID, messageID);
+    });
+    return;
+  }
+
+  return api.sendMessage(
+    `🔒 Admin Commands (UID: 61594022290817):\n` +
+    `/activate on — Simulan ang infinite auto-reply\n` +
+    `/activate off — Itigil ang bot\n` +
+    `/activate status — Tignan ang status\n` +
+    `/activate add <text> — Magdagdag ng bagong reply line\n` +
+    `/activate listlines — Ilista ang lahat ng linyang pang-asar\n` +
+    `/activate setnick [pangalan] — Baguhin ang nickname ng lahat\n` +
+    `/activate setgname [pangalan] — Baguhin ang pangalan ng GC`,
+    threadID,
+    messageID
+  );
+};
