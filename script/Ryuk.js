@@ -16,24 +16,20 @@ let targetGCName = "RYUK POGI ON TOP";
 const SELF_REACT_EMOJIS = ["😡", "😠", "🤬", "😤", "😾"];
 const ALL_REACT_EMOJIS = ["🔥", "💪", "👑", "⚡", "😎", "✅", "💯"];
 
-// ✅ AUTO BROADCAST SETTINGS
-const AUTO_MESSAGE_INTERVAL_MIN = 25 * 60 * 1000;  // Min 25 minutes
-const AUTO_MESSAGE_INTERVAL_MAX = 45 * 60 * 1000;  // Max 45 minutes
+const AUTO_MESSAGE_INTERVAL_MIN = 25 * 60 * 1000;
+const AUTO_MESSAGE_INTERVAL_MAX = 45 * 60 * 1000;
 
-// ✅ MGA AYUS NA DELAYS
 const NICK_DELAY_MIN = 8000;
 const NICK_DELAY_MAX = 15000;
 const REPLY_DELAY_MIN = 3500;
 const REPLY_DELAY_MAX = 6000;
 const COOLDOWN = 3000;
 
-// ✅ ON/OFF REACT EMOJI
 const REACT_ON = "😺";
 const REACT_OFF = "😿";
 
 const DATA_FILE = path.join(__dirname, "ryuk_data.json");
 
-// ✅ MGA RANDOM NA MESSAGE NG BOT KAHIT WALANG NAG-CHAT
 const AUTO_MESSAGES = [
   "😡",
   "😠",
@@ -59,7 +55,7 @@ const DEFAULT_DATA = {
 };
 
 const USER_COOLDOWN = new Map();
-const SEEN_MESSAGES = new Set();
+const PROCESSED_MESSAGES = new Set(); // ✅ Para 1 message = 1 reply lang
 let AUTO_CHAT_TIMER = null;
 let CURRENT_THREAD_ID = null;
 
@@ -104,7 +100,6 @@ function saveSystemData(data) {
   }
 }
 
-// ✅ AUTO CHAT SYSTEM
 function startAutoChat(api, threadID) {
   CURRENT_THREAD_ID = threadID;
   stopAutoChat();
@@ -149,10 +144,10 @@ function send(api, message, threadID, messageID, doSelfReact = false) {
   }, messageID);
 }
 
-function rememberMessage(messageID) {
+function markAsProcessed(messageID) {
   const id = String(messageID);
-  if (SEEN_MESSAGES.has(id)) return false;
-  SEEN_MESSAGES.add(id);
+  if (PROCESSED_MESSAGES.has(id)) return false;
+  PROCESSED_MESSAGES.add(id);
   return true;
 }
 
@@ -179,10 +174,10 @@ function getReplyText(fullName, isPM) {
 
 module.exports.config = {
   name: "ryuk",
-  version: "7.20.0 AUTO-CHAT",
+  version: "7.21.0 ONE_REPLY_PER_MESSAGE",
   hasPermission: 1,
   credits: "RYUK",
-  description: "✅ Auto-Chat + Safe Delays + On/Off React",
+  description: "✅ 1 Message = 1 Reply Only + Auto-Chat",
   usePrefix: true,
   cooldowns: 3
 };
@@ -198,7 +193,9 @@ module.exports.handleEvent = async function ({ api, event }) {
     const msg = String(body || "").trim().toLowerCase();
     if (!data.active) return;
 
-    // ✅ Start auto-chat kapag may pumasok na message sa GC
+    // ✅ 1 MESSAGE = 1 REPLY — Kung na-process na, wag na ulitin
+    if (!markAsProcessed(messageID)) return;
+
     if (!isPM && data.autoChat && !CURRENT_THREAD_ID) {
       startAutoChat(api, threadID);
     }
@@ -234,7 +231,7 @@ module.exports.handleEvent = async function ({ api, event }) {
         }
         return;
       }
-      if (data.autoReact && rememberMessage(messageID)) {
+      if (data.autoReact) {
         setTimeout(() => {
           try { api.setMessageReaction(getRandomAutoReactEmoji(), messageID, () => {}, true); } catch {}
         }, getRandomDelay(1500, 3000));
@@ -245,7 +242,6 @@ module.exports.handleEvent = async function ({ api, event }) {
     if (sender === botID) return;
     const targetIDClean = String(TARGET_USER_ID).trim();
     if (targetIDClean && sender !== targetIDClean && !isAdmin(sender)) return;
-    if (!rememberMessage(messageID)) return;
     if (data.silentMode) return;
 
     const cooldownKey = `${threadID}:${sender}`;
@@ -368,7 +364,6 @@ module.exports.run = async function ({ api, event, args }) {
     return send(api, "🔊 SILENT MODE → OFF", threadID, messageID);
   }
 
-  // ✅ AUTO-CHAT COMMANDS
   if (action === "autochat" && args[1] === "on") {
     data.autoChat = true;
     saveSystemData(data);
@@ -439,4 +434,4 @@ module.exports.run = async function ({ api, event, args }) {
     return send(api, "❌ AUTO-REACT → OFF", threadID, messageID);
   }
 };
-  
+                                              
