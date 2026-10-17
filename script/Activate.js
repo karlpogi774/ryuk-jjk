@@ -2,17 +2,18 @@ const fs = require("fs");
 const path = require("path");
 
 // ADMIN UID RESTRICTION
-const ADMIN_UID = [
-  "61594022290817",
-  "61595507156493"
-];
+const ADMIN_UID = ["61594022290817", "61595507156493"];
+
+function isAdmin(senderID) {
+  return ADMIN_UID.includes(String(senderID).trim());
+}
 
 module.exports.config = {
   name: "activate",
-  version: "12.0.0",
-  hasPermission: 2, // Admin only
+  version: "12.0.1",
+  hasPermission: 2,
   credits: "Ryuk",
-  description: "Admin-locked (UID: 61594022290817) Tagalog auto-reply bot with auto self-react, anti-spam, locked GC name & nicknames, anti-unsend listener, and PM support.",
+  description: "Admin-locked — 2 Admins • Tagalog auto-reply bot with auto self-react, anti-spam, locked GC name & nicknames, anti-unsend listener, and PM support.",
   usePrefix: true,
   commandCategory: "Admin",
   usages: "/activate on | off | status | add <text> | listlines | setnick [name] | setgname [name]",
@@ -111,8 +112,8 @@ module.exports.handleEvent = async function ({ api, event }) {
 
   // 3. AUTO REQUEST: SET GNAME VIA CHAT (ADMIN ONLY)
   if (lowerBody.startsWith("setgname")) {
-    if (String(senderID) !== ADMIN_UID) {
-      return api.sendMessage("❌ Restricted: Admin (61594022290817) lamang ang pwedeng magpalit ng GC Name.", threadID, messageID);
+    if (!isAdmin(senderID)) {
+      return api.sendMessage("❌ Restricted: Admin lamang ang pwedeng magpalit ng GC Name.", threadID, messageID);
     }
     const newGcName = body.slice(8).trim() || DEFAULT_LOCKED_NAME;
     if (!isGroup) {
@@ -129,8 +130,8 @@ module.exports.handleEvent = async function ({ api, event }) {
 
   // 4. AUTO REQUEST: SET NICK VIA CHAT (ADMIN ONLY)
   if (lowerBody.startsWith("setnick")) {
-    if (String(senderID) !== ADMIN_UID) {
-      return api.sendMessage("❌ Restricted: Admin (61594022290817) lamang ang pwedeng magpalit ng Nicknames.", threadID, messageID);
+    if (!isAdmin(senderID)) {
+      return api.sendMessage("❌ Restricted: Admin lamang ang pwedeng magpalit ng Nicknames.", threadID, messageID);
     }
     const newNick = body.slice(7).trim() || DEFAULT_LOCKED_NAME;
     if (!isGroup) {
@@ -201,8 +202,8 @@ module.exports.run = async function ({ api, event, args }) {
   const { threadID, messageID, senderID, isGroup } = event;
 
   // STRICT ADMIN UID CHECK
-  if (String(senderID) !== ADMIN_UID) {
-    return api.sendMessage("❌ Access Denied: Admin UID (61594022290817) lamang ang pwedeng gumamit ng bot commands na ito.", threadID, messageID);
+  if (!isAdmin(senderID)) {
+    return api.sendMessage("❌ Access Denied: Admin lamang ang pwedeng gumamit ng bot commands na ito.", threadID, messageID);
   }
 
   const sub = (args[0] || "").toLowerCase();
@@ -221,7 +222,8 @@ module.exports.run = async function ({ api, event, args }) {
     }
 
     return api.sendMessage(
-      `🔥 ADMIN BOT ACTIVATED (UID: 61594022290817)\n\n` +
+      `🔥 ADMIN BOT ACTIVATED\n\n` +
+      `• Admins: 2 verified ✅\n` +
       `• Duration: INFINITE ♾️\n` +
       `• Mode: Auto Reply (PM & GC Supported)\n` +
       `• Anti-Spam: 2s Slow-Motion Buffer\n` +
@@ -248,13 +250,14 @@ module.exports.run = async function ({ api, event, args }) {
     }
     const totalLines = (data.roasts || DEFAULT_TAGALOG_ROASTS).length;
     return api.sendMessage(
-      `🔥 Autobot Status: ACTIVE (ADMIN LOCKED)\n` +
-      `Admin UID: 61594022290817\n` +
-      `Location: PM and GC Supported\n` +
-      `Anti-Spam Delay: 2s\n` +
-      `Enforced GC Name: "${data.gcName || DEFAULT_LOCKED_NAME}"\n` +
-      `Enforced Nickname: "${data.nickName || DEFAULT_LOCKED_NAME}"\n` +
-      `Kabuuan ng mga linya: ${totalLines}`,
+      `🔥 Autobot Status: ACTIVE (2 ADMINS LOCKED)\n` +
+      `• Admin 1: 61594022290817\n` +
+      `• Admin 2: 61595507156493\n` +
+      `• Location: PM and GC Supported\n` +
+      `• Anti-Spam Delay: 2s\n` +
+      `• Enforced GC Name: "${data.gcName || DEFAULT_LOCKED_NAME}"\n` +
+      `• Enforced Nickname: "${data.nickName || DEFAULT_LOCKED_NAME}"\n` +
+      `• Kabuuan ng mga linya: ${totalLines}`,
       threadID,
       messageID
     );
@@ -330,7 +333,7 @@ module.exports.run = async function ({ api, event, args }) {
   }
 
   return api.sendMessage(
-    `🔒 Admin Commands (UID: 61594022290817):\n` +
+    `🔒 Admin Commands (2 Admins):\n` +
     `/activate on — Simulan ang infinite auto-reply\n` +
     `/activate off — Itigil ang bot\n` +
     `/activate status — Tignan ang status\n` +
@@ -342,3 +345,4 @@ module.exports.run = async function ({ api, event, args }) {
     messageID
   );
 };
+      
