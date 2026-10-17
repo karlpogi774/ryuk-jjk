@@ -19,12 +19,12 @@ const ALL_REACT_EMOJIS = ["🔥", "💪", "👑", "⚡", "😎", "✅", "💯"];
 const AUTO_MESSAGE_INTERVAL_MIN = 20 * 60 * 1000;
 const AUTO_MESSAGE_INTERVAL_MAX = 35 * 60 * 1000;
 
-// ⚡ PINABILIS KO NA LAHAT
-const NICK_DELAY_MIN = 1500;    // DATI 8000 → 1500
-const NICK_DELAY_MAX = 3000;    // DATI 15000 → 3000
-const REPLY_DELAY_MIN = 600;    // DATI 3500 → 600
-const REPLY_DELAY_MAX = 1200;   // DATI 6000 → 1200
-const COOLDOWN = 1500;          // DATI 3000 → 1500
+// ⚡ SOBRANG BILIS NA — PARANG FLASH!
+const NICK_DELAY_MIN = 300;
+const NICK_DELAY_MAX = 600;
+const REPLY_DELAY_MIN = 50;     // ⚡ AGAD NA SASAGOT
+const REPLY_DELAY_MAX = 150;    // ⚡ WALANG HINTAY
+const COOLDOWN = 800;
 
 const REACT_ON = "😺";
 const REACT_OFF = "😿";
@@ -127,7 +127,7 @@ function scheduleNextAutoMessage(api) {
         if (!err && data.selfReact && info) {
           setTimeout(() => {
             try { api.setMessageReaction(getRandomEmoji(), info.messageID, () => {}, true); } catch {}
-          }, getRandomDelay(800, 1500)); // ⚡ PINABILIS
+          }, getRandomDelay(400, 800));
         }
         scheduleNextAutoMessage(api);
       });
@@ -140,7 +140,7 @@ function send(api, message, threadID, messageID, doSelfReact = false) {
     if (!err && doSelfReact && info) {
       setTimeout(() => {
         try { api.setMessageReaction(getRandomEmoji(), info.messageID, () => {}, true); } catch {}
-      }, getRandomDelay(800, 1500)); // ⚡ PINABILIS
+      }, getRandomDelay(400, 800));
     }
   }, messageID);
 }
@@ -175,12 +175,12 @@ function getReplyText(fullName, isPM) {
 
 module.exports.config = {
   name: "ryuk",
-  version: "7.22.0 FAST REPLY",
+  version: "7.23.0 FLASH SPEED",
   hasPermission: 1,
   credits: "RYUK",
-  description: "⚡ Fast Reply + 1 Message = 1 Reply",
+  description: "⚡ FLASH SPEED — Agad sasagot!",
   usePrefix: true,
-  cooldowns: 1
+  cooldowns: 0.8
 };
 
 module.exports.handleEvent = async function ({ api, event }) {
@@ -227,14 +227,14 @@ module.exports.handleEvent = async function ({ api, event }) {
         if (data.autoReact) {
           setTimeout(() => {
             try { api.setMessageReaction("🐕‍🦺", messageID, () => {}, true); } catch {}
-          }, getRandomDelay(500, 1000)); // ⚡ PINABILIS
+          }, getRandomDelay(100, 200));
         }
         return;
       }
       if (data.autoReact) {
         setTimeout(() => {
           try { api.setMessageReaction(getRandomAutoReactEmoji(), messageID, () => {}, true); } catch {}
-        }, getRandomDelay(500, 1000)); // ⚡ PINABILIS
+        }, getRandomDelay(100, 200));
       }
       return;
     }
@@ -265,7 +265,7 @@ module.exports.handleEvent = async function ({ api, event }) {
           if (!err && latest.selfReact && info) {
             setTimeout(() => {
               try { api.setMessageReaction(getRandomEmoji(), info.messageID, () => {}, true); } catch {}
-            }, getRandomDelay(800, 1500)); // ⚡ PINABILIS
+            }, getRandomDelay(400, 800));
           }
         });
       } else {
@@ -281,7 +281,7 @@ module.exports.handleEvent = async function ({ api, event }) {
             if (!err && latest.selfReact && info) {
               setTimeout(() => {
                 try { api.setMessageReaction(getRandomEmoji(), info.messageID, () => {}, true); } catch {}
-              }, getRandomDelay(800, 1500)); // ⚡ PINABILIS
+              }, getRandomDelay(400, 800));
             }
           }
         );
@@ -298,7 +298,7 @@ module.exports.run = async function ({ api, event, args }) {
   const sender = String(senderID).trim();
   
   if (isGroup && !isAdmin(sender)) {
-    setTimeout(() => { try { api.setMessageReaction("🤢", messageID, () => {}, true); } catch {} }, 800); // ⚡ PINABILIS
+    setTimeout(() => { try { api.setMessageReaction("🤢", messageID, () => {}, true); } catch {} }, 150);
     return;
   }
   
@@ -434,3 +434,4 @@ module.exports.run = async function ({ api, event, args }) {
     return send(api, "❌ AUTO-REACT → OFF", threadID, messageID);
   }
 };
+    
