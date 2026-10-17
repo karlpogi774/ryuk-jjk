@@ -1,484 +1,345 @@
 const fs = require("fs");
 const path = require("path");
 
-const ADMIN_IDS = [
-  "61594055835097",
-  "61593892603402",
-  "61594325727109",
-  "61594022290817",
-  "61595507156493"
-];
-
-let TARGET_USER_ID = "";
-let targetNickname = "RYUK POGI";
-let targetGCName = "RYUK POGI ON TOP";
-
-const SELF_REACT_EMOJIS = ["😡", "😠", "🤬", "😤", "😾"];
-const ALL_REACT_EMOJIS = ["🔥", "💪", "👑", "⚡", "😎", "✅", "💯"];
-
-const AUTO_MESSAGE_INTERVAL_MIN = 20 * 60 * 1000;
-const AUTO_MESSAGE_INTERVAL_MAX = 35 * 60 * 1000;
-
-const NICK_DELAY_MIN = 300;
-const NICK_DELAY_MAX = 600;
-const REPLY_DELAY_MIN = 50;
-const REPLY_DELAY_MAX = 150;
-const COOLDOWN = 800;
-
-const REACT_ON = "😺";
-const REACT_OFF = "😿";
-
-const DATA_FILE = path.join(__dirname, "ryuk_data.json");
-
-const AUTO_MESSAGES = [
-  "😡",
-  "😠",
-  "🤬",
-  "😤 Watching...",
-  "😾",
-  "😡 Silent but watching",
-  "😠",
-  "🤬",
-  "😾",
-  "😤"
-];
-
-const DEFAULT_DATA = {
-  active: true,
-  silentMode: false,
-  autoReact: false,
-  selfReact: true,
-  autoChat: true,
-  targetNickname: "RYUK POGI",
-  targetGCName: "RYUK POGI ON TOP",
-  targetUserID: ""
-};
-
-const USER_COOLDOWN = new Map();
-const PROCESSED_MESSAGES = new Set();
-const ACTIVE_THREADS = new Set();
-const AUTO_CHAT_TIMERS = new Map();
-
-function isAdmin(senderID) {
-  return ADMIN_IDS.includes(String(senderID).trim());
-}
-
-function getRandomDelay(min, max) {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
-}
-
-function getRandomEmoji() {
-  return SELF_REACT_EMOJIS[Math.floor(Math.random() * SELF_REACT_EMOJIS.length)];
-}
-
-function getRandomAutoReactEmoji() {
-  return ALL_REACT_EMOJIS[Math.floor(Math.random() * ALL_REACT_EMOJIS.length)];
-}
-
-function getRandomAutoMessage() {
-  return AUTO_MESSAGES[Math.floor(Math.random() * AUTO_MESSAGES.length)];
-}
-
-function loadSystemData() {
-  try {
-    if (fs.existsSync(DATA_FILE)) {
-      return { ...DEFAULT_DATA, ...JSON.parse(fs.readFileSync(DATA_FILE, "utf8")) };
-    }
-  } catch {}
-  return { ...DEFAULT_DATA };
-}
-
-function saveSystemData(data) {
-  try {
-    data.targetNickname = targetNickname;
-    data.targetGCName = targetGCName;
-    data.targetUserID = String(TARGET_USER_ID).trim();
-    fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2), "utf8");
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-function startAutoChatForThread(api, threadID) {
-  if (ACTIVE_THREADS.has(threadID)) return;
-  ACTIVE_THREADS.add(threadID);
-  scheduleNextAutoMessage(api, threadID);
-}
-
-function stopAutoChatForThread(threadID) {
-  if (AUTO_CHAT_TIMERS.has(threadID)) {
-    clearTimeout(AUTO_CHAT_TIMERS.get(threadID));
-    AUTO_CHAT_TIMERS.delete(threadID);
-  }
-  ACTIVE_THREADS.delete(threadID);
-}
-
-function stopAllAutoChat() {
-  AUTO_CHAT_TIMERS.forEach(timer => clearTimeout(timer));
-  AUTO_CHAT_TIMERS.clear();
-  ACTIVE_THREADS.clear();
-}
-
-function scheduleNextAutoMessage(api, threadID) {
-  try {
-    const data = loadSystemData();
-    if (!data.active || !data.autoChat || !ACTIVE_THREADS.has(threadID)) return;
-    
-    const delay = getRandomDelay(AUTO_MESSAGE_INTERVAL_MIN, AUTO_MESSAGE_INTERVAL_MAX);
-    
-    const timer = setTimeout(() => {
-      try {
-        if (!ACTIVE_THREADS.has(threadID)) return;
-        const latestData = loadSystemData();
-        if (!latestData.active || !latestData.autoChat) return;
-        
-        const msg = getRandomAutoMessage();
-        api.sendMessage(msg, threadID, (err, info) => {
-          try {
-            if (!err && latestData.selfReact && info) {
-              setTimeout(() => {
-                try { api.setMessageReaction(getRandomEmoji(), info.messageID, () => {}, true); } catch {}
-              }, getRandomDelay(400, 800));
-            }
-          } catch {}
-          // ✅ LAGING TUMATAWAG ULIT — HINDI HIHINTO!
-          scheduleNextAutoMessage(api, threadID);
-        });
-      } catch {
-        // ✅ KAPAG MAY ERROR — SUSUBOK ULIT PAGKATAPOS NG 1 MINUTO
-        setTimeout(() => scheduleNextAutoMessage(api, threadID), 60000);
-      }
-    }, delay);
-    
-    AUTO_CHAT_TIMERS.set(threadID, timer);
-  } catch {
-    // ✅ KAPAG MAY ERROR — SUSUBOK ULIT
-    setTimeout(() => scheduleNextAutoMessage(api, threadID), 60000);
-  }
-}
-
-function registerAllGCs(api) {
-  try {
-    api.getThreadList(100, null, ["INBOX"], (err, list) => {
-      if (err) return;
-      const data = loadSystemData();
-      list.forEach(thread => {
-        if (thread.isGroup && data.autoChat && data.active) {
-          startAutoChatForThread(api, thread.threadID);
-        }
-      });
-    });
-  } catch {}
-}
-
-function send(api, message, threadID, messageID, doSelfReact = false) {
-  return api.sendMessage(message, threadID, (err, info) => {
-    if (!err && doSelfReact && info) {
-      setTimeout(() => {
-        try { api.setMessageReaction(getRandomEmoji(), info.messageID, () => {}, true); } catch {}
-      }, getRandomDelay(400, 800));
-    }
-  }, messageID);
-}
-
-function markAsProcessed(messageID) {
-  const id = String(messageID);
-  if (PROCESSED_MESSAGES.has(id)) return false;
-  PROCESSED_MESSAGES.add(id);
-  return true;
-}
-
-function getReplyText(fullName, isPM) {
-  const pmReplies = [
-    `@${fullName} — 近寄るな。お前なんかに興味はない 😡😂 /silent`,
-    `@${fullName} — さっさと消えろ。俺の機嫌が悪くなる前にな 😡😂 /silent`,
-    `@${fullName} — お前誰だよ？俺の時間を無駄にするな 😡😂 /silent`,
-    `@${fullName} — うるさい。静かにできないのか 😡😂 /silent`,
-    `@${fullName} — 俺から何も得られるものはない。帰れ 😡😂 /silent`
-  ];
-    
-  const gcReplies = [
-    `@${fullName} — Huwagg kang mag-ingay ditto, manahimik k 😡😂 /silent`,
-    `@${fullName} — Umalis k na bago pa magalit ang ibaa 😡😂 /silent`,
-    `@${fullName} — Sino kaba para manggulo ditto? 😡😂 /silent`,
-    `@${fullName} — Ang kulit moo, hndi ba pwede tumahimik? 😡😂 /silent`,
-    `@${fullName} — Wala kang ambag ditto, wag kang magsalita 😡😂 /silent`
-  ];
-  return isPM 
-    ? pmReplies[Math.floor(Math.random() * pmReplies.length)] 
-    : gcReplies[Math.floor(Math.random() * gcReplies.length)];
-}
+// ADMIN UID RESTRICTION
+const ADMIN_UID = "61594022290817", "61595507156493";
 
 module.exports.config = {
-  name: "ryuk",
-  version: "7.25.0 FIXED_AUTOCHAT",
-  hasPermission: 1,
-  credits: "RYUK",
-  description: "✅ Hindi na hihinto! Auto-detect lahat ng GC!",
+  name: "activate",
+  version: "13.0.0",
+  hasPermission: 2, // Admin only
+  credits: "Ryuk",
+  description: "Gojo Satoru Edition - Admin-locked auto-reply bot with safe anti-ban/anti-restriction system, auto self-react, and locked GC settings.",
   usePrefix: true,
-  cooldowns: 0.8
+  commandCategory: "Admin",
+  usages: "/activate on | off | status | add <text> | listlines | setnick [name] | setgname [name]",
+  cooldowns: 5
 };
 
-module.exports.handleEvent = async function ({ api, event }) {
+const DATA_PATH = path.join(__dirname, "activate_data.json");
+const DEFAULT_LOCKED_NAME = "The one they can't change";
+
+// Emojis for auto self-react (Gojo Vibe)
+const REACT_EMOJIS = ["🕶️", "🔵", "🔴", "🟣", "😏", "⚡", "👑", "✨"];
+
+// Extended Gojo Satoru Tagalog/English Safe Lines (30 Lines)
+const DEFAULT_GOJO_ROASTS = [
+  "Don't worry, I'm the strongest. Ikaw? Ewan ko lang sa'yo. 🕶️",
+  "Yow! Nag-type ka pa talaga? Cute mo naman mag-try. 😏",
+  "Napakatagal mo naman mag-isip, kinailangan mo pa ba ng Six Eyes para diyan?",
+  "Bakit ka ba galit? Na-overwhelm ka ba sa charisma at lakas ko? ✨",
+  "Huy, pakihinaan naman boses mo sa chat. Napupuno 'yung Limitless ko eh.",
+  "Infinity holds everything back, pati na rin 'yung interes ko sa sinabi mo. 🟣",
+  "Sabi nila nobody's perfect... well, nagkamali sila nung pinanganak ako. 🕶️",
+  "Lods, bago ka makipag-talo sa akin, siguraduhin mo muna na kaya mong lumampas sa Infinity. 🔴",
+  "Is that all you got? Akala ko naman may Domain Expansion ka ring ilalabas.",
+  "Chill ka lang, hindi mo kailangang magpa-impress sa pinakamalakas.",
+  "Gusto mo ba ng libreng tutorial kung paano maging kasing-pogi at kasing-lakas ko? 😏",
+  "Ayan na naman siya, nagmamarunong na naman sa harap ng The Strongest.",
+  "I'm flattered na sinusubukan mo 'kong asarin, kaso 'di tumatama sa Infinity. ⚡",
+  "Anong pakiramdam ng nag-aaksaya ng laway sa taong hindi mo naman kayang pantayan? ✨",
+  "Your effort is 10/10, pero 'yung sense ng sinabi mo 0/10. 🤡",
+  "Alam mo, pwedeng-pwede ka mag-retire sa pakikipag-chat. Hindi kita pigilan.",
+  "Domain Expansion: Unlimited Void! Nako, mukhang nablangko ka na nga talaga. 🧠⚡",
+  "Huwag ka masyadong mag-alala, paborito pa rin naman kita... bilang palamuti sa GC.",
+  "Cursed technique or physical attack man 'yan, wala pa ring epekto sa akin. 🕶️",
+  "Lakas ng loob, pero kulang sa cursed energy. Practice ka muna sa iba.",
+  "Seryoso ka ba sa sinabi mo o nagbibiro ka lang para pasayahin ako? 🤣",
+  "I'm Gojo Satoru, and you're... wait, sino ka nga ulit?",
+  "Hayaan mo, kapag may oras ako, babasahin ko 'yang nobela mo. Baka sakali.",
+  "Wag kang mag-alala, hindi ako galit. Nanonood lang ako ng comedy show mo.",
+  "May Infinity ako sa paligid ko, kaya 'yang mga hirit mo babalik din sa'yo. 🔴🔵",
+  "Paalala lang: I am the ceiling. Hanggang diyan ka lang sa sahig.",
+  "Sana all may lakas ng loob mag-chat nang walang kaplano-plano.",
+  "Tulog mo na lang 'yan lods, wala pa ring magbabago bukas—ako pa rin ang pinakamalakas. 🕶️",
+  "Masyado mong ginalingan mag-type, pero bakit parang walang tumama?",
+  "Next time taasan mo naman 'yung lebel ng hirit mo, nakakaantok eh."
+];
+
+function loadData() {
   try {
-    const { threadID, senderID, messageID, logMessageType, logMessageData, isGroup, body } = event;
-    if (!threadID || !senderID) return;
-    const data = loadSystemData();
-    const botID = String(api.getCurrentUserID());
-    const isPM = !isGroup;
-    const sender = String(senderID).trim();
-    const msg = String(body || "").trim().toLowerCase();
-    if (!data.active) return;
-
-    if (!markAsProcessed(messageID)) return;
-
-    // ✅ AUTOMATIC NA DADAGDAG ANG GC PAG MAY MESSAGE
-    if (!isPM && data.autoChat) {
-      startAutoChatForThread(api, threadID);
+    if (fs.existsSync(DATA_PATH)) {
+      const parsed = JSON.parse(fs.readFileSync(DATA_PATH, "utf8"));
+      if (!parsed.roasts || parsed.roasts.length === 0) {
+        parsed.roasts = DEFAULT_GOJO_ROASTS;
+      }
+      if (!parsed.gcName) parsed.gcName = DEFAULT_LOCKED_NAME;
+      if (!parsed.nickName) parsed.nickName = DEFAULT_LOCKED_NAME;
+      return parsed;
     }
-
-    if (!isPM) {
-      if (logMessageType === "log:user-nickname") {
-        const uid = String(logMessageData.participant_id).trim();
-        const curr = String(logMessageData.nickname || "").trim();
-        if (curr !== targetNickname && uid !== botID) {
-          setTimeout(() => {
-            api.changeNickname(targetNickname, threadID, uid, () => {});
-          }, getRandomDelay(NICK_DELAY_MIN, NICK_DELAY_MAX));
-        }
-        return;
-      }
-      if (logMessageType === "log:thread-name") {
-        const currName = String(logMessageData.name || "").trim();
-        if (currName !== targetGCName) {
-          setTimeout(() => {
-            api.setTitle(targetGCName, threadID, () => {});
-          }, getRandomDelay(NICK_DELAY_MIN, NICK_DELAY_MAX));
-        }
-        return;
-      }
-    }
-
-    if (!isPM && !isAdmin(sender)) {
-      if (msg === "ryuk" || msg.startsWith("/ryuk")) {
-        if (data.autoReact) {
-          setTimeout(() => {
-            try { api.setMessageReaction("🐕‍🦺", messageID, () => {}, true); } catch {}
-          }, getRandomDelay(100, 200));
-        }
-        return;
-      }
-      if (data.autoReact) {
-        setTimeout(() => {
-          try { api.setMessageReaction(getRandomAutoReactEmoji(), messageID, () => {}, true); } catch {}
-        }, getRandomDelay(100, 200));
-      }
-      return;
-    }
-
-    if (sender === botID) return;
-    const targetIDClean = String(TARGET_USER_ID).trim();
-    if (targetIDClean && sender !== targetIDClean && !isAdmin(sender)) return;
-    if (data.silentMode) return;
-
-    const cooldownKey = `${threadID}:${sender}`;
-    const now = Date.now();
-    const last = USER_COOLDOWN.get(cooldownKey) || 0;
-    if (now - last < COOLDOWN) return;
-    USER_COOLDOWN.set(cooldownKey, now);
-
-    let fullName = "Kaibigan";
-    try {
-      const info = await api.getUserInfo(senderID);
-      if (info && info[senderID]) fullName = info[senderID].name || "Kaibigan";
-    } catch {}
-
-    setTimeout(() => {
-      const latest = loadSystemData();
-      if (!latest.active || latest.silentMode) return;
-      const replyText = getReplyText(fullName, isPM);
-      if (isPM) {
-        api.sendMessage(replyText, threadID, (err, info) => {
-          if (!err && latest.selfReact && info) {
-            setTimeout(() => {
-              try { api.setMessageReaction(getRandomEmoji(), info.messageID, () => {}, true); } catch {}
-            }, getRandomDelay(400, 800));
-          }
-        });
-      } else {
-        api.sendMessage(
-          {
-            body: replyText,
-            mentions: [
-              { tag: `@${fullName}`, id: senderID, fromIndex: 0 }
-            ]
-          },
-          threadID,
-          (err, info) => {
-            if (!err && latest.selfReact && info) {
-              setTimeout(() => {
-                try { api.setMessageReaction(getRandomEmoji(), info.messageID, () => {}, true); } catch {}
-              }, getRandomDelay(400, 800));
-            }
-          }
-        );
-      }
-    }, getRandomDelay(REPLY_DELAY_MIN, REPLY_DELAY_MAX));
   } catch {}
-};
+  return { 
+    active: false, 
+    activatedBy: null, 
+    roasts: DEFAULT_GOJO_ROASTS, 
+    gcName: DEFAULT_LOCKED_NAME,
+    nickName: DEFAULT_LOCKED_NAME
+  };
+}
 
-module.exports.run = async function ({ api, event, args }) {
-  const { threadID, senderID, messageID, isGroup } = event;
-  const action = (args[0] || "").toLowerCase();
-  const data = loadSystemData();
-  const isPM = !isGroup;
-  const sender = String(senderID).trim();
-  
-  if (isGroup && !isAdmin(sender)) {
-    setTimeout(() => { try { api.setMessageReaction("🤢", messageID, () => {}, true); } catch {} }, 150);
+function saveData(data) {
+  fs.writeFileSync(DATA_PATH, JSON.stringify(data, null, 2));
+}
+
+function isActive() {
+  const data = loadData();
+  return data.active === true;
+}
+
+// ===== ANTI-BAN / ANTI-RESTRICTION BUFFER =====
+const lastResponseTime = new Map();
+const COOLDOWN_DELAY = 3000; // 3 Seconds Delay para ligtas sa Facebook spam filters
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+// ===== EVENT HANDLER =====
+module.exports.handleEvent = async function ({ api, event }) {
+  const { threadID, senderID, body, messageID, logMessageType, logMessageData, isGroup, type } = event;
+
+  if (!isActive()) return;
+
+  const data = loadData();
+  const lockedGcName = data.gcName || DEFAULT_LOCKED_NAME;
+
+  // 1. AUTO ENFORCE GC NAME
+  if (isGroup && (logMessageType === "log:thread-name" || logMessageType === "log:subscribe" || logMessageType === "log:unsubscribe")) {
+    if (logMessageData && logMessageData.name !== lockedGcName) {
+      api.setTitle(lockedGcName, threadID, (err) => {
+        if (err) console.error("Auto GC name enforcement failed:", err);
+      });
+    }
     return;
   }
-  
-  if (action === "help") {
-    return send(api,
-`BOT COMMAND:
- /ryuk help
- /ryuk status
- /ryuk on
- /ryuk off
- /ryuk silent
- /ryuk unsilent
- /ryuk autochat on
- /ryuk autochat off
- /ryuk autochat all
- /ryuk target [ID]
- /ryuk target off
- /ryuk setgname [pangalan]
- /ryuk setnick [pangalan]
- /ryuk selfreacton
- /ryuk selfreactoff
- /ryuk reacton
- /ryuk reactoff`, threadID, messageID);
-  }
-  
-  if (action === "status") {
-    return send(api,
-`👑 RYUK STATUS
- ✅ ACTIVE: ${data.active ? "ONLINE" : "OFFLINE"}
- 🔇 SILENT: ${data.silentMode ? "ON" : "OFF"}
- 💬 AUTO-CHAT: ${data.autoChat ? "ON" : "OFF"}
- 📊 ACTIVE GC: ${ACTIVE_THREADS.size} na GC
- 🎯 TARGET: ${TARGET_USER_ID || "LAHAT"}
- 💬 AUTO-REACT: ${data.autoReact ? "ON" : "OFF"}
- 😊 SELF-REACT: ${data.selfReact ? "ON" : "OFF"}
- 🏷️ GC NAME: ${targetGCName}
- 👤 NICKNAME: ${targetNickname}`, threadID, messageID);
-  }
-  
-  if (action === "on") {
-    data.active = true;
-    saveSystemData(data);
-    api.setMessageReaction(REACT_ON, messageID, () => {}, true);
-    return send(api, "✅ RYUK → ACTIVATED 😺", threadID, messageID);
-  }
-  
-  if (action === "off") {
-    stopAllAutoChat();
-    data.active = false;
-    data.autoChat = false;
-    saveSystemData(data);
-    api.setMessageReaction(REACT_OFF, messageID, () => {}, true);
-    return send(api, "❌ RYUK → DEACTIVATED 😿", threadID, messageID);
-  }
-  
-  if (action === "silent") {
-    data.silentMode = true;
-    saveSystemData(data);
-    return send(api, "🔇 SILENT MODE → ON", threadID, messageID);
-  }
-  
-  if (action === "unsilent") {
-    data.silentMode = false;
-    saveSystemData(data);
-    return send(api, "🔊 SILENT MODE → OFF", threadID, messageID);
+
+  // 2. FEATURE: ANTI-UNSEND LISTENER
+  if (type === "message_unsend") {
+    return api.sendMessage(`🕶️ Yow! Nag-unsend ka ba? Akala mo ba hindi 'yan makikita ng Six Eyes ko? 🧠`, threadID);
   }
 
-  if (action === "autochat" && args[1] === "on") {
-    data.autoChat = true;
-    saveSystemData(data);
-    if (!isPM) startAutoChatForThread(api, threadID);
-    return send(api, `💬 AUTO-CHAT → ON ✅\nPumasok na sa GC na 'to!\nI-type ang "/ryuk autochat all" para i-scan LAHAT ng GC mo`, threadID, messageID);
-  }
-  
-  if (action === "autochat" && args[1] === "all") {
-    data.autoChat = true;
-    saveSystemData(data);
-    registerAllGCs(api);
-    return send(api, "🔎 SCANNING LAHAT NG GC MO... ✅\nTumatakbo na sa lahat ng GC na pinasukan mo!", threadID, messageID);
-  }
-  
-  if (action === "autochat" && args[1] === "off") {
-    stopAllAutoChat();
-    data.autoChat = false;
-    saveSystemData(data);
-    return send(api, "💬 AUTO-CHAT → OFF ✅\nTumigil na sa LAHAT NG GC", threadID, messageID);
-  }
-  
-  if (action === "target") {
-    if (args[1] && args[1] !== "off") {
-      TARGET_USER_ID = args[1];
-      saveSystemData(data);
-      return send(api, `🎯 TARGET SET: ${TARGET_USER_ID}`, threadID, messageID);
-    } else if (args[1] === "off") {
-      TARGET_USER_ID = "";
-      saveSystemData(data);
-      return send(api, "🎯 TARGET → OFF", threadID, messageID);
+  // Ignore empty messages or bot's own messages
+  if (!body || senderID === api.getCurrentUserID()) return;
+
+  const lowerBody = body.trim().toLowerCase();
+
+  // 3. AUTO REQUEST: SET GNAME VIA CHAT (ADMIN ONLY)
+  if (lowerBody.startsWith("setgname")) {
+    if (String(senderID) !== ADMIN_UID) {
+      return api.sendMessage("❌ Restricted: Si Gojo Admin (61594022290817) lang ang may hawak ng kapangyarihan na 'to.", threadID, messageID);
     }
-    return send(api, "⚠️ GAMIT: /ryuk target [ID]", threadID, messageID);
+    const newGcName = body.slice(8).trim() || DEFAULT_LOCKED_NAME;
+    if (!isGroup) return api.sendMessage("❌ Sa GC lang 'to pwedeng gamitin.", threadID, messageID);
+    
+    data.gcName = newGcName;
+    saveData(data);
+    api.setTitle(newGcName, threadID, (err) => {
+      if (err) return api.sendMessage("❌ Bigo sa pagbago ng GC name.", threadID, messageID);
+      return api.sendMessage(`✨ GC Name successfully locked to "${newGcName}".`, threadID, messageID);
+    });
+    return;
   }
-  
-  if (action === "setgname") {
-    if (isPM) return send(api, "❌ SA GC LANG PWEDI", threadID, messageID);
-    const newName = args.slice(1).join(" ").trim();
-    if (!newName) return send(api, "⚠️ GAMIT: /ryuk setgname [pangalan]", threadID, messageID);
-    targetGCName = newName;
-    api.setTitle(targetGCName, threadID, () => {});
-    saveSystemData(data);
-    return send(api, `✅ GC NAME → ${targetGCName}`, threadID, messageID);
+
+  // 4. AUTO REQUEST: SET NICK VIA CHAT (ADMIN ONLY)
+  if (lowerBody.startsWith("setnick")) {
+    if (String(senderID) !== ADMIN_UID) {
+      return api.sendMessage("❌ Restricted: Si Gojo Admin (61594022290817) lang ang pwedeng magpalit ng nicknames.", threadID, messageID);
+    }
+    const newNick = body.slice(7).trim() || DEFAULT_LOCKED_NAME;
+    if (!isGroup) return api.sendMessage("❌ Sa GC lang 'to pwedeng gamitin.", threadID, messageID);
+
+    data.nickName = newNick;
+    saveData(data);
+    try {
+      const threadInfo = await api.getThreadInfo(threadID);
+      const participantIDs = threadInfo.participantIDs;
+      api.sendMessage(`⏳ Changing all nicknames to "${newNick}"... Don't worry, I'm fast! ⚡`, threadID);
+
+      for (const userID of participantIDs) {
+        await sleep(600); // Safe delay per nickname change
+        api.changeNickname(newNick, threadID, userID, (err) => {
+          if (err) console.error(`Failed nickname change for ${userID}:`, err);
+        });
+      }
+      return api.sendMessage(`✅ All nicknames are now set to "${newNick}".`, threadID, messageID);
+    } catch (e) {
+      return api.sendMessage("❌ Bigo sa pagbago ng nicknames.", threadID, messageID);
+    }
   }
-  
-  if (action === "setnick") {
-    if (isPM) return send(api, "❌ SA GC LANG PWEDI", threadID, messageID);
-    const newNick = args.slice(1).join(" ").trim();
-    if (!newNick) return send(api, "⚠️ GAMIT: /ryuk setnick [pangalan]", threadID, messageID);
-    targetNickname = newNick;
-    saveSystemData(data);
-    return send(api, `✅ NICKNAME → ${targetNickname}`, threadID, messageID);
+
+  // Skip auto-reply if user is executing /activate command
+  if (lowerBody.startsWith("/activate")) return;
+
+  const now = Date.now();
+  const lastTime = lastResponseTime.get(threadID) || 0;
+
+  // Safe Anti-Spam Check (3s Delay)
+  if (now - lastTime < COOLDOWN_DELAY) {
+    return;
   }
-  
-  if (action === "selfreacton") {
-    data.selfReact = true;
-    saveSystemData(data);
-    return send(api, "✅ SELF-REACT → ON", threadID, messageID);
-  }
-  
-  if (action === "selfreactoff") {
-    data.selfReact = false;
-    saveSystemData(data);
-    return send(api, "❌ SELF-REACT → OFF", threadID, messageID);
-  }
-  
-  if (action === "reacton") {
-    data.autoReact = true;
-    saveSystemData(data);
-    return send(api, "✅ AUTO-REACT → ON", threadID, messageID);
-  }
-  
-  if (action === "reactoff") {
-    data.autoReact = false;
-    saveSystemData(data);
-    return send(api, "❌ AUTO-REACT → OFF", threadID, messageID);
+
+  lastResponseTime.set(threadID, now);
+
+  try {
+    const roastsList = data.roasts && data.roasts.length > 0 ? data.roasts : DEFAULT_GOJO_ROASTS;
+
+    // Pick random Gojo roast line and emoji
+    const randomRoast = roastsList[Math.floor(Math.random() * roastsList.length)];
+    const randomEmoji = REACT_EMOJIS[Math.floor(Math.random() * REACT_EMOJIS.length)];
+
+    // 2.5-3 Seconds typing/slow-motion delay for anti-ban safety
+    await sleep(2500);
+
+    // AUTO REPLY WITH DIRECT QUOTE
+    api.sendMessage({
+      body: randomRoast,
+      mentions: [{ tag: `@${senderID}`, id: senderID }]
+    }, threadID, async (err, info) => {
+      if (!err && info && info.messageID) {
+        // SAFE AUTO SELF-REACT (1000ms delay)
+        await sleep(1000);
+        api.setMessageReaction(randomEmoji, info.messageID, (reactErr) => {
+          if (reactErr) console.error("Self-react error:", reactErr);
+        }, true);
+      }
+    }, messageID);
+  } catch (error) {
+    console.error("Auto-reply error:", error);
   }
 };
-  
+
+// ===== COMMAND HANDLER (ADMIN PERMISSION ENFORCED) =====
+module.exports.run = async function ({ api, event, args }) {
+  const { threadID, messageID, senderID, isGroup } = event;
+
+  // STRICT ADMIN UID CHECK
+  if (String(senderID) !== ADMIN_UID) {
+    return api.sendMessage("❌ Access Denied: Admin UID (61594022290817) lamang ang pwedeng gumamit ng Gojo Bot commands.", threadID, messageID);
+  }
+
+  const sub = (args[0] || "").toLowerCase();
+  const data = loadData();
+
+  // Turn ON Bot Features
+  if (sub === "on") {
+    data.active = true;
+    data.activatedBy = senderID;
+    data.activatedAt = Date.now();
+    saveData(data);
+
+    const lockedGcName = data.gcName || DEFAULT_LOCKED_NAME;
+    if (isGroup) {
+      api.setTitle(lockedGcName, threadID, () => {});
+    }
+
+    return api.sendMessage(
+      `🕶️ GOJO SATORU BOT ACTIVATED (UID: 61594022290817)\n\n` +
+      `• Mode: Infinite Auto-Reply (PM & GC)\n` +
+      `• Safety: Anti-Ban Safe Delay (3s Buffer)\n` +
+      `• Self-React: Gojo Emojis Active 🕶️🔴🟣\n` +
+      `• Lines Available: ${DEFAULT_GOJO_ROASTS.length} Gojo Verses\n` +
+      `• Enforced GC Name: "${lockedGcName}"\n\n` +
+      `Don't worry, I'm the strongest! ✨`,
+      threadID,
+      messageID
+    );
+  }
+
+  // Turn OFF Bot Features
+  if (sub === "off") {
+    data.active = false;
+    saveData(data);
+    return api.sendMessage("✅ Naka-OFF na ang Gojo auto-reply bot.", threadID, messageID);
+  }
+
+  // Status Check
+  if (sub === "status") {
+    if (!data.active) {
+      return api.sendMessage("Naka-OFF ang Gojo auto-reply bot sa kasalukuyan.", threadID, messageID);
+    }
+    const totalLines = (data.roasts || DEFAULT_GOJO_ROASTS).length;
+    return api.sendMessage(
+      `🕶️ Gojo Bot Status: ACTIVE (SAFE ANTI-BAN MODE)\n` +
+      `Admin UID: 61594022290817\n` +
+      `Cooldown Buffer: 3 Seconds\n` +
+      `Enforced GC Name: "${data.gcName || DEFAULT_LOCKED_NAME}"\n` +
+      `Kabuuan ng mga linyang Gojo: ${totalLines}`,
+      threadID,
+      messageID
+    );
+  }
+
+  // Add Custom Lines
+  if (sub === "add") {
+    const customLine = args.slice(1).join(" ");
+    if (!customLine) {
+      return api.sendMessage("❌ Maglagay ng linyang idadagdag.\nHalimbawa: /activate add Don't worry, I'm the strongest.", threadID, messageID);
+    }
+
+    if (!data.roasts) data.roasts = DEFAULT_GOJO_ROASTS;
+    data.roasts.push(customLine);
+    saveData(data);
+
+    return api.sendMessage(`✅ Naidagdag na ang bagong Gojo line:\n"${customLine}"`, threadID, messageID);
+  }
+
+  // List Lines
+  if (sub === "listlines") {
+    const list = data.roasts || DEFAULT_GOJO_ROASTS;
+    let msg = `📜 Gojo Auto-Reply Lines (${list.length}):\n\n`;
+    list.forEach((line, index) => {
+      msg += `${index + 1}. ${line}\n`;
+    });
+    return api.sendMessage(msg, threadID, messageID);
+  }
+
+  // Command: Set Nicknames
+  if (sub === "setnick") {
+    if (!isGroup) return api.sendMessage("❌ Sa GC lang 'to pwedeng gamitin.", threadID, messageID);
+    const customNickname = args.slice(1).join(" ") || DEFAULT_LOCKED_NAME;
+    data.nickName = customNickname;
+    saveData(data);
+
+    try {
+      const threadInfo = await api.getThreadInfo(threadID);
+      const participantIDs = threadInfo.participantIDs;
+
+      api.sendMessage(`⏳ Binabago ang nicknames ng lahat ng ${participantIDs.length} miyembro...`, threadID);
+
+      for (const userID of participantIDs) {
+        await sleep(600);
+        api.changeNickname(customNickname, threadID, userID, (err) => {
+          if (err) console.error(`Failed nickname change for ${userID}:`, err);
+        });
+      }
+      return api.sendMessage(`✅ Tagumpay na nabago ang lahat ng nicknames papuntang '${customNickname}'.`, threadID, messageID);
+    } catch (e) {
+      return api.sendMessage("❌ Bigo sa pagbago ng nicknames.", threadID, messageID);
+    }
+  }
+
+  // Command: Set Group Name
+  if (sub === "setgname") {
+    if (!isGroup) return api.sendMessage("❌ Sa GC lang 'to pwedeng gamitin.", threadID, messageID);
+    const customGcName = args.slice(1).join(" ") || DEFAULT_LOCKED_NAME;
+    data.gcName = customGcName;
+    saveData(data);
+
+    api.setTitle(customGcName, threadID, (err) => {
+      if (err) return api.sendMessage("❌ Bigo sa pagbago ng GC Name.", threadID, messageID);
+      return api.sendMessage(`✅ GC Name locked to '${customGcName}'.`, threadID, messageID);
+    });
+    return;
+  }
+
+  return api.sendMessage(
+    `🕶️ Gojo Admin Commands (UID: 61594022290817):\n` +
+    `/activate on — Simulan ang Gojo auto-reply\n` +
+    `/activate off — Itigil ang bot\n` +
+    `/activate status — Tignan ang status\n` +
+    `/activate add <text> — Magdagdag ng bagong Gojo line\n` +
+    `/activate listlines — Ilista ang lahat ng Gojo lines\n` +
+    `/activate setnick [pangalan] — Set nickname ng lahat\n` +
+    `/activate setgname [pangalan] — Set GC Name`,
+    threadID,
+    messageID
+  );
+};
