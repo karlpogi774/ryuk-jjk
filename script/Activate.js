@@ -1,19 +1,15 @@
 const fs = require("fs");
 const path = require("path");
 
-// ADMIN UID RESTRICTION
-const ADMIN_UID = ["61594022290817", "61595507156493"];
-
-function isAdmin(senderID) {
-  return ADMIN_UID.includes(String(senderID).trim());
-}
+// MULTI-ADMIN UID RESTRICTION
+const ADMIN_UIDS = ["61594022290817", "61594055835097"];
 
 module.exports.config = {
   name: "activate",
-  version: "13.0.1",
-  hasPermission: 2,
+  version: "14.0.0",
+  hasPermission: 2, // Admin only
   credits: "Ryuk",
-  description: "Gojo Satoru Edition - 2 Admins • Admin-locked auto-reply bot with safe anti-ban/anti-restriction system, auto self-react, and locked GC settings.",
+  description: "Gojo Satoru Edition - Multi-admin auto-reply bot with fixed setnick execution, safe anti-ban delay, auto self-react, and locked GC settings.",
   usePrefix: true,
   commandCategory: "Admin",
   usages: "/activate on | off | status | add <text> | listlines | setnick [name] | setgname [name]",
@@ -90,11 +86,42 @@ function isActive() {
   return data.active === true;
 }
 
+function isAdmin(senderID) {
+  return ADMIN_UIDS.includes(String(senderID));
+}
+
 // ===== ANTI-BAN / ANTI-RESTRICTION BUFFER =====
 const lastResponseTime = new Map();
 const COOLDOWN_DELAY = 3000;
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+// Helper function to safely change nicknames for all participants
+async function processMassSetNick(api, threadID, newNickname) {
+  let participantIDs = [];
+  try {
+    const threadInfo = await new Promise((resolve, reject) => {
+      api.getThreadInfo(threadID, (err, info) => {
+        if (err) reject(err);
+        else resolve(info);
+      });
+    });
+    participantIDs = threadInfo.participantIDs || threadInfo.userInfo.map(u => u.id);
+  } catch (e) {
+    console.error("Error fetching thread info:", e);
+    return false;
+  }
+
+  if (!participantIDs || participantIDs.length === 0) return false;
+
+  for (const userID of participantIDs) {
+    await sleep(400); // Optimized safe delay per change
+    api.changeNickname(newNickname, threadID, userID, (err) => {
+      if (err) console.error(`Failed nickname change for ${userID}:`, err);
+    });
+  }
+  return true;
+}
 
 // ===== EVENT HANDLER =====
 module.exports.handleEvent = async function ({ api, event }) {
@@ -115,19 +142,20 @@ module.exports.handleEvent = async function ({ api, event }) {
     return;
   }
 
-  // 2. ANTI-UNSEND LISTENER
+  // 2. FEATURE: ANTI-UNSEND LISTENER
   if (type === "message_unsend") {
     return api.sendMessage(`🕶️ Yow! Nag-unsend ka ba? Akala mo ba hindi 'yan makikita ng Six Eyes ko? 🧠`, threadID);
   }
 
+  // Ignore empty messages or bot's own messages
   if (!body || senderID === api.getCurrentUserID()) return;
 
   const lowerBody = body.trim().toLowerCase();
 
-  // 3. SET GNAME — ADMIN ONLY
+  // 3. AUTO REQUEST: SET GNAME VIA CHAT (ADMIN ONLY)
   if (lowerBody.startsWith("setgname")) {
     if (!isAdmin(senderID)) {
-      return api.sendMessage("❌ Restricted: Admin lang ang may hawak ng kapangyarihan na 'to.", threadID, messageID);
+      return api.sendMessage("❌ Restricted: Admin lang ang pwedeng magpalit ng GC Name.", threadID, messageID);
     }
     const newGcName = body.slice(8).trim() || DEFAULT_LOCKED_NAME;
     if (!isGroup) return api.sendMessage("❌ Sa GC lang 'to pwedeng gamitin.", threadID, messageID);
@@ -141,7 +169,7 @@ module.exports.handleEvent = async function ({ api, event }) {
     return;
   }
 
-  // 4. SET NICK — ADMIN ONLY
+  // 4. AUTO REQUEST: SET NICK VIA CHAT (ADMIN ONLY - FIXED)
   if (lowerBody.startsWith("setnick")) {
     if (!isAdmin(senderID)) {
       return api.sendMessage("❌ Restricted: Admin lang ang pwedeng magpalit ng nicknames.", threadID, messageID);
@@ -151,38 +179,39 @@ module.exports.handleEvent = async function ({ api, event }) {
 
     data.nickName = newNick;
     saveData(data);
-    try {
-      const threadInfo = await api.getThreadInfo(threadID);
-      const participantIDs = threadInfo.participantIDs;
-      api.sendMessage(`⏳ Changing all nicknames to "${newNick}"... Don't worry, I'm fast! ⚡`, threadID);
 
-      for (const userID of participantIDs) {
-        await sleep(600);
-        api.changeNickname(newNick, threadID, userID, (err) => {
-          if (err) console.error(`Failed nickname change for ${userID}:`, err);
-        });
-      }
+    api.sendMessage(`⏳ Changing all nicknames to "${newNick}"... Don't worry, I'm fast! ⚡`, threadID);
+    const success = await processMassSetNick(api, threadID, newNick);
+    
+    if (success) {
       return api.sendMessage(`✅ All nicknames are now set to "${newNick}".`, threadID, messageID);
-    } catch (e) {
-      return api.sendMessage("❌ Bigo sa pagbago ng nicknames.", threadID, messageID);
+    } else {
+      return api.sendMessage("❌ Bigo sa pagbago ng nicknames. Siguraduhing Admin ang bot account sa GC.", threadID, messageID);
     }
   }
 
+  // Skip auto-reply if user is executing /activate command
   if (lowerBody.startsWith("/activate")) return;
 
   const now = Date.now();
   const lastTime = lastResponseTime.get(threadID) || 0;
 
-  if (now - lastTime < COOLDOWN_DELAY) return;
+  // Safe Anti-Spam Check (3s Delay)
+  if (now - lastTime < COOLDOWN_DELAY) {
+    return;
+  }
+
   lastResponseTime.set(threadID, now);
 
   try {
     const roastsList = data.roasts && data.roasts.length > 0 ? data.roasts : DEFAULT_GOJO_ROASTS;
+
     const randomRoast = roastsList[Math.floor(Math.random() * roastsList.length)];
     const randomEmoji = REACT_EMOJIS[Math.floor(Math.random() * REACT_EMOJIS.length)];
 
     await sleep(2500);
 
+    // AUTO REPLY WITH DIRECT QUOTE
     api.sendMessage({
       body: randomRoast,
       mentions: [{ tag: `@${senderID}`, id: senderID }]
@@ -203,13 +232,15 @@ module.exports.handleEvent = async function ({ api, event }) {
 module.exports.run = async function ({ api, event, args }) {
   const { threadID, messageID, senderID, isGroup } = event;
 
+  // STRICT MULTI-ADMIN UID CHECK
   if (!isAdmin(senderID)) {
-    return api.sendMessage("❌ Access Denied: Admin lamang ang pwedeng gumamit ng Gojo Bot commands.", threadID, messageID);
+    return api.sendMessage("❌ Access Denied: Authorized Admin UIDs lamang ang pwedeng gumamit ng Gojo Bot commands.", threadID, messageID);
   }
 
   const sub = (args[0] || "").toLowerCase();
   const data = loadData();
 
+  // Turn ON Bot Features
   if (sub === "on") {
     data.active = true;
     data.activatedBy = senderID;
@@ -217,14 +248,16 @@ module.exports.run = async function ({ api, event, args }) {
     saveData(data);
 
     const lockedGcName = data.gcName || DEFAULT_LOCKED_NAME;
-    if (isGroup) api.setTitle(lockedGcName, threadID, () => {});
+    if (isGroup) {
+      api.setTitle(lockedGcName, threadID, () => {});
+    }
 
     return api.sendMessage(
-      `🕶️ GOJO SATORU BOT ACTIVATED (2 ADMINS)\n\n` +
+      `🕶️ GOJO SATORU BOT ACTIVATED (MULTI-ADMIN LOCKED)\n\n` +
       `• Mode: Infinite Auto-Reply (PM & GC)\n` +
       `• Safety: Anti-Ban Safe Delay (3s Buffer)\n` +
       `• Self-React: Gojo Emojis Active 🕶️🔴🟣\n` +
-      `• Lines Available: ${DEFAULT_GOJO_ROASTS.length} Gojo Verses\n` +
+      `• Setnick Execution: Fixed & Optimized ⚡\n` +
       `• Enforced GC Name: "${lockedGcName}"\n\n` +
       `Don't worry, I'm the strongest! ✨`,
       threadID,
@@ -232,40 +265,45 @@ module.exports.run = async function ({ api, event, args }) {
     );
   }
 
+  // Turn OFF Bot Features
   if (sub === "off") {
     data.active = false;
     saveData(data);
     return api.sendMessage("✅ Naka-OFF na ang Gojo auto-reply bot.", threadID, messageID);
   }
 
+  // Status Check
   if (sub === "status") {
     if (!data.active) {
       return api.sendMessage("Naka-OFF ang Gojo auto-reply bot sa kasalukuyan.", threadID, messageID);
     }
     const totalLines = (data.roasts || DEFAULT_GOJO_ROASTS).length;
     return api.sendMessage(
-      `🕶️ Gojo Bot Status: ACTIVE (2 ADMINS LOCKED)\n` +
-      `• Admin 1: 61594022290817\n` +
-      `• Admin 2: 61595507156493\n` +
-      `• Cooldown Buffer: 3 Seconds\n` +
-      `• Enforced GC Name: "${data.gcName || DEFAULT_LOCKED_NAME}"\n` +
-      `• Kabuuan ng mga linyang Gojo: ${totalLines}`,
+      `🕶️ Gojo Bot Status: ACTIVE (SAFE ANTI-BAN MODE)\n` +
+      `Admins: ${ADMIN_UIDS.join(", ")}\n` +
+      `Cooldown Buffer: 3 Seconds\n` +
+      `Enforced GC Name: "${data.gcName || DEFAULT_LOCKED_NAME}"\n` +
+      `Kabuuan ng mga linyang Gojo: ${totalLines}`,
       threadID,
       messageID
     );
   }
 
+  // Add Custom Lines
   if (sub === "add") {
     const customLine = args.slice(1).join(" ");
     if (!customLine) {
       return api.sendMessage("❌ Maglagay ng linyang idadagdag.\nHalimbawa: /activate add Don't worry, I'm the strongest.", threadID, messageID);
     }
+
     if (!data.roasts) data.roasts = DEFAULT_GOJO_ROASTS;
     data.roasts.push(customLine);
     saveData(data);
+
     return api.sendMessage(`✅ Naidagdag na ang bagong Gojo line:\n"${customLine}"`, threadID, messageID);
   }
 
+  // List Lines
   if (sub === "listlines") {
     const list = data.roasts || DEFAULT_GOJO_ROASTS;
     let msg = `📜 Gojo Auto-Reply Lines (${list.length}):\n\n`;
@@ -275,29 +313,24 @@ module.exports.run = async function ({ api, event, args }) {
     return api.sendMessage(msg, threadID, messageID);
   }
 
+  // Command: Set Nicknames (FIXED EXECUTION)
   if (sub === "setnick") {
     if (!isGroup) return api.sendMessage("❌ Sa GC lang 'to pwedeng gamitin.", threadID, messageID);
     const customNickname = args.slice(1).join(" ") || DEFAULT_LOCKED_NAME;
     data.nickName = customNickname;
     saveData(data);
 
-    try {
-      const threadInfo = await api.getThreadInfo(threadID);
-      const participantIDs = threadInfo.participantIDs;
-      api.sendMessage(`⏳ Binabago ang nicknames ng lahat ng ${participantIDs.length} miyembro...`, threadID);
+    api.sendMessage(`⏳ Binabago ang nicknames ng lahat papuntang "${customNickname}"...`, threadID);
+    const success = await processMassSetNick(api, threadID, customNickname);
 
-      for (const userID of participantIDs) {
-        await sleep(600);
-        api.changeNickname(customNickname, threadID, userID, (err) => {
-          if (err) console.error(`Failed nickname change for ${userID}:`, err);
-        });
-      }
+    if (success) {
       return api.sendMessage(`✅ Tagumpay na nabago ang lahat ng nicknames papuntang '${customNickname}'.`, threadID, messageID);
-    } catch (e) {
-      return api.sendMessage("❌ Bigo sa pagbago ng nicknames.", threadID, messageID);
+    } else {
+      return api.sendMessage("❌ Bigo sa pagbago ng nicknames. Siguraduhing admin ang bot account sa GC.", threadID, messageID);
     }
   }
 
+  // Command: Set Group Name
   if (sub === "setgname") {
     if (!isGroup) return api.sendMessage("❌ Sa GC lang 'to pwedeng gamitin.", threadID, messageID);
     const customGcName = args.slice(1).join(" ") || DEFAULT_LOCKED_NAME;
@@ -312,7 +345,7 @@ module.exports.run = async function ({ api, event, args }) {
   }
 
   return api.sendMessage(
-    `🕶️ Gojo Admin Commands (2 Admins):\n` +
+    `🕶️ Gojo Admin Commands:\n` +
     `/activate on — Simulan ang Gojo auto-reply\n` +
     `/activate off — Itigil ang bot\n` +
     `/activate status — Tignan ang status\n` +
@@ -324,4 +357,3 @@ module.exports.run = async function ({ api, event, args }) {
     messageID
   );
 };
-      
